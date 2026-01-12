@@ -1,0 +1,50 @@
+{
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "export": "Export",
+    "open": "Open",
+    "new": "New",
+    "close": "Close"
+  },
+  "toolbar": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "strikethrough": "Strikethrough",
+    "code": "Code",
+    "heading": "Heading",
+    "unorderedList": "Unordered list",
+    "orderedList": "Ordered list",
+    "taskList": "Task list",
+    "blockquote": "Blockquote",
+    "codeBlock": "Code block",
+    "link": "Link",
+    "image": "Image",
+    "table": "Table",
+    "horizontalRule": "Horizontal rule"
+  },
+  "sidebar": {
+    "title": "Assets",
+    "headings": "Headings",
+    "images": "Images",
+    "links": "Links",
+    "alerts": "Alerts",
+    "footnotes": "Footnotes",
+    "tables": "Tables"
+  },
+  "fileBrowser": {
+    "title": "Files"
+  },
+  "status": {
+    "saved": "Saved",
+    "unsaved": "Unsaved",
+    "saving": "Saving..."
+  },
+  "dialogs": {
+    "unsavedChanges": "You have unsaved changes. Do you want to save before closing?",
+    "deleteConfirm": "Are you sure you want to delete this file?",
+    "renameFile": "Rename file",
+    "newFile": "New file",
+    "newFolder": "New folder"
+  }
+}

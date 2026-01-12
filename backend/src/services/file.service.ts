@@ -1,0 +1,98 @@
+import fs from 'fs/promises';
+import path from 'path';
+import { validatePath } from '../utils/security.js';
+
+const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT || '/workspace';
+
+export interface FileInfo {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  extension?: string;
+  size?: number;
+  modifiedAt?: string;
+}
+
+export const listDirectory = async (relativePath: string): Promise<FileInfo[]> => {
+  const safePath = await validatePath(relativePath, WORKSPACE_ROOT);
+
+  const entries = await fs.readdir(safePath, { withFileTypes: true });
+
+  const fileInfos = await Promise.all(
+    entries.map(async (entry) => {
+      const fullPath = path.join(safePath, entry.name);
+      const stats = await fs.stat(fullPath);
+
+      return {
+        name: entry.name,
+        path: path.relative(WORKSPACE_ROOT, fullPath),
+        type: entry.isDirectory() ? 'directory' : 'file',
+        extension: entry.isFile() ? path.extname(entry.name) : undefined,
+        size: stats.size,
+        modifiedAt: stats.mtime.toISOString(),
+      } as FileInfo;
+    })
+  );
+
+  // Filter to show only .md files and directories
+  return fileInfos.filter(
+    (info) => info.type === 'directory' || info.extension === '.md'
+  );
+};
+
+export const readFileContent = async (relativePath: string): Promise<string> => {
+  const safePath = await validatePath(relativePath, WORKSPACE_ROOT);
+  return await fs.readFile(safePath, 'utf-8');
+};
+
+export const writeFileContent = async (
+  relativePath: string,
+  content: string
+): Promise<void> => {
+  const safePath = await validatePath(relativePath, WORKSPACE_ROOT);
+  await fs.writeFile(safePath, content, 'utf-8');
+};
+
+export const createNewFile = async (
+  relativePath: string,
+  content: string = ''
+): Promise<void> => {
+  const safePath = await validatePath(relativePath, WORKSPACE_ROOT);
+
+  // Check if file already exists
+  try {
+    await fs.access(safePath);
+    throw new Error('File already exists');
+  } catch (error: any) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  // Ensure directory exists
+  const dir = path.dirname(safePath);
+  await fs.mkdir(dir, { recursive: true });
+
+  await fs.writeFile(safePath, content, 'utf-8');
+};
+
+export const deleteFileOrDirectory = async (relativePath: string): Promise<void> => {
+  const safePath = await validatePath(relativePath, WORKSPACE_ROOT);
+
+  const stats = await fs.stat(safePath);
+  if (stats.isDirectory()) {
+    await fs.rm(safePath, { recursive: true });
+  } else {
+    await fs.unlink(safePath);
+  }
+};
+
+export const renameFileOrDirectory = async (
+  oldRelativePath: string,
+  newRelativePath: string
+): Promise<void> => {
+  const oldSafePath = await validatePath(oldRelativePath, WORKSPACE_ROOT);
+  const newSafePath = await validatePath(newRelativePath, WORKSPACE_ROOT);
+
+  await fs.rename(oldSafePath, newSafePath);
+};

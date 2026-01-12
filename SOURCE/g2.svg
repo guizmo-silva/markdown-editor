@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="11.398582"
+   height="11.399494"
+   viewBox="0 0 3.0158749 3.0161162"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   sodipodi:docname="icones_markdown.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     inkscape:zoom="8.2747368"
+     inkscape:cx="84.89696"
+     inkscape:cy="43.324641"
+     inkscape:window-width="1920"
+     inkscape:window-height="1024"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showgrid="false">
+    <inkscape:page
+       x="0"
+       y="0"
+       width="3.0158749"
+       height="3.0161161"
+       id="page2"
+       margin="0"
+       bleed="0" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1">
+    <linearGradient
+       id="swatch5"
+       inkscape:swatch="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop5" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#swatch5"
+       id="linearGradient5"
+       x1="23.684898"
+       y1="9.1205721"
+       x2="26.59494"
+       y2="9.1205721"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-0.54357218,-0.33573572)" />
+  </defs>
+  <g
+     inkscape:label="Camada 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-23.08841,-7.2767786)">
+    <g
+       id="g2">
+      <rect
+         style="fill:#000000;stroke-width:0.233053;stroke-dasharray:none"
+         id="rect1"
+         width="2.5579867"
+         height="0.5755471"
+         x="23.325642"
+         y="7.562048" />
+      <rect
+         style="fill:none;fill-opacity:1;stroke:url(#linearGradient5);stroke-width:0.396875;stroke-dasharray:none;stroke-dashoffset:0;paint-order:normal"
+         id="rect5"
+         width="2.619"
+         height="2.6192415"
+         x="23.286848"
+         y="7.4752159"
+         ry="0.52916664" />
+      <path
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.396875;stroke-dasharray:none;stroke-opacity:1"
+         d="M 24.596348,7.3062493 V 10.040098"
+         id="path2" />
+    </g>
+  </g>
+</svg>

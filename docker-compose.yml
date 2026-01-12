@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: markdown-editor-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://backend:3001
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - markdown-editor
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: markdown-editor-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - FRONTEND_URL=http://frontend:3000
+      - WORKSPACE_ROOT=/workspace
+    volumes:
+      # Configure your workspace directories here
+      # Example: Map local directories to container workspace
+      - ./workspace:/workspace
+    restart: unless-stopped
+    networks:
+      - markdown-editor
+
+networks:
+  markdown-editor:
+    driver: bridge
+
+volumes:
+  workspace:
+    driver: local

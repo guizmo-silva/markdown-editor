@@ -1,0 +1,50 @@
+{
+  "buttons": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "export": "Exportar",
+    "open": "Abrir",
+    "new": "Nuevo",
+    "close": "Cerrar"
+  },
+  "toolbar": {
+    "bold": "Negrita",
+    "italic": "Cursiva",
+    "strikethrough": "Tachado",
+    "code": "Código",
+    "heading": "Título",
+    "unorderedList": "Lista desordenada",
+    "orderedList": "Lista ordenada",
+    "taskList": "Lista de tareas",
+    "blockquote": "Cita",
+    "codeBlock": "Bloque de código",
+    "link": "Enlace",
+    "image": "Imagen",
+    "table": "Tabla",
+    "horizontalRule": "Línea horizontal"
+  },
+  "sidebar": {
+    "title": "Elementos",
+    "headings": "Títulos",
+    "images": "Imágenes",
+    "links": "Enlaces",
+    "alerts": "Alertas",
+    "footnotes": "Notas al pie",
+    "tables": "Tablas"
+  },
+  "fileBrowser": {
+    "title": "Archivos"
+  },
+  "status": {
+    "saved": "Guardado",
+    "unsaved": "No guardado",
+    "saving": "Guardando..."
+  },
+  "dialogs": {
+    "unsavedChanges": "Tienes cambios sin guardar. ¿Quieres guardar antes de cerrar?",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este archivo?",
+    "renameFile": "Renombrar archivo",
+    "newFile": "Nuevo archivo",
+    "newFolder": "Nueva carpeta"
+  }
+}

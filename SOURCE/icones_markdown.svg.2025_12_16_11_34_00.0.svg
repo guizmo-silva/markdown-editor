@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1440"
+   height="960"
+   viewBox="0 0 380.99999 254"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   sodipodi:docname="icones_markdown.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     inkscape:zoom="11.702245"
+     inkscape:cx="592.74953"
+     inkscape:cy="425.85847"
+     inkscape:window-width="1920"
+     inkscape:window-height="1024"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showgrid="false" />
+  <defs
+     id="defs1">
+    <linearGradient
+       id="swatch5"
+       inkscape:swatch="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop5" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#swatch5"
+       id="linearGradient5"
+       x1="23.684899"
+       y1="9.1205724"
+       x2="26.59494"
+       y2="9.1205724"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     inkscape:label="Camada 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-size:4.09987px;text-align:start;letter-spacing:-0.806979px;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#000000;stroke-width:0.256243"
+       x="10.278255"
+       y="9.854023"
+       id="text1"
+       inkscape:export-filename="text1.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96"><tspan
+         id="tspan1"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.09987px;font-family:roboto;-inkscape-font-specification:'roboto Medium';letter-spacing:-0.806979px;stroke-width:0.256243"
+         x="10.278255"
+         y="9.854023"
+         sodipodi:role="line"
+         dx="0">&gt;_</tspan></text>
+    <path
+       style="font-weight:500;font-size:4.09987px;font-family:roboto;-inkscape-font-specification:'roboto Medium';letter-spacing:-0.806979px;stroke-width:0.256243"
+       d="m 17.99244,8.3125704 v -0.47845 l 1.72964,0.7447 v 0.38636 L 17.99244,9.7098903 V 9.2314304 l 1.21115,-0.45242 0.036,-0.004 0.002,-0.012 -0.038,-0.008 z M 20.90498,10.23638 H 19.06924 V 9.8540203 h 1.83574 z"
+       id="text5"
+       aria-label="&gt;_"
+       inkscape:export-filename="text5.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+    <rect
+       style="fill:none;stroke:url(#linearGradient5);stroke-width:0.396875;stroke-dasharray:none;stroke-dashoffset:0;paint-order:normal"
+       id="rect5"
+       width="2.619"
+       height="2.6192415"
+       x="23.83042"
+       y="7.8109517"
+       ry="0.52916664" />
+  </g>
+</svg>

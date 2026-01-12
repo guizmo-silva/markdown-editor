@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="11.007996"
+   height="9.0794067"
+   viewBox="0 0 2.9125321 2.4022597"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   sodipodi:docname="icones_markdown.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     inkscape:zoom="11.702245"
+     inkscape:cx="592.74953"
+     inkscape:cy="425.85847"
+     inkscape:window-width="1920"
+     inkscape:window-height="1024"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showgrid="false">
+    <inkscape:page
+       x="0"
+       y="0"
+       width="2.9125321"
+       height="2.4022596"
+       id="page2"
+       margin="0"
+       bleed="0" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Camada 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-157.69245,-110.22787)">
+    <path
+       style="font-weight:500;font-size:4.09987px;font-family:roboto;-inkscape-font-specification:'roboto Medium';letter-spacing:-0.806979px;stroke-width:0.256243"
+       d="m 157.69244,110.70632 v -0.47845 l 1.72964,0.7447 v 0.38636 l -1.72964,0.74471 v -0.47846 l 1.21115,-0.45242 0.036,-0.004 0.002,-0.012 -0.038,-0.008 z m 2.91254,1.92381 h -1.83574 v -0.38236 h 1.83574 z"
+       id="text5"
+       aria-label="&gt;_" />
+  </g>
+</svg>

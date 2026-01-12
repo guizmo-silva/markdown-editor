@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1440"
+   height="960"
+   viewBox="0 0 380.99999 254"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   sodipodi:docname="icones_markdown.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     inkscape:zoom="11.702245"
+     inkscape:cx="95.109955"
+     inkscape:cy="36.531452"
+     inkscape:window-width="1920"
+     inkscape:window-height="1024"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showgrid="false" />
+  <defs
+     id="defs1">
+    <linearGradient
+       id="swatch5"
+       inkscape:swatch="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop5" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#swatch5"
+       id="linearGradient5"
+       x1="23.684899"
+       y1="9.1205724"
+       x2="26.59494"
+       y2="9.1205724"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-0.54357218,-0.33573572)" />
+  </defs>
+  <g
+     inkscape:label="Camada 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-size:4.09987px;text-align:start;letter-spacing:-0.806979px;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#000000;stroke-width:0.256243"
+       x="10.278255"
+       y="9.854023"
+       id="text1"
+       inkscape:export-filename="text1.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96"><tspan
+         id="tspan1"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:4.09987px;font-family:roboto;-inkscape-font-specification:'roboto Medium';letter-spacing:-0.806979px;stroke-width:0.256243"
+         x="10.278255"
+         y="9.854023"
+         sodipodi:role="line"
+         dx="0">&gt;_</tspan></text>
+    <path
+       style="font-weight:500;font-size:4.09987px;font-family:roboto;-inkscape-font-specification:'roboto Medium';letter-spacing:-0.806979px;stroke-width:0.256243"
+       d="m 17.99244,8.3125704 v -0.47845 l 1.72964,0.7447 v 0.38636 L 17.99244,9.7098903 V 9.2314304 l 1.21115,-0.45242 0.036,-0.004 0.002,-0.012 -0.038,-0.008 z M 20.90498,10.23638 H 19.06924 V 9.8540203 h 1.83574 z"
+       id="text5"
+       aria-label="&gt;_"
+       inkscape:export-filename="text5.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+    <g
+       id="g2"
+       inkscape:export-filename="g2.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96">
+      <rect
+         style="fill:#000000;stroke-width:0.233053;stroke-dasharray:none"
+         id="rect1"
+         width="2.5579867"
+         height="0.5755471"
+         x="23.325642"
+         y="7.562048" />
+      <rect
+         style="fill:none;fill-opacity:1;stroke:url(#linearGradient5);stroke-width:0.396875;stroke-dasharray:none;stroke-dashoffset:0;paint-order:normal"
+         id="rect5"
+         width="2.619"
+         height="2.6192415"
+         x="23.286848"
+         y="7.4752159"
+         ry="0.52916664" />
+      <path
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.396875;stroke-dasharray:none;stroke-opacity:1"
+         d="M 24.596348,7.3062493 V 10.040098"
+         id="path2" />
+    </g>
+    <path
+       id="path9"
+       style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+       d="M 30.069999 7.0641683 C 29.158505 7.1558693 28.443225 7.9279472 28.443225 8.8630249 C 28.443225 9.8595637 29.255361 10.6717 30.2519 10.6717 C 30.816674 10.6717 31.322347 10.410956 31.654399 10.003524 A 1.7107677 1.7107677 0 0 1 31.189827 10.067603 A 1.7107677 1.7107677 0 0 1 31.006893 10.057784 A 1.7107677 1.7107677 0 0 1 29.479338 8.3565959 A 1.7107677 1.7107677 0 0 1 29.66744 7.5767985 A 1.7107677 1.7107677 0 0 1 30.069999 7.0641683 z M 29.701546 10.164754 C 29.786053 10.200407 29.874582 10.228159 29.966646 10.24692 C 29.874582 10.228158 29.786054 10.200408 29.701546 10.164754 z "
+       inkscape:export-filename="path9.svg"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+  </g>
+</svg>

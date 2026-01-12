@@ -1,0 +1,224 @@
+/* Markdown Preview Styles */
+.markdown-preview {
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+/* Headings */
+.markdown-preview h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  line-height: 1.25;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.3em;
+}
+
+.markdown-preview h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  line-height: 1.25;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.3em;
+}
+
+.markdown-preview h3 {
+  font-size: 1.25em;
+  font-weight: 700;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  line-height: 1.25;
+}
+
+.markdown-preview h4 {
+  font-size: 1em;
+  font-weight: 700;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  line-height: 1.25;
+}
+
+.markdown-preview h5 {
+  font-size: 0.875em;
+  font-weight: 700;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  line-height: 1.25;
+}
+
+.markdown-preview h6 {
+  font-size: 0.85em;
+  font-weight: 700;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  line-height: 1.25;
+  color: #666666;
+}
+
+/* Paragraphs */
+.markdown-preview p {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+/* Links */
+.markdown-preview a {
+  color: #0969da;
+  text-decoration: none;
+}
+
+.markdown-preview a:hover {
+  text-decoration: underline;
+}
+
+/* Bold and Italic */
+.markdown-preview strong {
+  font-weight: 700;
+}
+
+.markdown-preview em {
+  font-style: italic;
+}
+
+/* Strikethrough */
+.markdown-preview del {
+  text-decoration: line-through;
+}
+
+/* Lists */
+.markdown-preview ul,
+.markdown-preview ol {
+  margin-top: 0;
+  margin-bottom: 16px;
+  padding-left: 2em;
+}
+
+.markdown-preview ul {
+  list-style-type: disc;
+}
+
+.markdown-preview ol {
+  list-style-type: decimal;
+}
+
+.markdown-preview li {
+  margin-top: 0.25em;
+}
+
+.markdown-preview li > p {
+  margin-bottom: 0.25em;
+}
+
+/* Task Lists */
+.markdown-preview input[type="checkbox"] {
+  margin-right: 0.5em;
+}
+
+/* Blockquotes */
+.markdown-preview blockquote {
+  margin: 0 0 16px 0;
+  padding: 0 1em;
+  color: #666666;
+  border-left: 0.25em solid #d0d7de;
+}
+
+.markdown-preview blockquote > :first-child {
+  margin-top: 0;
+}
+
+.markdown-preview blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* Code */
+.markdown-preview code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(175, 184, 193, 0.2);
+  border-radius: 6px;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.markdown-preview pre {
+  margin-top: 0;
+  margin-bottom: 16px;
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+}
+
+.markdown-preview pre code {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+  font-size: 100%;
+}
+
+/* Tables */
+.markdown-preview table {
+  border-spacing: 0;
+  border-collapse: collapse;
+  margin-top: 0;
+  margin-bottom: 16px;
+  width: 100%;
+  overflow: auto;
+}
+
+.markdown-preview table th {
+  font-weight: 700;
+  padding: 6px 13px;
+  border: 1px solid #d0d7de;
+  background-color: #f6f8fa;
+}
+
+.markdown-preview table td {
+  padding: 6px 13px;
+  border: 1px solid #d0d7de;
+}
+
+.markdown-preview table tr {
+  background-color: #ffffff;
+  border-top: 1px solid #d0d7de;
+}
+
+.markdown-preview table tr:nth-child(2n) {
+  background-color: #f6f8fa;
+}
+
+/* Horizontal Rule */
+.markdown-preview hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: #d0d7de;
+  border: 0;
+}
+
+/* Images */
+.markdown-preview img {
+  max-width: 100%;
+  height: auto;
+  margin: 16px 0;
+  border-radius: 6px;
+}
+
+/* First and last child margins */
+.markdown-preview > *:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-preview > *:last-child {
+  margin-bottom: 0 !important;
+}

@@ -1,0 +1,50 @@
+{
+  "buttons": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "export": "Exportieren",
+    "open": "Öffnen",
+    "new": "Neu",
+    "close": "Schließen"
+  },
+  "toolbar": {
+    "bold": "Fett",
+    "italic": "Kursiv",
+    "strikethrough": "Durchgestrichen",
+    "code": "Code",
+    "heading": "Überschrift",
+    "unorderedList": "Ungeordnete Liste",
+    "orderedList": "Geordnete Liste",
+    "taskList": "Aufgabenliste",
+    "blockquote": "Zitat",
+    "codeBlock": "Codeblock",
+    "link": "Link",
+    "image": "Bild",
+    "table": "Tabelle",
+    "horizontalRule": "Horizontale Linie"
+  },
+  "sidebar": {
+    "title": "Elemente",
+    "headings": "Überschriften",
+    "images": "Bilder",
+    "links": "Links",
+    "alerts": "Warnungen",
+    "footnotes": "Fußnoten",
+    "tables": "Tabellen"
+  },
+  "fileBrowser": {
+    "title": "Dateien"
+  },
+  "status": {
+    "saved": "Gespeichert",
+    "unsaved": "Nicht gespeichert",
+    "saving": "Speichern..."
+  },
+  "dialogs": {
+    "unsavedChanges": "Sie haben nicht gespeicherte Änderungen. Möchten Sie vor dem Schließen speichern?",
+    "deleteConfirm": "Sind Sie sicher, dass Sie diese Datei löschen möchten?",
+    "renameFile": "Datei umbenennen",
+    "newFile": "Neue Datei",
+    "newFolder": "Neuer Ordner"
+  }
+}
