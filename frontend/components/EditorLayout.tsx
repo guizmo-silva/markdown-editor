@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { CodeEditor } from './Editor';
 import { MarkdownPreview } from './Preview';
 import { AssetsSidebar } from './Sidebar';
 import { ViewToggle, type ViewMode } from './ViewToggle';
 import { Tabs } from './Tabs';
+import { Toolbar } from './Toolbar';
 
 export default function EditorLayout() {
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
   const [markdown, setMarkdown] = useState(`# Welcome to Markdown Editor
 
 Start typing your markdown here...
@@ -159,13 +161,21 @@ This text has a footnote reference[^1] and another one[^2].
         <div className="flex-1 flex overflow-hidden">
           {/* Code Editor */}
           {(viewMode === 'code' || viewMode === 'split') && (
-            <div className={`${viewMode === 'split' ? 'flex-1 border-r border-[#999999]' : 'w-full'}`}>
-              <CodeEditor
+            <div className={`${viewMode === 'split' ? 'flex-1 border-r border-[#999999]' : 'w-full'} flex flex-col`}>
+              <Toolbar
+                textareaRef={editorRef}
                 value={markdown}
                 onChange={setMarkdown}
-                placeholder="Start typing your markdown..."
-                scrollToLine={scrollToLine}
               />
+              <div className="flex-1 overflow-hidden">
+                <CodeEditor
+                  ref={editorRef}
+                  value={markdown}
+                  onChange={setMarkdown}
+                  placeholder="Start typing your markdown..."
+                  scrollToLine={scrollToLine}
+                />
+              </div>
             </div>
           )}
 

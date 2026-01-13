@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, forwardRef } from 'react';
 import InfoBar from './InfoBar';
 
 interface CodeEditorProps {
@@ -10,11 +10,23 @@ interface CodeEditorProps {
   scrollToLine?: number;
 }
 
-export default function CodeEditor({ value, onChange, placeholder, scrollToLine }: CodeEditorProps) {
+const CodeEditor = forwardRef<HTMLTextAreaElement, CodeEditorProps>(
+  ({ value, onChange, placeholder, scrollToLine }, forwardedRef) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [characterCount, setCharacterCount] = useState(0);
+
+  // Sync forwarded ref with internal ref
+  useEffect(() => {
+    if (forwardedRef) {
+      if (typeof forwardedRef === 'function') {
+        forwardedRef(textareaRef.current);
+      } else {
+        (forwardedRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = textareaRef.current;
+      }
+    }
+  }, [forwardedRef]);
 
   // Calculate line count
   const lineCount = value.split('\n').length;
@@ -149,4 +161,8 @@ export default function CodeEditor({ value, onChange, placeholder, scrollToLine 
       />
     </div>
   );
-}
+});
+
+CodeEditor.displayName = 'CodeEditor';
+
+export default CodeEditor;
