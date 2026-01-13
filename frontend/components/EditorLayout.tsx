@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { CodeEditor } from './Editor';
 import { MarkdownPreview } from './Preview';
-import { AssetsSidebar, ViewMode } from './Sidebar';
+import { AssetsSidebar } from './Sidebar';
+import { ViewToggle, type ViewMode } from './ViewToggle';
 
 export default function EditorLayout() {
   const [viewMode, setViewMode] = useState<ViewMode>('split');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [markdown, setMarkdown] = useState(`# Welcome to Markdown Editor
 
 Start typing your markdown here...
@@ -90,25 +92,65 @@ This text has a footnote reference[^1] and another one[^2].
     // For now, just log the selection
   };
 
-  return (
-    <div className="h-screen w-screen flex flex-col bg-white">
-      {/* Header */}
-      <div className="h-[36px] bg-[#E9E9E9] border-b border-[#CCCCCC] flex items-center justify-between px-4">
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-semibold">Markdown Editor</span>
-        </div>
-      </div>
+  const handleToggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
 
-      {/* Layout: Sidebar (left) + Content (right) */}
-      <div className="flex-1 flex flex-row overflow-hidden">
-        {/* Sidebar - Left side */}
+  return (
+    <div className="h-screen w-screen flex flex-row bg-white">
+      {/* Sidebar - Full height on the left */}
+      {!isSidebarCollapsed && (
         <AssetsSidebar
           markdown={markdown}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           onNavigateToLine={handleNavigateToLine}
           onFileSelect={handleFileSelect}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={handleToggleSidebar}
         />
+      )}
+
+      {/* Collapsed Sidebar */}
+      {isSidebarCollapsed && (
+        <div className="w-[60px] bg-white border-r border-[#CCCCCC] flex flex-col items-center relative">
+          {/* Logo at top */}
+          <div className="py-3 border-b border-[#CCCCCC] w-full flex items-center justify-center">
+            <img
+              src="/Logo.svg"
+              alt="MD Logo"
+              className="h-[32px] w-auto"
+            />
+          </div>
+
+          {/* Vertical Toggle */}
+          <div className="py-3">
+            <ViewToggle currentMode={viewMode} onModeChange={setViewMode} vertical={true} />
+          </div>
+
+          {/* Expand Button - Fixed at bottom */}
+          <button
+            onClick={handleToggleSidebar}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 w-10 h-10 bg-white rounded-full shadow-md hover:shadow-lg flex items-center justify-center transition-all border border-[#CCCCCC]"
+            aria-label="Show sidebar"
+          >
+            <img
+              src="/hide_side_bar_icon.svg"
+              alt="Show sidebar"
+              className="h-4 w-4"
+            />
+          </button>
+        </div>
+      )}
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="h-[36px] bg-[#E9E9E9] border-b border-[#CCCCCC] flex items-center justify-between px-4">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-semibold">Markdown Editor</span>
+          </div>
+        </div>
 
         {/* Content Area - Based on view mode */}
         <div className="flex-1 flex overflow-hidden">

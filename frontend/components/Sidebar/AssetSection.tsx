@@ -8,43 +8,47 @@ interface AssetSectionProps {
   count: number;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  mdSymbol?: string; // Markdown symbol like "#", "![]", "[]()"
 }
 
-export default function AssetSection({ title, count, children, defaultOpen = false }: AssetSectionProps) {
+export default function AssetSection({ title, count, children, defaultOpen = false, mdSymbol }: AssetSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-[#CCCCCC]">
+    <div>
       {/* Section Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-[#F0F0F0] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[12px] font-semibold text-[#000]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-            {title}
+          <span className="text-[12px] font-bold text-[#000]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+            {title} {mdSymbol && <span className="text-[#666666]">{mdSymbol}</span>}
           </span>
-          <span className="text-[11px] text-[#666666]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-            ({count})
-          </span>
+          <img
+            src="/element_fold_icon.svg"
+            alt={isOpen ? 'Expanded' : 'Collapsed'}
+            className={`w-3 h-2 transition-transform ${isOpen ? '' : '-rotate-90'}`}
+          />
         </div>
-        <svg
-          className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
       </button>
 
       {/* Section Content */}
       {isOpen && (
-        <div className="px-3 pb-2">
-          {count > 0 ? children : (
-            <p className="text-[11px] text-[#999999] italic" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-              No items
-            </p>
+        <div className="pr-3 relative">
+          {count > 0 ? (
+            <div className="relative pl-6 pb-2">
+              {/* Container for children with tree connectors */}
+              <div className="relative">
+                {children}
+              </div>
+            </div>
+          ) : (
+            <div className="pl-6">
+              <p className="text-[11px] text-[#999999] italic" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                No items
+              </p>
+            </div>
           )}
         </div>
       )}

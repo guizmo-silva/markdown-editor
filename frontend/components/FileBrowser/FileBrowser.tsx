@@ -108,14 +108,7 @@ export default function FileBrowser({ onFileSelect }: FileBrowserProps) {
   };
 
   return (
-    <div className="border-t border-[#CCCCCC]">
-      {/* Header */}
-      <div className="px-3 py-3 border-b border-[#CCCCCC]">
-        <h2 className="text-[20px] font-bold text-[#000]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-          {t('fileBrowser.title', 'Arquivos')}
-        </h2>
-      </div>
-
+    <div>
       {/* File Tree */}
       <div className="py-2">
         {mockFiles.map((item, index) => (
