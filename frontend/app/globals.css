@@ -37,3 +37,15 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
 }
+
+/* Tree lines: hide vertical line after last item */
+.tree-last-item::after {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 16px;
+  bottom: -10px;
+  width: 1px;
+  background: white;
+  z-index: 1;
+}

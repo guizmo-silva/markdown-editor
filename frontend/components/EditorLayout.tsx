@@ -5,6 +5,7 @@ import { CodeEditor } from './Editor';
 import { MarkdownPreview } from './Preview';
 import { AssetsSidebar } from './Sidebar';
 import { ViewToggle, type ViewMode } from './ViewToggle';
+import { Tabs } from './Tabs';
 
 export default function EditorLayout() {
   const [viewMode, setViewMode] = useState<ViewMode>('split');
@@ -145,11 +146,13 @@ This text has a footnote reference[^1] and another one[^2].
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="h-[36px] bg-[#E9E9E9] border-b border-[#CCCCCC] flex items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-semibold">Markdown Editor</span>
-          </div>
+        {/* Tabs with border below */}
+        <div className="border-b border-[#CCCCCC]">
+          <Tabs
+            onTabChange={(tabId) => console.log('Tab changed to:', tabId)}
+            onTabClose={(tabId) => console.log('Tab closed:', tabId)}
+            onNewTab={() => console.log('New tab requested')}
+          />
         </div>
 
         {/* Content Area - Based on view mode */}

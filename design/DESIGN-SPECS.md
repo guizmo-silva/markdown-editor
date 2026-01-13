@@ -38,3 +38,12 @@
 
 ### Sidebar
 - Largura: 230px padrão (pode ser redimensionada)
+
+### Tab bar
+- Altura das abas: 30px
+- Corner radius: 15 (superior esquerdo e superior direito)
+- Cor: BG Icon & Tab
+- Fonte: Roboto Mono - Medium - Tamanho 10
+  - Cor: Tab & Line number
+- Ícone de fechar: 5px x 6px
+- Ícone nova aba: 14px x 14px

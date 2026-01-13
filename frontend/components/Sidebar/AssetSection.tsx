@@ -38,6 +38,9 @@ export default function AssetSection({ title, count, children, defaultOpen = fal
         <div className="pr-3 relative">
           {count > 0 ? (
             <div className="relative pl-6 pb-2">
+              {/* Main vertical tree line - will be hidden after last element via CSS */}
+              <div className="absolute left-3 top-0 bottom-0 w-[1px] bg-[#CCCCCC] tree-line"></div>
+
               {/* Container for children with tree connectors */}
               <div className="relative">
                 {children}

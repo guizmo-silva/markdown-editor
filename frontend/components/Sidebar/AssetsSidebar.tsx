@@ -72,27 +72,22 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(heading.line)}
-                  className="mb-1 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative"
+                  className={`mb-1 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                   style={{ paddingLeft: `${(heading.level - 1) * 8 + 8}px` }}
                 >
-                  {/* Tree connector line - horizontal line from vertical to item */}
-                  <div className="absolute left-[-12px] top-1/2 w-3 h-[1px] bg-[#CCCCCC] -translate-y-1/2"></div>
+                  {/* Horizontal connector from vertical line to item */}
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
 
-                  {/* Vertical line segment - continues down unless last item */}
-                  {!isLast && (
-                    <div className="absolute left-[-12px] top-1/2 bottom-[-4px] w-[1px] bg-[#CCCCCC]"></div>
-                  )}
-
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {'#'.repeat(heading.level)}
                     </span>
                     <span className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {heading.text}
                     </span>
-                  </div>
-                  <div className="text-[9px] text-[#999999] mt-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    Line {heading.line}
+                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      (Line {heading.line})
+                    </span>
                   </div>
                 </div>
               );
@@ -107,24 +102,21 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(image.line)}
-                  className="mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative"
+                  className={`mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                 >
-                  {/* Tree connector line */}
-                  <div className="absolute left-[-12px] top-1/2 w-3 h-[1px] bg-[#CCCCCC] -translate-y-1/2"></div>
+                  {/* Horizontal connector from vertical line to item */}
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
 
-                  {/* Vertical line segment */}
-                  {!isLast && (
-                    <div className="absolute left-[-12px] top-1/2 bottom-[-8px] w-[1px] bg-[#CCCCCC]"></div>
-                  )}
-
-                  <div className="text-[11px] text-[#000] font-medium mb-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    {image.alt}
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      {image.alt}
+                    </span>
+                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      (Line {image.line})
+                    </span>
                   </div>
                   <div className="text-[10px] text-[#666666] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                     {image.url}
-                  </div>
-                  <div className="text-[9px] text-[#999999] mt-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    Line {image.line}
                   </div>
                 </div>
               );
@@ -139,35 +131,30 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(link.line)}
-                  className="mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative"
+                  className={`mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                 >
-                  {/* Tree connector line */}
-                  <div className="absolute left-[-12px] top-1/2 w-3 h-[1px] bg-[#CCCCCC] -translate-y-1/2"></div>
+                  {/* Horizontal connector from vertical line to item */}
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
 
-                  {/* Vertical line segment */}
-                  {!isLast && (
-                    <div className="absolute left-[-12px] top-1/2 bottom-[-8px] w-[1px] bg-[#CCCCCC]"></div>
-                  )}
-
-                  <div className="flex items-center gap-1 mb-1">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
                     {link.isExternal ? (
-                      <svg className="w-3 h-3 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 text-[#666666] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                     ) : (
-                      <svg className="w-3 h-3 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 text-[#666666] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                       </svg>
                     )}
-                    <div className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {link.text}
-                    </div>
+                    </span>
+                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      (Line {link.line})
+                    </span>
                   </div>
                   <div className="text-[10px] text-[#666666] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                     {link.url}
-                  </div>
-                  <div className="text-[9px] text-[#999999] mt-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    Line {link.line}
                   </div>
                 </div>
               );
@@ -182,17 +169,12 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(alert.line)}
-                  className="mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative"
+                  className={`mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                 >
-                  {/* Tree connector line */}
-                  <div className="absolute left-[-12px] top-1/2 w-3 h-[1px] bg-[#CCCCCC] -translate-y-1/2"></div>
+                  {/* Horizontal connector from vertical line to item */}
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
 
-                  {/* Vertical line segment */}
-                  {!isLast && (
-                    <div className="absolute left-[-12px] top-1/2 bottom-[-8px] w-[1px] bg-[#CCCCCC]"></div>
-                  )}
-
-                  <div className="flex items-center gap-1 mb-1">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
                         alert.type === 'NOTE' ? 'bg-blue-100 text-blue-800' :
@@ -205,12 +187,12 @@ export default function AssetsSidebar({
                     >
                       {alert.type}
                     </span>
+                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      (Line {alert.line})
+                    </span>
                   </div>
                   <div className="text-[11px] text-[#000] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                     {alert.content}
-                  </div>
-                  <div className="text-[9px] text-[#999999] mt-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    Line {alert.line}
                   </div>
                 </div>
               );
@@ -225,27 +207,24 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(footnote.line)}
-                  className="mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative"
+                  className={`mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                 >
-                  {/* Tree connector line */}
-                  <div className="absolute left-[-12px] top-1/2 w-3 h-[1px] bg-[#CCCCCC] -translate-y-1/2"></div>
+                  {/* Horizontal connector from vertical line to item */}
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
 
-                  {/* Vertical line segment */}
-                  {!isLast && (
-                    <div className="absolute left-[-12px] top-1/2 bottom-[-8px] w-[1px] bg-[#CCCCCC]"></div>
-                  )}
-
-                  <div className="text-[11px] text-[#000] font-medium mb-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    [^{footnote.id}]
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      [^{footnote.id}]
+                    </span>
+                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      (Line {footnote.line})
+                    </span>
                   </div>
                   {footnote.definition && (
                     <div className="text-[10px] text-[#666666] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {footnote.definition}
                     </div>
                   )}
-                  <div className="text-[9px] text-[#999999] mt-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    Line {footnote.line}
-                  </div>
                 </div>
               );
             })}
@@ -259,24 +238,21 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(table.line)}
-                  className="mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative"
+                  className={`mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                 >
-                  {/* Tree connector line */}
-                  <div className="absolute left-[-12px] top-1/2 w-3 h-[1px] bg-[#CCCCCC] -translate-y-1/2"></div>
+                  {/* Horizontal connector from vertical line to item */}
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
 
-                  {/* Vertical line segment */}
-                  {!isLast && (
-                    <div className="absolute left-[-12px] top-1/2 bottom-[-8px] w-[1px] bg-[#CCCCCC]"></div>
-                  )}
-
-                  <div className="text-[11px] text-[#000] font-medium mb-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    {table.header}
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      {table.header}
+                    </span>
+                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      (Line {table.line})
+                    </span>
                   </div>
                   <div className="text-[10px] text-[#666666]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                     {table.rows} rows × {table.cols} columns
-                  </div>
-                  <div className="text-[9px] text-[#999999] mt-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    Line {table.line}
                   </div>
                 </div>
               );
