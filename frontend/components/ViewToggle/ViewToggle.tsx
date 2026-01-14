@@ -11,7 +11,7 @@ interface ViewToggleProps {
 export default function ViewToggle({ currentMode, onModeChange, vertical = false }: ViewToggleProps) {
   return (
     <div className="flex items-center justify-center gap-1">
-      <div className={`inline-flex bg-[#E9E9E9] rounded p-1 gap-1 ${vertical ? 'flex-col' : ''}`}>
+      <div className={`inline-flex bg-[#E9E9E9] rounded-lg p-1 gap-1 ${vertical ? 'flex-col' : ''}`}>
         {/* Code Only View */}
         <button
           onClick={() => onModeChange('code')}

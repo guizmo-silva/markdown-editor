@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeEditor } from './Editor';
 import { MarkdownPreview } from './Preview';
 import { AssetsSidebar } from './Sidebar';
@@ -8,9 +8,14 @@ import { ViewToggle, type ViewMode } from './ViewToggle';
 import { Tabs } from './Tabs';
 import { Toolbar } from './Toolbar';
 
+const SIDEBAR_MIN_WIDTH = 230;
+const SIDEBAR_MAX_WIDTH = 380;
+
 export default function EditorLayout() {
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_MIN_WIDTH);
+  const [isResizing, setIsResizing] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const [markdown, setMarkdown] = useState(`# Welcome to Markdown Editor
 
@@ -99,19 +104,66 @@ This text has a footnote reference[^1] and another one[^2].
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  // Sidebar resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+
+    const newWidth = e.clientX;
+    if (newWidth >= SIDEBAR_MIN_WIDTH && newWidth <= SIDEBAR_MAX_WIDTH) {
+      setSidebarWidth(newWidth);
+    } else if (newWidth < SIDEBAR_MIN_WIDTH) {
+      setSidebarWidth(SIDEBAR_MIN_WIDTH);
+    } else if (newWidth > SIDEBAR_MAX_WIDTH) {
+      setSidebarWidth(SIDEBAR_MAX_WIDTH);
+    }
+  }, [isResizing]);
+
+  const handleResizeEnd = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
+
   return (
     <div className="h-screen w-screen flex flex-row bg-white">
       {/* Sidebar - Full height on the left */}
       {!isSidebarCollapsed && (
-        <AssetsSidebar
-          markdown={markdown}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          onNavigateToLine={handleNavigateToLine}
-          onFileSelect={handleFileSelect}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={handleToggleSidebar}
-        />
+        <div className="relative flex" style={{ width: sidebarWidth }}>
+          <AssetsSidebar
+            markdown={markdown}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onNavigateToLine={handleNavigateToLine}
+            onFileSelect={handleFileSelect}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={handleToggleSidebar}
+            width={sidebarWidth}
+          />
+          {/* Resize Handle */}
+          <div
+            className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-[#999999] transition-colors z-10"
+            onMouseDown={handleResizeStart}
+          />
+        </div>
       )}
 
       {/* Collapsed Sidebar */}
@@ -148,14 +200,12 @@ This text has a footnote reference[^1] and another one[^2].
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Tabs with border below */}
-        <div className="border-b border-[#CCCCCC]">
-          <Tabs
-            onTabChange={(tabId) => console.log('Tab changed to:', tabId)}
-            onTabClose={(tabId) => console.log('Tab closed:', tabId)}
-            onNewTab={() => console.log('New tab requested')}
-          />
-        </div>
+        {/* Tabs */}
+        <Tabs
+          onTabChange={(tabId) => console.log('Tab changed to:', tabId)}
+          onTabClose={(tabId) => console.log('Tab closed:', tabId)}
+          onNewTab={() => console.log('New tab requested')}
+        />
 
         {/* Content Area - Based on view mode */}
         <div className="flex-1 flex overflow-hidden">

@@ -42,16 +42,16 @@ export default function Tabs({
   };
 
   return (
-    <div className="h-[36px] bg-[#E9E9E9] flex items-start pl-0 pr-2 gap-1">
+    <div className="h-[30px] bg-white flex items-stretch pl-0 pr-2">
       {tabs.map((tab) => (
         <div
           key={tab.id}
           onClick={() => handleTabClick(tab.id)}
           className={`
-            h-full px-3 flex items-center gap-2 cursor-pointer
+            px-3 flex items-center gap-2 cursor-pointer
             ${activeTab === tab.id
-              ? 'bg-white border-t border-l border-r border-[#CCCCCC]'
-              : 'bg-[#E9E9E9] hover:bg-[#DADADA]'
+              ? 'bg-[#E9E9E9]'
+              : 'bg-white border-2 border-[#E9E9E9] border-b-0 hover:bg-[#F5F5F5]'
             }
             transition-colors
           `}
@@ -63,7 +63,7 @@ export default function Tabs({
           }}
         >
           <span
-            className={`text-[10px] font-medium select-none ${activeTab === tab.id ? 'text-[#000]' : 'text-[#999999]'}`}
+            className="text-[10px] font-medium select-none text-[#999999]"
             style={{ fontFamily: 'Roboto Mono, monospace' }}
           >
             {tab.title}
@@ -82,7 +82,7 @@ export default function Tabs({
       {/* New Tab Button */}
       <button
         onClick={handleNewTab}
-        className="flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors self-center"
+        className="flex items-center justify-center hover:bg-[#E9E9E9] rounded transition-colors self-center ml-2"
         aria-label="New tab"
         style={{ width: '14px', height: '14px' }}
       >

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface FileItem {
@@ -12,6 +12,7 @@ interface FileItem {
 
 interface FileBrowserProps {
   onFileSelect?: (filePath: string) => void;
+  collapseAllTrigger?: number; // Increment to trigger collapse all
 }
 
 // Mock data - will be replaced with real API calls
@@ -38,8 +39,15 @@ const mockFiles: FileItem[] = [
   { name: 'TODO.md', type: 'file', path: '/TODO.md' },
 ];
 
-function FileTreeItem({ item, level, onSelect }: { item: FileItem; level: number; onSelect: (path: string) => void }) {
+function FileTreeItem({ item, level, onSelect, collapseAllTrigger }: { item: FileItem; level: number; onSelect: (path: string) => void; collapseAllTrigger?: number }) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Collapse when trigger changes
+  useEffect(() => {
+    if (collapseAllTrigger !== undefined && collapseAllTrigger > 0) {
+      setIsExpanded(false);
+    }
+  }, [collapseAllTrigger]);
 
   const handleClick = () => {
     if (item.type === 'folder') {
@@ -89,7 +97,7 @@ function FileTreeItem({ item, level, onSelect }: { item: FileItem; level: number
       {item.type === 'folder' && isExpanded && item.children && (
         <div>
           {item.children.map((child, index) => (
-            <FileTreeItem key={index} item={child} level={level + 1} onSelect={onSelect} />
+            <FileTreeItem key={index} item={child} level={level + 1} onSelect={onSelect} collapseAllTrigger={collapseAllTrigger} />
           ))}
         </div>
       )}
@@ -97,7 +105,7 @@ function FileTreeItem({ item, level, onSelect }: { item: FileItem; level: number
   );
 }
 
-export default function FileBrowser({ onFileSelect }: FileBrowserProps) {
+export default function FileBrowser({ onFileSelect, collapseAllTrigger }: FileBrowserProps) {
   const { t } = useTranslation();
 
   const handleFileSelect = (filePath: string) => {
@@ -112,7 +120,7 @@ export default function FileBrowser({ onFileSelect }: FileBrowserProps) {
       {/* File Tree */}
       <div className="py-2">
         {mockFiles.map((item, index) => (
-          <FileTreeItem key={index} item={item} level={0} onSelect={handleFileSelect} />
+          <FileTreeItem key={index} item={item} level={0} onSelect={handleFileSelect} collapseAllTrigger={collapseAllTrigger} />
         ))}
       </div>
     </div>

@@ -1,11 +1,13 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import AssetSection from './AssetSection';
 import { FileBrowser } from '@/components/FileBrowser';
 import { ViewToggle, ViewMode } from '@/components/ViewToggle';
 import { parseMarkdownAssets, type MarkdownAssets } from '@/utils/markdownParser';
+
+type SectionId = 'headings' | 'images' | 'links' | 'alerts' | 'footnotes' | 'tables';
 
 interface AssetsSidebarProps {
   markdown: string;
@@ -15,6 +17,7 @@ interface AssetsSidebarProps {
   onFileSelect?: (filePath: string) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  width?: number;
 }
 
 export default function AssetsSidebar({
@@ -24,14 +27,54 @@ export default function AssetsSidebar({
   onNavigateToLine,
   onFileSelect,
   isCollapsed = false,
-  onToggleCollapse
+  onToggleCollapse,
+  width = 230
 }: AssetsSidebarProps) {
   const { t } = useTranslation();
+
+  // State to track which sections are open
+  const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>({
+    headings: true, // Default open
+    images: false,
+    links: false,
+    alerts: false,
+    footnotes: false,
+    tables: false,
+  });
+
+  // Trigger for collapsing all files in FileBrowser
+  const [filesCollapseTrigger, setFilesCollapseTrigger] = useState(0);
 
   // Parse markdown to extract all assets
   const assets: MarkdownAssets = useMemo(() => {
     return parseMarkdownAssets(markdown);
   }, [markdown]);
+
+  // Handle section toggle
+  const handleSectionToggle = (sectionId: SectionId, isOpen: boolean) => {
+    setOpenSections(prev => ({ ...prev, [sectionId]: isOpen }));
+  };
+
+  // Collapse all content sections
+  const handleCollapseAllContent = () => {
+    // Check if any section is open
+    const anyOpen = Object.values(openSections).some(v => v);
+    if (anyOpen) {
+      setOpenSections({
+        headings: false,
+        images: false,
+        links: false,
+        alerts: false,
+        footnotes: false,
+        tables: false,
+      });
+    }
+  };
+
+  // Collapse all files
+  const handleCollapseAllFiles = () => {
+    setFilesCollapseTrigger(prev => prev + 1);
+  };
 
   const handleItemClick = (line: number) => {
     if (onNavigateToLine) {
@@ -40,9 +83,9 @@ export default function AssetsSidebar({
   };
 
   return (
-    <div className="w-[230px] h-full bg-white border-r border-[#CCCCCC] flex flex-col relative">
+    <div className="h-full bg-white border-r border-[#CCCCCC] flex flex-col relative" style={{ width }}>
       {/* Top Section: Logo and View Toggle */}
-      <div className="px-4 py-3 border-b border-[#CCCCCC] flex items-center justify-between gap-3">
+      <div className="px-4 pt-[20px] pb-3 flex items-center justify-between gap-3">
         {/* Logo */}
         <img
           src="/Logo.svg"
@@ -59,13 +102,18 @@ export default function AssetsSidebar({
         {/* Conteúdo Section */}
         <div className="border-b border-[#CCCCCC]">
           <div className="px-3 py-3">
-            <h2 className="text-[20px] font-bold text-[#000]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+            <h2
+              className="text-[20px] font-bold text-[#000] cursor-pointer hover:text-[#666666] transition-colors"
+              style={{ fontFamily: 'Roboto Mono, monospace' }}
+              onClick={handleCollapseAllContent}
+              title="Click to collapse all"
+            >
               Conteúdo
             </h2>
           </div>
 
           {/* Headings Section */}
-          <AssetSection title={t('sidebar.headings', 'Titulo')} count={assets.headings.length} defaultOpen={true} mdSymbol="#">
+          <AssetSection title={t('sidebar.headings', 'Titulo')} count={assets.headings.length} mdSymbol="#" isOpen={openSections.headings} onToggle={(isOpen) => handleSectionToggle('headings', isOpen)}>
             {assets.headings.map((heading, index) => {
               const isLast = index === assets.headings.length - 1;
               return (
@@ -95,7 +143,7 @@ export default function AssetsSidebar({
           </AssetSection>
 
           {/* Images Section */}
-          <AssetSection title={t('sidebar.images', 'Imagens')} count={assets.images.length} defaultOpen={false} mdSymbol="![]">
+          <AssetSection title={t('sidebar.images', 'Imagens')} count={assets.images.length} mdSymbol="![]" isOpen={openSections.images} onToggle={(isOpen) => handleSectionToggle('images', isOpen)}>
             {assets.images.map((image, index) => {
               const isLast = index === assets.images.length - 1;
               return (
@@ -124,7 +172,7 @@ export default function AssetsSidebar({
           </AssetSection>
 
           {/* Links Section */}
-          <AssetSection title={t('sidebar.links', 'Links')} count={assets.links.length} defaultOpen={false} mdSymbol="[]()">
+          <AssetSection title={t('sidebar.links', 'Links')} count={assets.links.length} mdSymbol="[]()" isOpen={openSections.links} onToggle={(isOpen) => handleSectionToggle('links', isOpen)}>
             {assets.links.map((link, index) => {
               const isLast = index === assets.links.length - 1;
               return (
@@ -162,7 +210,7 @@ export default function AssetsSidebar({
           </AssetSection>
 
           {/* Alerts Section */}
-          <AssetSection title={t('sidebar.alerts', 'Alerts')} count={assets.alerts.length} mdSymbol="[!]">
+          <AssetSection title={t('sidebar.alerts', 'Alerts')} count={assets.alerts.length} mdSymbol="[!]" isOpen={openSections.alerts} onToggle={(isOpen) => handleSectionToggle('alerts', isOpen)}>
             {assets.alerts.map((alert, index) => {
               const isLast = index === assets.alerts.length - 1;
               return (
@@ -200,7 +248,7 @@ export default function AssetsSidebar({
           </AssetSection>
 
           {/* Footnotes Section */}
-          <AssetSection title={t('sidebar.footnotes', 'Footnotes')} count={assets.footnotes.length} mdSymbol="[^]">
+          <AssetSection title={t('sidebar.footnotes', 'Footnotes')} count={assets.footnotes.length} mdSymbol="[^]" isOpen={openSections.footnotes} onToggle={(isOpen) => handleSectionToggle('footnotes', isOpen)}>
             {assets.footnotes.map((footnote, index) => {
               const isLast = index === assets.footnotes.length - 1;
               return (
@@ -231,7 +279,7 @@ export default function AssetsSidebar({
           </AssetSection>
 
           {/* Tables Section */}
-          <AssetSection title={t('sidebar.tables', 'Tables')} count={assets.tables.length} mdSymbol="|">
+          <AssetSection title={t('sidebar.tables', 'Tables')} count={assets.tables.length} mdSymbol="|" isOpen={openSections.tables} onToggle={(isOpen) => handleSectionToggle('tables', isOpen)}>
             {assets.tables.map((table, index) => {
               const isLast = index === assets.tables.length - 1;
               return (
@@ -263,11 +311,16 @@ export default function AssetsSidebar({
         {/* Arquivos Section */}
         <div>
           <div className="px-3 py-3">
-            <h2 className="text-[20px] font-bold text-[#000]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+            <h2
+              className="text-[20px] font-bold text-[#000] cursor-pointer hover:text-[#666666] transition-colors"
+              style={{ fontFamily: 'Roboto Mono, monospace' }}
+              onClick={handleCollapseAllFiles}
+              title="Click to collapse all"
+            >
               Arquivos
             </h2>
           </div>
-          <FileBrowser onFileSelect={onFileSelect} />
+          <FileBrowser onFileSelect={onFileSelect} collapseAllTrigger={filesCollapseTrigger} />
         </div>
       </div>
 

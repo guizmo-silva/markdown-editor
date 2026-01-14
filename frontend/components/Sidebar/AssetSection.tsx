@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface AssetSectionProps {
@@ -9,16 +9,34 @@ interface AssetSectionProps {
   children: React.ReactNode;
   defaultOpen?: boolean;
   mdSymbol?: string; // Markdown symbol like "#", "![]", "[]()"
+  isOpen?: boolean; // Controlled mode
+  onToggle?: (isOpen: boolean) => void; // Callback for controlled mode
 }
 
-export default function AssetSection({ title, count, children, defaultOpen = false, mdSymbol }: AssetSectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+export default function AssetSection({ title, count, children, defaultOpen = false, mdSymbol, isOpen: controlledIsOpen, onToggle }: AssetSectionProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen);
+
+  // Use controlled value if provided, otherwise use internal state
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+
+  // Sync internal state with controlled value
+  useEffect(() => {
+    if (controlledIsOpen !== undefined) {
+      setInternalIsOpen(controlledIsOpen);
+    }
+  }, [controlledIsOpen]);
+
+  const handleToggle = () => {
+    const newValue = !isOpen;
+    setInternalIsOpen(newValue);
+    onToggle?.(newValue);
+  };
 
   return (
     <div>
       {/* Section Header */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-[#F0F0F0] transition-colors"
       >
         <div className="flex items-center gap-2">

@@ -28,6 +28,24 @@
 - Altura: 36px
 - Background: #E9E9E9
 
+#### ORDEM DA TOOLBAR:
+- Bold
+- Itálico
+- Strike
+- Títulos
+- Quote
+- Lista numerada
+- Lista com bullets
+- Código inline
+- BLoco de código
+- Link
+- Imagem
+- Tabela
+- Linha
+- Check box
+- Sobrescrito
+- Subescrito
+
 ### Codeview
 - Background: #D8D8D8
 - Texto: #666666
@@ -47,3 +65,7 @@
   - Cor: Tab & Line number
 - Ícone de fechar: 5px x 6px
 - Ícone nova aba: 14px x 14px
+
+## Figma
+- 🔗 Projeto: https://www.figma.com/design/8ZXI7ppvGwt9p1z9uUpxkR/Editor-Markdown?node-id=1-7961&t=64bqSTgMb8B2QATL-1
+- 🔗 Protótipo: https://www.figma.com/proto/8ZXI7ppvGwt9p1z9uUpxkR/Editor-Markdown?node-id=1-7961&t=64bqSTgMb8B2QATL-1
