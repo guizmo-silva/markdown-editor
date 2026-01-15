@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 export type ViewMode = 'code' | 'split' | 'preview';
 
 interface ViewToggleProps {
@@ -9,6 +11,7 @@ interface ViewToggleProps {
 }
 
 export default function ViewToggle({ currentMode, onModeChange, vertical = false }: ViewToggleProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-center gap-1">
       <div className={`inline-flex bg-[#E9E9E9] rounded-lg p-1 gap-1 ${vertical ? 'flex-col' : ''}`}>
@@ -18,7 +21,7 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
           className={`p-2 rounded transition-colors ${
             currentMode === 'code' ? 'bg-white shadow-sm' : 'hover:bg-[#D8D8D8]'
           }`}
-          title="Code view only"
+          title={t('viewToggle.codeView')}
         >
         <svg width="18" height="15" viewBox="0 0 18 15" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g clipPath="url(#clip0_10_145)">
@@ -38,7 +41,7 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
           className={`p-2 rounded transition-colors ${
             currentMode === 'split' ? 'bg-white shadow-sm' : 'hover:bg-[#D8D8D8]'
           }`}
-          title="Split view"
+          title={t('viewToggle.splitView')}
         >
         <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g clipPath="url(#clip0_12_149)">
@@ -64,7 +67,7 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
           className={`p-2 rounded transition-colors ${
             currentMode === 'preview' ? 'bg-white shadow-sm' : 'hover:bg-[#D8D8D8]'
           }`}
-          title="Preview only"
+          title={t('viewToggle.previewView')}
         >
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g clipPath="url(#clip0_39_200)">

@@ -21,10 +21,20 @@
     "link": "Link",
     "image": "Image",
     "table": "Table",
-    "horizontalRule": "Horizontal rule"
+    "horizontalRule": "Horizontal rule",
+    "subscript": "Subscript",
+    "superscript": "Superscript",
+    "localImage": "Import local",
+    "linkedImage": "Linked image",
+    "selectTableSize": "Select size",
+    "insertLinkedImage": "Insert linked image",
+    "imageUrl": "Image URL",
+    "altText": "Alt text",
+    "insert": "Insert"
   },
   "sidebar": {
     "title": "Assets",
+    "content": "Content",
     "headings": "Headings",
     "images": "Images",
     "links": "Links",
@@ -34,6 +44,16 @@
   },
   "fileBrowser": {
     "title": "Files"
+  },
+  "viewToggle": {
+    "codeView": "Code only",
+    "splitView": "Split view",
+    "previewView": "Preview only"
+  },
+  "menu": {
+    "language": "Language",
+    "appearance": "Appearance",
+    "darkMode": "Dark mode"
   },
   "status": {
     "saved": "Saved",

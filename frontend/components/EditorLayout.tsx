@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { CodeEditor } from './Editor';
+import { CodeMirrorEditor, type CodeMirrorHandle } from './Editor';
 import { MarkdownPreview } from './Preview';
 import { AssetsSidebar } from './Sidebar';
 import { ViewToggle, type ViewMode } from './ViewToggle';
@@ -16,7 +16,7 @@ export default function EditorLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_MIN_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
-  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<CodeMirrorHandle>(null);
   const [markdown, setMarkdown] = useState(`# Welcome to Markdown Editor
 
 Start typing your markdown here...
@@ -218,7 +218,7 @@ This text has a footnote reference[^1] and another one[^2].
                 onChange={setMarkdown}
               />
               <div className="flex-1 overflow-hidden">
-                <CodeEditor
+                <CodeMirrorEditor
                   ref={editorRef}
                   value={markdown}
                   onChange={setMarkdown}

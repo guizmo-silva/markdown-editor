@@ -21,10 +21,20 @@
     "link": "Link",
     "image": "Bild",
     "table": "Tabelle",
-    "horizontalRule": "Horizontale Linie"
+    "horizontalRule": "Horizontale Linie",
+    "subscript": "Tiefgestellt",
+    "superscript": "Hochgestellt",
+    "localImage": "Lokal importieren",
+    "linkedImage": "Verlinktes Bild",
+    "selectTableSize": "Größe auswählen",
+    "insertLinkedImage": "Verlinktes Bild einfügen",
+    "imageUrl": "Bild-URL",
+    "altText": "Alternativtext (Alt)",
+    "insert": "Einfügen"
   },
   "sidebar": {
     "title": "Elemente",
+    "content": "Inhalt",
     "headings": "Überschriften",
     "images": "Bilder",
     "links": "Links",
@@ -34,6 +44,16 @@
   },
   "fileBrowser": {
     "title": "Dateien"
+  },
+  "viewToggle": {
+    "codeView": "Nur Code",
+    "splitView": "Geteilte Ansicht",
+    "previewView": "Nur Vorschau"
+  },
+  "menu": {
+    "language": "Sprache",
+    "appearance": "Erscheinungsbild",
+    "darkMode": "Dunkelmodus"
   },
   "status": {
     "saved": "Gespeichert",

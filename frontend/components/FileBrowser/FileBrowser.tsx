@@ -62,7 +62,7 @@ function FileTreeItem({ item, level, onSelect, collapseAllTrigger }: { item: Fil
       <div
         onClick={handleClick}
         className="flex items-center gap-1 px-2 py-1 hover:bg-[#F0F0F0] cursor-pointer transition-colors"
-        style={{ paddingLeft: `${level * 12 + 8}px` }}
+        style={{ paddingLeft: `${level * 12 + 20}px` }}
       >
         {/* Folder expand/collapse icon */}
         {item.type === 'folder' && (

@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { useMemo, useState } from 'react';
 import AssetSection from './AssetSection';
+import LogoMenu from './LogoMenu';
 import { FileBrowser } from '@/components/FileBrowser';
 import { ViewToggle, ViewMode } from '@/components/ViewToggle';
 import { parseMarkdownAssets, type MarkdownAssets } from '@/utils/markdownParser';
@@ -85,13 +86,9 @@ export default function AssetsSidebar({
   return (
     <div className="h-full bg-white border-r border-[#CCCCCC] flex flex-col relative" style={{ width }}>
       {/* Top Section: Logo and View Toggle */}
-      <div className="px-4 pt-[20px] pb-3 flex items-center justify-between gap-3">
-        {/* Logo */}
-        <img
-          src="/Logo.svg"
-          alt="MD Logo"
-          className="h-[32px] w-auto"
-        />
+      <div className="pl-[20px] pr-4 pt-[20px] pb-3 flex items-center justify-between gap-3">
+        {/* Logo with Menu */}
+        <LogoMenu />
 
         {/* View Toggle */}
         <ViewToggle currentMode={viewMode} onModeChange={onViewModeChange} />
@@ -101,14 +98,14 @@ export default function AssetsSidebar({
       <div className="flex-1 overflow-y-auto">
         {/* Conteúdo Section */}
         <div className="border-b border-[#CCCCCC]">
-          <div className="px-3 py-3">
+          <div className="pl-[20px] pr-3 py-3">
             <h2
               className="text-[20px] font-bold text-[#000] cursor-pointer hover:text-[#666666] transition-colors"
               style={{ fontFamily: 'Roboto Mono, monospace' }}
               onClick={handleCollapseAllContent}
               title="Click to collapse all"
             >
-              Conteúdo
+              {t('sidebar.content')}
             </h2>
           </div>
 
@@ -310,14 +307,14 @@ export default function AssetsSidebar({
 
         {/* Arquivos Section */}
         <div>
-          <div className="px-3 py-3">
+          <div className="pl-[20px] pr-3 py-3">
             <h2
               className="text-[20px] font-bold text-[#000] cursor-pointer hover:text-[#666666] transition-colors"
               style={{ fontFamily: 'Roboto Mono, monospace' }}
               onClick={handleCollapseAllFiles}
               title="Click to collapse all"
             >
-              Arquivos
+              {t('fileBrowser.title')}
             </h2>
           </div>
           <FileBrowser onFileSelect={onFileSelect} collapseAllTrigger={filesCollapseTrigger} />

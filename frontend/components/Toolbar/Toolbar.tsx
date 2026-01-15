@@ -1,9 +1,19 @@
 'use client';
 
 import { RefObject, useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { CodeMirrorHandle } from '@/components/Editor';
+
+// Unified interface for textarea-like editors
+interface EditorHandle {
+  selectionStart: number;
+  selectionEnd: number;
+  focus: () => void;
+  setSelectionRange: (start: number, end: number) => void;
+}
 
 interface ToolbarProps {
-  textareaRef: RefObject<HTMLTextAreaElement>;
+  textareaRef: RefObject<HTMLTextAreaElement | CodeMirrorHandle | null>;
   value: string;
   onChange: (value: string) => void;
 }
@@ -13,7 +23,13 @@ export default function Toolbar({
   value,
   onChange
 }: ToolbarProps) {
+  const { t } = useTranslation();
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
+
+  // Helper to get editor handle (works with both textarea and CodeMirror)
+  const getEditor = (): EditorHandle | null => {
+    return textareaRef.current as EditorHandle | null;
+  };
   const [showQuoteMenu, setShowQuoteMenu] = useState(false);
   const [showImageMenu, setShowImageMenu] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -58,11 +74,11 @@ export default function Toolbar({
 
   // Helper function to wrap selected text or insert at cursor
   const wrapText = (prefix: string, suffix: string, placeholder: string = '') => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+    const editor = getEditor();
+    if (!editor) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
     const selectedText = value.substring(start, end);
     const textToInsert = selectedText || placeholder;
     const newText = value.substring(0, start) + prefix + textToInsert + suffix + value.substring(end);
@@ -72,22 +88,22 @@ export default function Toolbar({
     // Set cursor position
     setTimeout(() => {
       if (selectedText) {
-        textarea.selectionStart = start;
-        textarea.selectionEnd = end + prefix.length + suffix.length;
+        editor.setSelectionRange(start, end + prefix.length + suffix.length);
       } else {
-        textarea.selectionStart = textarea.selectionEnd = start + prefix.length + textToInsert.length;
+        const newPos = start + prefix.length + textToInsert.length;
+        editor.setSelectionRange(newPos, newPos);
       }
-      textarea.focus();
+      editor.focus();
     }, 0);
   };
 
   // Helper function to toggle formatting (add or remove)
   const toggleFormat = (prefix: string, suffix: string, placeholder: string = '') => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+    const editor = getEditor();
+    if (!editor) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
     const selectedText = value.substring(start, end);
 
     // Check if the selected text is already wrapped with the format
@@ -107,9 +123,8 @@ export default function Toolbar({
 
       // Adjust cursor position
       setTimeout(() => {
-        textarea.selectionStart = start - prefix.length;
-        textarea.selectionEnd = end - prefix.length;
-        textarea.focus();
+        editor.setSelectionRange(start - prefix.length, end - prefix.length);
+        editor.focus();
       }, 0);
     } else {
       // Check if selection includes the formatting markers
@@ -121,9 +136,8 @@ export default function Toolbar({
         onChange(newText);
 
         setTimeout(() => {
-          textarea.selectionStart = start;
-          textarea.selectionEnd = start + unwrappedText.length;
-          textarea.focus();
+          editor.setSelectionRange(start, start + unwrappedText.length);
+          editor.focus();
         }, 0);
       } else {
         // Add formatting
@@ -134,12 +148,12 @@ export default function Toolbar({
 
         setTimeout(() => {
           if (selectedText) {
-            textarea.selectionStart = start + prefix.length;
-            textarea.selectionEnd = end + prefix.length;
+            editor.setSelectionRange(start + prefix.length, end + prefix.length);
           } else {
-            textarea.selectionStart = textarea.selectionEnd = start + prefix.length + textToInsert.length;
+            const newPos = start + prefix.length + textToInsert.length;
+            editor.setSelectionRange(newPos, newPos);
           }
-          textarea.focus();
+          editor.focus();
         }, 0);
       }
     }
@@ -147,44 +161,46 @@ export default function Toolbar({
 
   // Helper function to insert text at cursor or replace selection
   const insertText = (text: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+    const editor = getEditor();
+    if (!editor) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
     const newText = value.substring(0, start) + text + value.substring(end);
 
     onChange(newText);
 
     setTimeout(() => {
-      textarea.selectionStart = textarea.selectionEnd = start + text.length;
-      textarea.focus();
+      const newPos = start + text.length;
+      editor.setSelectionRange(newPos, newPos);
+      editor.focus();
     }, 0);
   };
 
   // Helper function to add prefix to current line
   const addLinePrefix = (prefix: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+    const editor = getEditor();
+    if (!editor) return;
 
-    const start = textarea.selectionStart;
+    const start = editor.selectionStart;
     const lineStart = value.lastIndexOf('\n', start - 1) + 1;
     const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart);
 
     onChange(newText);
 
     setTimeout(() => {
-      textarea.selectionStart = textarea.selectionEnd = start + prefix.length;
-      textarea.focus();
+      const newPos = start + prefix.length;
+      editor.setSelectionRange(newPos, newPos);
+      editor.focus();
     }, 0);
   };
 
   // Helper function to toggle line prefix (add or remove)
   const toggleLinePrefix = (prefix: string, alternativePrefixes: string[] = []) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+    const editor = getEditor();
+    if (!editor) return;
 
-    const start = textarea.selectionStart;
+    const start = editor.selectionStart;
     const lineStart = value.lastIndexOf('\n', start - 1) + 1;
     const lineEnd = value.indexOf('\n', start);
     const lineContent = value.substring(lineStart, lineEnd === -1 ? value.length : lineEnd);
@@ -199,8 +215,9 @@ export default function Toolbar({
       onChange(newText);
 
       setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = Math.max(lineStart, start - matchedPrefix.length);
-        textarea.focus();
+        const newPos = Math.max(lineStart, start - matchedPrefix.length);
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
       }, 0);
     } else {
       // Add the prefix
@@ -208,8 +225,9 @@ export default function Toolbar({
       onChange(newText);
 
       setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + prefix.length;
-        textarea.focus();
+        const newPos = start + prefix.length;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
       }, 0);
     }
   };
@@ -426,38 +444,42 @@ export default function Toolbar({
   const handleHorizontalLine = () => insertText('\n---\n');
 
   const buttonsBeforeHeading = [
-    { icon: '/Bold_icon.svg', alt: 'Bold', onClick: handleBold },
-    { icon: '/Italic_icon.svg', alt: 'Italic', onClick: handleItalic },
-    { icon: '/Strike_icon.svg', alt: 'Strikethrough', onClick: handleStrikethrough },
+    { icon: '/Bold_icon.svg', translationKey: 'toolbar.bold', onClick: handleBold },
+    { icon: '/Italic_icon.svg', translationKey: 'toolbar.italic', onClick: handleItalic },
+    { icon: '/Strike_icon.svg', translationKey: 'toolbar.strikethrough', onClick: handleStrikethrough },
   ];
 
   const buttonsBetweenQuoteAndImage = [
-    { icon: '/NumberedList_icon.svg', alt: 'Numbered List', onClick: handleNumberedList },
-    { icon: '/List_icon.svg', alt: 'Bullet List', onClick: handleBulletList },
-    { icon: '/InLineCode_icon.svg', alt: 'Inline Code', onClick: handleInlineCode },
-    { icon: '/CodeBlock_icon.svg', alt: 'Code Block', onClick: handleCodeBlock },
-    { icon: '/URL_icon.svg', alt: 'Link', onClick: handleLink },
+    { icon: '/NumberedList_icon.svg', translationKey: 'toolbar.orderedList', onClick: handleNumberedList },
+    { icon: '/List_icon.svg', translationKey: 'toolbar.unorderedList', onClick: handleBulletList },
+    { icon: '/InLineCode_icon.svg', translationKey: 'toolbar.code', onClick: handleInlineCode },
+    { icon: '/CodeBlock_icon.svg', translationKey: 'toolbar.codeBlock', onClick: handleCodeBlock },
+    { icon: '/URL_icon.svg', translationKey: 'toolbar.link', onClick: handleLink },
   ];
 
   const buttonsAfterTable = [
-    { icon: '/Line_icon.svg', alt: 'Horizontal Line', onClick: handleHorizontalLine },
-    { icon: '/Task_icon.svg', alt: 'Task', onClick: handleTask },
-    { icon: '/Sobrescrito_icon.svg', alt: 'Superscript', onClick: handleSuperscript },
-    { icon: '/Subescrito_icon.svg', alt: 'Subscript', onClick: handleSubscript }
+    { icon: '/Line_icon.svg', translationKey: 'toolbar.horizontalRule', onClick: handleHorizontalLine },
+    { icon: '/Task_icon.svg', translationKey: 'toolbar.taskList', onClick: handleTask },
+    { icon: '/Sobrescrito_icon.svg', translationKey: 'toolbar.superscript', onClick: handleSuperscript },
+    { icon: '/Subescrito_icon.svg', translationKey: 'toolbar.subscript', onClick: handleSubscript }
   ];
 
   const GRID_SIZE = 8;
 
-  const renderButton = (button: { icon: string; alt: string; onClick: () => void }, index: number) => (
-    <button
-      key={index}
-      onClick={button.onClick}
-      className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
-      aria-label={button.alt}
-    >
-      <img src={button.icon} alt={button.alt} className="w-full h-full" />
-    </button>
-  );
+  const renderButton = (button: { icon: string; translationKey: string; onClick: () => void }, index: number) => {
+    const label = t(button.translationKey);
+    return (
+      <button
+        key={index}
+        onClick={button.onClick}
+        className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
+        aria-label={label}
+        title={label}
+      >
+        <img src={button.icon} alt={label} className="w-full h-full" />
+      </button>
+    );
+  };
 
   return (
     <>
@@ -471,9 +493,10 @@ export default function Toolbar({
             onMouseUp={handleHeadingMouseUp}
             onMouseLeave={handleHeadingMouseLeave}
             className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
-            aria-label="Heading"
+            aria-label={t('toolbar.heading')}
+            title={t('toolbar.heading')}
           >
-            <img src="/Heading_icon.svg" alt="Heading" className="w-full h-full" />
+            <img src="/Heading_icon.svg" alt={t('toolbar.heading')} className="w-full h-full" />
           </button>
 
           {showHeadingMenu && (
@@ -499,9 +522,10 @@ export default function Toolbar({
             onMouseUp={handleQuoteMouseUp}
             onMouseLeave={handleQuoteMouseLeave}
             className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
-            aria-label="Quote"
+            aria-label={t('toolbar.blockquote')}
+            title={t('toolbar.blockquote')}
           >
-            <img src="/Quote_icon.svg" alt="Quote" className="w-full h-full" />
+            <img src="/Quote_icon.svg" alt={t('toolbar.blockquote')} className="w-full h-full" />
           </button>
 
           {showQuoteMenu && (
@@ -529,9 +553,10 @@ export default function Toolbar({
             onMouseUp={handleImageMouseUp}
             onMouseLeave={handleImageMouseLeave}
             className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
-            aria-label="Image"
+            aria-label={t('toolbar.image')}
+            title={t('toolbar.image')}
           >
-            <img src="/Image_icon.svg" alt="Image" className="w-full h-full" />
+            <img src="/Image_icon.svg" alt={t('toolbar.image')} className="w-full h-full" />
           </button>
 
           {showImageMenu && (
@@ -540,13 +565,13 @@ export default function Toolbar({
                 onClick={handleLocalImage}
                 className="w-full px-3 py-1.5 text-left hover:bg-[#E9E9E9] flex items-center gap-2 text-sm"
               >
-                <span className="text-[#666666]">Importar local</span>
+                <span className="text-[#666666]">{t('toolbar.localImage')}</span>
               </button>
               <button
                 onClick={handleLinkedImage}
                 className="w-full px-3 py-1.5 text-left hover:bg-[#E9E9E9] flex items-center gap-2 text-sm"
               >
-                <span className="text-[#666666]">Imagem linkada</span>
+                <span className="text-[#666666]">{t('toolbar.linkedImage')}</span>
               </button>
             </div>
           )}
@@ -568,9 +593,10 @@ export default function Toolbar({
             onMouseUp={handleTableMouseUp}
             onMouseLeave={handleTableMouseLeave}
             className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
-            aria-label="Table"
+            aria-label={t('toolbar.table')}
+            title={t('toolbar.table')}
           >
-            <img src="/Table_icon.svg" alt="Table" className="w-full h-full" />
+            <img src="/Table_icon.svg" alt={t('toolbar.table')} className="w-full h-full" />
           </button>
 
           {showTableMenu && (
@@ -578,7 +604,7 @@ export default function Toolbar({
               <div className="text-xs text-[#666] mb-2 text-center">
                 {tableHover.rows > 0 && tableHover.cols > 0
                   ? `${tableHover.rows} × ${tableHover.cols}`
-                  : 'Selecione o tamanho'}
+                  : t('toolbar.selectTableSize')}
               </div>
               <div
                 className="grid gap-[2px]"
@@ -614,11 +640,11 @@ export default function Toolbar({
       {showImageModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
           <div className="bg-white rounded-lg shadow-xl p-6 w-[400px] max-w-[90vw]">
-            <h3 className="text-lg font-semibold text-[#333] mb-4">Inserir imagem linkada</h3>
+            <h3 className="text-lg font-semibold text-[#333] mb-4">{t('toolbar.insertLinkedImage')}</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-[#666] mb-1">URL da imagem</label>
+                <label className="block text-sm text-[#666] mb-1">{t('toolbar.imageUrl')}</label>
                 <input
                   type="text"
                   value={imageUrl}
@@ -630,7 +656,7 @@ export default function Toolbar({
               </div>
 
               <div>
-                <label className="block text-sm text-[#666] mb-1">Texto alternativo (Alt)</label>
+                <label className="block text-sm text-[#666] mb-1">{t('toolbar.altText')}</label>
                 <input
                   type="text"
                   value={imageAlt}
@@ -646,13 +672,13 @@ export default function Toolbar({
                 onClick={handleImageModalCancel}
                 className="px-4 py-2 text-[#666] hover:bg-[#E9E9E9] rounded transition-colors"
               >
-                Cancelar
+                {t('buttons.cancel')}
               </button>
               <button
                 onClick={handleImageModalConfirm}
                 className="px-4 py-2 bg-[#333] text-white rounded hover:bg-[#555] transition-colors"
               >
-                Inserir
+                {t('toolbar.insert')}
               </button>
             </div>
           </div>
