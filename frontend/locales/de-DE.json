@@ -66,5 +66,12 @@
     "renameFile": "Datei umbenennen",
     "newFile": "Neue Datei",
     "newFolder": "Neuer Ordner"
+  },
+  "infobar": {
+    "spellcheck": "Rechtschreibung",
+    "spellcheckOff": "Rechtschreibung: Aus",
+    "enableSpellcheck": "Rechtschreibprüfung aktivieren",
+    "selectLanguage": "Sprache der Prüfung",
+    "current": "aktuell"
   }
 }

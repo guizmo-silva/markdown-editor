@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState, useImperativeHandle, forwardRef } from 'react';
-import { EditorState } from '@codemirror/state';
+import { EditorState, Compartment } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
+import { useTranslation } from 'react-i18next';
 import InfoBar from './InfoBar';
 
 // Interface to expose textarea-like API for compatibility with Toolbar
@@ -117,6 +118,9 @@ const editorTheme = EditorView.theme({
   },
 });
 
+// Compartment for dynamic spellcheck configuration
+const spellcheckCompartment = new Compartment();
+
 const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   value,
   onChange,
@@ -124,10 +128,13 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   scrollToLine,
   onEditorReady,
 }, ref) => {
+  const { i18n } = useTranslation();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [characterCount, setCharacterCount] = useState(0);
+  const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
+  const [spellcheckLanguage, setSpellcheckLanguage] = useState(i18n.language);
 
   // Expose textarea-like API through ref
   useImperativeHandle(ref, () => ({
@@ -158,6 +165,17 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       column: pos - line.from + 1,
     });
   }, []);
+
+  // Get spellcheck content attributes
+  const getSpellcheckAttrs = useCallback(() => {
+    if (!spellcheckEnabled) {
+      return EditorView.contentAttributes.of({ spellcheck: 'false' });
+    }
+    return EditorView.contentAttributes.of({
+      spellcheck: 'true',
+      lang: spellcheckLanguage,
+    });
+  }, [spellcheckEnabled, spellcheckLanguage]);
 
   // Initialize editor
   useEffect(() => {
@@ -196,6 +214,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         updateListener,
         EditorView.lineWrapping,
         placeholder ? EditorView.contentAttributes.of({ 'data-placeholder': placeholder }) : [],
+        spellcheckCompartment.of(getSpellcheckAttrs()),
       ],
     });
 
@@ -217,6 +236,16 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       viewRef.current = null;
     };
   }, []); // Only run once on mount
+
+  // Update spellcheck when settings change
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    view.dispatch({
+      effects: spellcheckCompartment.reconfigure(getSpellcheckAttrs()),
+    });
+  }, [spellcheckEnabled, spellcheckLanguage, getSpellcheckAttrs]);
 
   // Sync external value changes
   useEffect(() => {
@@ -260,6 +289,10 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         line={cursorPosition.line}
         column={cursorPosition.column}
         characters={characterCount}
+        spellcheckEnabled={spellcheckEnabled}
+        spellcheckLanguage={spellcheckLanguage}
+        onSpellcheckToggle={setSpellcheckEnabled}
+        onSpellcheckLanguageChange={setSpellcheckLanguage}
       />
     </div>
   );

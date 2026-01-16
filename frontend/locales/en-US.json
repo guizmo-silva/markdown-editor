@@ -66,5 +66,12 @@
     "renameFile": "Rename file",
     "newFile": "New file",
     "newFolder": "New folder"
+  },
+  "infobar": {
+    "spellcheck": "Spellcheck",
+    "spellcheckOff": "Spellcheck: Off",
+    "enableSpellcheck": "Enable spellcheck",
+    "selectLanguage": "Spellcheck language",
+    "current": "current"
   }
 }

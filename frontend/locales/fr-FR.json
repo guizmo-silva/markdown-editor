@@ -66,5 +66,12 @@
     "renameFile": "Renommer le fichier",
     "newFile": "Nouveau fichier",
     "newFolder": "Nouveau dossier"
+  },
+  "infobar": {
+    "spellcheck": "Correcteur",
+    "spellcheckOff": "Correcteur: Désactivé",
+    "enableSpellcheck": "Activer le correcteur orthographique",
+    "selectLanguage": "Langue du correcteur",
+    "current": "actuel"
   }
 }
