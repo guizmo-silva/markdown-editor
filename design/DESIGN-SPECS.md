@@ -20,7 +20,7 @@
 - Tab & Line Number: #999999
 - Bttn TXT: #FFF
 - Code fold icon & outlines: #CCCCCC
-- Code TXT: #666666
+- Code TXT: #404040
 - Formated txt view: #252525
 - Code view BG: #D8D8D8
 - SPlit view line: #999999

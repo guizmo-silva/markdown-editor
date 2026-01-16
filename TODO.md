@@ -8,6 +8,9 @@
 ## Concluído
 
 ### Sessão Atual
+- [x] **GFM Alerts** - Suporte a alertas do GitHub ([!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]) com estilos coloridos
+
+### Sessão Anterior
 - [x] **Syntax highlight na visão de código** - Implementado com cores adequadas para modo claro (markdown highlighting)
 - [x] **Syntax highlight na visão de texto formatado** - Blocos de código com Prism.js e tema de bom contraste
 - [x] **Cores corrigidas** - Texto da visão de código agora usa #666666 conforme DESIGN-SPECS
