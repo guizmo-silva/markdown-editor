@@ -144,7 +144,8 @@
   color: #c7254e;
 }
 
-/* Code Blocks - handled by prism-theme.css */
+/* Code Blocks - styles in prism-theme.css */
+
 .markdown-preview pre {
   margin-top: 0;
   margin-bottom: 16px;

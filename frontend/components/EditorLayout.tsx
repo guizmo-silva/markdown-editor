@@ -10,12 +10,17 @@ import { Toolbar } from './Toolbar';
 
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
+const SPLIT_MIN_PERCENT = 20; // Minimum 20% for each panel
+const SPLIT_MAX_PERCENT = 80; // Maximum 80% for each panel
 
 export default function EditorLayout() {
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_MIN_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
+  const [splitPosition, setSplitPosition] = useState(50); // Percentage for code editor width
+  const [isResizingSplit, setIsResizingSplit] = useState(false);
+  const splitContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<CodeMirrorHandle>(null);
   const [markdown, setMarkdown] = useState(`# Welcome to Markdown Editor
 
@@ -127,6 +132,51 @@ This text has a footnote reference[^1] and another one[^2].
     setIsResizing(false);
   }, []);
 
+  // Split resize handlers
+  const handleSplitResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingSplit(true);
+  }, []);
+
+  const handleSplitResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizingSplit || !splitContainerRef.current) return;
+
+    const container = splitContainerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const relativeX = e.clientX - containerRect.left;
+    const percentage = (relativeX / containerRect.width) * 100;
+
+    if (percentage >= SPLIT_MIN_PERCENT && percentage <= SPLIT_MAX_PERCENT) {
+      setSplitPosition(percentage);
+    } else if (percentage < SPLIT_MIN_PERCENT) {
+      setSplitPosition(SPLIT_MIN_PERCENT);
+    } else if (percentage > SPLIT_MAX_PERCENT) {
+      setSplitPosition(SPLIT_MAX_PERCENT);
+    }
+  }, [isResizingSplit]);
+
+  const handleSplitResizeEnd = useCallback(() => {
+    setIsResizingSplit(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizingSplit) {
+      document.addEventListener('mousemove', handleSplitResizeMove);
+      document.addEventListener('mouseup', handleSplitResizeEnd);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      if (isResizingSplit) {
+        document.removeEventListener('mousemove', handleSplitResizeMove);
+        document.removeEventListener('mouseup', handleSplitResizeEnd);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    };
+  }, [isResizingSplit, handleSplitResizeMove, handleSplitResizeEnd]);
+
   useEffect(() => {
     if (isResizing) {
       document.addEventListener('mousemove', handleResizeMove);
@@ -208,10 +258,13 @@ This text has a footnote reference[^1] and another one[^2].
         />
 
         {/* Content Area - Based on view mode */}
-        <div className="flex-1 flex overflow-hidden">
+        <div ref={splitContainerRef} className="flex-1 flex overflow-hidden relative">
           {/* Code Editor */}
           {(viewMode === 'code' || viewMode === 'split') && (
-            <div className={`${viewMode === 'split' ? 'flex-1 border-r border-[#999999]' : 'w-full'} flex flex-col`}>
+            <div
+              className="flex flex-col overflow-hidden"
+              style={{ width: viewMode === 'split' ? `${splitPosition}%` : '100%' }}
+            >
               <Toolbar
                 textareaRef={editorRef}
                 value={markdown}
@@ -229,9 +282,20 @@ This text has a footnote reference[^1] and another one[^2].
             </div>
           )}
 
+          {/* Split Resize Handle */}
+          {viewMode === 'split' && (
+            <div
+              className="w-1 bg-[#999999] cursor-col-resize hover:bg-[#666666] active:bg-[#666666] transition-colors flex-shrink-0"
+              onMouseDown={handleSplitResizeStart}
+            />
+          )}
+
           {/* Preview */}
           {(viewMode === 'preview' || viewMode === 'split') && (
-            <div className={viewMode === 'split' ? 'flex-1' : 'w-full'}>
+            <div
+              className="overflow-hidden"
+              style={{ width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 4px)` : '100%' }}
+            >
               <MarkdownPreview content={markdown} />
             </div>
           )}

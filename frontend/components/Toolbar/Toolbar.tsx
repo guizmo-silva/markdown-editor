@@ -472,22 +472,22 @@ export default function Toolbar({
       <button
         key={index}
         onClick={button.onClick}
-        className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
+        className="w-6 h-6 flex-shrink-0 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
         aria-label={label}
         title={label}
       >
-        <img src={button.icon} alt={label} className="w-full h-full" />
+        <img src={button.icon} alt={label} className="w-6 h-6" />
       </button>
     );
   };
 
   return (
     <>
-      <div className="h-[40px] min-h-[40px] max-h-[40px] bg-[#E9E9E9] flex items-center justify-center px-3 gap-2 border-b border-[#CCCCCC]">
+      <div className="min-h-[40px] bg-[#E9E9E9] flex items-center justify-center flex-wrap px-3 py-2 gap-2 border-b border-[#CCCCCC]">
         {buttonsBeforeHeading.map(renderButton)}
 
         {/* Heading button with dropdown */}
-        <div className="relative" ref={headingButtonRef}>
+        <div className="relative flex-shrink-0" ref={headingButtonRef}>
           <button
             onMouseDown={handleHeadingMouseDown}
             onMouseUp={handleHeadingMouseUp}
@@ -496,7 +496,7 @@ export default function Toolbar({
             aria-label={t('toolbar.heading')}
             title={t('toolbar.heading')}
           >
-            <img src="/Heading_icon.svg" alt={t('toolbar.heading')} className="w-full h-full" />
+            <img src="/Heading_icon.svg" alt={t('toolbar.heading')} className="w-6 h-6" />
           </button>
 
           {showHeadingMenu && (
@@ -516,7 +516,7 @@ export default function Toolbar({
         </div>
 
         {/* Quote button with dropdown */}
-        <div className="relative" ref={quoteButtonRef}>
+        <div className="relative flex-shrink-0" ref={quoteButtonRef}>
           <button
             onMouseDown={handleQuoteMouseDown}
             onMouseUp={handleQuoteMouseUp}
@@ -525,7 +525,7 @@ export default function Toolbar({
             aria-label={t('toolbar.blockquote')}
             title={t('toolbar.blockquote')}
           >
-            <img src="/Quote_icon.svg" alt={t('toolbar.blockquote')} className="w-full h-full" />
+            <img src="/Quote_icon.svg" alt={t('toolbar.blockquote')} className="w-6 h-6" />
           </button>
 
           {showQuoteMenu && (
@@ -547,7 +547,7 @@ export default function Toolbar({
         {buttonsBetweenQuoteAndImage.map((button, index) => renderButton(button, index + 100))}
 
         {/* Image button with dropdown */}
-        <div className="relative" ref={imageButtonRef}>
+        <div className="relative flex-shrink-0" ref={imageButtonRef}>
           <button
             onMouseDown={handleImageMouseDown}
             onMouseUp={handleImageMouseUp}
@@ -556,7 +556,7 @@ export default function Toolbar({
             aria-label={t('toolbar.image')}
             title={t('toolbar.image')}
           >
-            <img src="/Image_icon.svg" alt={t('toolbar.image')} className="w-full h-full" />
+            <img src="/Image_icon.svg" alt={t('toolbar.image')} className="w-6 h-6" />
           </button>
 
           {showImageMenu && (
@@ -587,7 +587,7 @@ export default function Toolbar({
         />
 
         {/* Table button with grid dropdown */}
-        <div className="relative" ref={tableButtonRef}>
+        <div className="relative flex-shrink-0" ref={tableButtonRef}>
           <button
             onMouseDown={handleTableMouseDown}
             onMouseUp={handleTableMouseUp}
@@ -596,7 +596,7 @@ export default function Toolbar({
             aria-label={t('toolbar.table')}
             title={t('toolbar.table')}
           >
-            <img src="/Table_icon.svg" alt={t('toolbar.table')} className="w-full h-full" />
+            <img src="/Table_icon.svg" alt={t('toolbar.table')} className="w-6 h-6" />
           </button>
 
           {showTableMenu && (

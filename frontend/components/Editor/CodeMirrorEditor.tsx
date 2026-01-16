@@ -6,7 +6,7 @@ import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightAc
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
-import { syntaxHighlighting, defaultHighlightStyle, HighlightStyle } from '@codemirror/language';
+import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import InfoBar from './InfoBar';
 
@@ -26,6 +26,45 @@ interface CodeMirrorEditorProps {
   onEditorReady?: (view: EditorView) => void;
 }
 
+// Markdown syntax highlighting for light mode (bg: #D8D8D8)
+const markdownHighlighting = HighlightStyle.define([
+  // Headers - darker and bold
+  { tag: tags.heading1, color: '#1a1a1a', fontWeight: 'bold' },
+  { tag: tags.heading2, color: '#1a1a1a', fontWeight: 'bold' },
+  { tag: tags.heading3, color: '#2a2a2a', fontWeight: 'bold' },
+  { tag: tags.heading4, color: '#3a3a3a', fontWeight: 'bold' },
+  { tag: tags.heading5, color: '#3a3a3a', fontWeight: 'bold' },
+  { tag: tags.heading6, color: '#4a4a4a', fontWeight: 'bold' },
+
+  // Emphasis
+  { tag: tags.emphasis, fontStyle: 'italic', color: '#4a4a4a' },
+  { tag: tags.strong, fontWeight: 'bold', color: '#2a2a2a' },
+  { tag: tags.strikethrough, textDecoration: 'line-through', color: '#888888' },
+
+  // Code - inline and blocks
+  { tag: tags.monospace, fontFamily: 'Roboto Mono, monospace', backgroundColor: 'rgba(0,0,0,0.1)', color: '#c7254e' },
+
+  // Links
+  { tag: tags.link, color: '#0066cc', textDecoration: 'underline' },
+  { tag: tags.url, color: '#0066cc' },
+
+  // Lists
+  { tag: tags.list, color: '#555555' },
+
+  // Quotes
+  { tag: tags.quote, color: '#555555', fontStyle: 'italic' },
+
+  // Meta characters (markdown symbols like #, *, _, etc.)
+  { tag: tags.processingInstruction, color: '#999999' },
+  { tag: tags.meta, color: '#999999' },
+
+  // Content - base text
+  { tag: tags.content, color: '#666666' },
+
+  // Comments
+  { tag: tags.comment, color: '#999999', fontStyle: 'italic' },
+]);
+
 // Custom theme matching your app's design
 const editorTheme = EditorView.theme({
   '&': {
@@ -38,6 +77,7 @@ const editorTheme = EditorView.theme({
     lineHeight: '20px',
     padding: '8px 0',
     caretColor: '#333',
+    color: '#666666',
   },
   '.cm-line': {
     padding: '0 8px',
@@ -76,45 +116,6 @@ const editorTheme = EditorView.theme({
     overflow: 'auto',
   },
 });
-
-// Custom syntax highlighting for Markdown
-const markdownHighlighting = HighlightStyle.define([
-  // Headers
-  { tag: tags.heading1, color: '#1a1a1a', fontWeight: 'bold', fontSize: '1.4em' },
-  { tag: tags.heading2, color: '#2a2a2a', fontWeight: 'bold', fontSize: '1.3em' },
-  { tag: tags.heading3, color: '#3a3a3a', fontWeight: 'bold', fontSize: '1.2em' },
-  { tag: tags.heading4, color: '#4a4a4a', fontWeight: 'bold', fontSize: '1.1em' },
-  { tag: tags.heading5, color: '#5a5a5a', fontWeight: 'bold' },
-  { tag: tags.heading6, color: '#6a6a6a', fontWeight: 'bold' },
-
-  // Emphasis
-  { tag: tags.emphasis, fontStyle: 'italic', color: '#555555' },
-  { tag: tags.strong, fontWeight: 'bold', color: '#333333' },
-  { tag: tags.strikethrough, textDecoration: 'line-through', color: '#888888' },
-
-  // Code
-  { tag: tags.monospace, fontFamily: 'Roboto Mono, monospace', backgroundColor: 'rgba(0,0,0,0.08)', color: '#c7254e' },
-
-  // Links
-  { tag: tags.link, color: '#0066cc', textDecoration: 'underline' },
-  { tag: tags.url, color: '#0066cc' },
-
-  // Lists
-  { tag: tags.list, color: '#666666' },
-
-  // Quotes
-  { tag: tags.quote, color: '#666666', fontStyle: 'italic', borderLeft: '3px solid #ccc' },
-
-  // Meta (like markdown symbols)
-  { tag: tags.processingInstruction, color: '#999999' },
-  { tag: tags.meta, color: '#999999' },
-
-  // Content
-  { tag: tags.content, color: '#333333' },
-
-  // Comments
-  { tag: tags.comment, color: '#999999' },
-]);
 
 const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   value,
@@ -190,7 +191,6 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           base: markdownLanguage,
           codeLanguages: languages,
         }),
-        syntaxHighlighting(defaultHighlightStyle),
         syntaxHighlighting(markdownHighlighting),
         editorTheme,
         updateListener,
