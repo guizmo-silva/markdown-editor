@@ -2,13 +2,20 @@
 
 ## Em Andamento
 
-### Syntax Highlight
-- [ ] **Arrumar cores do syntax highlight na visão de código** - As cores estão conflitando com a cor de fundo
-- [ ] Completar implementação de syntax highlight na visão do código
-- [ ] Implementar syntax highlight na visão de texto
+- [ ] Implementar modo escuro
+- [ ] Exportação de arquivos
 
 ## Concluído
 
+### Sessão Atual
+- [x] **Syntax highlight na visão de código** - Implementado com cores adequadas para modo claro (markdown highlighting)
+- [x] **Syntax highlight na visão de texto formatado** - Blocos de código com Prism.js e tema de bom contraste
+- [x] **Cores corrigidas** - Texto da visão de código agora usa #666666 conforme DESIGN-SPECS
+- [x] **Views redimensionáveis** - Barra divisória no modo split permite arrastar para redimensionar (20%-80%)
+- [x] **Toolbar responsiva** - Ícones mantêm tamanho fixo e quebram linha quando não há espaço
+- [x] **Spellcheck implementado** - Correção ortográfica com seleção de idioma na InfoBar
+
+### Anteriores
 - [x] Adicionar menu de traduções no logo
 - [x] Adicionar tooltips às ferramentas
 - [x] Corrigir erros de tradução
@@ -20,5 +27,7 @@
 
 ## Próximos Passos
 
-- [ ] Revisar tema de cores para melhor contraste
+- [ ] Implementar tema escuro (dark mode)
 - [ ] Testar syntax highlight com diferentes linguagens de código
+- [ ] Sincronização de scroll entre visão de código e preview
+- [ ] Salvar/carregar arquivos
