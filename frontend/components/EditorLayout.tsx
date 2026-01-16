@@ -65,15 +65,20 @@ function hello() {
 
 ## Alerts
 
-[!NOTE] This is a note alert with important information.
+> [!NOTE]
+> This is a note alert with important information.
 
-[!TIP] Here's a helpful tip for you!
+> [!TIP]
+> Here's a helpful tip for you!
 
-[!IMPORTANT] Pay attention to this important message.
+> [!IMPORTANT]
+> Pay attention to this important message.
 
-[!WARNING] Be careful with this warning.
+> [!WARNING]
+> Be careful with this warning.
 
-[!CAUTION] This is a caution alert.
+> [!CAUTION]
+> This is a caution alert.
 
 ## Blockquote
 
@@ -83,6 +88,26 @@ function hello() {
 ---
 
 **Bold text** and *italic text* work perfectly!
+
+## Math Formulas
+
+Inline math: $E = mc^2$ and $a^2 + b^2 = c^2$
+
+Block math (Quadratic Formula):
+
+$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+Summation:
+
+$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$
+
+Integral:
+
+$$\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$
+
+Matrix:
+
+$$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$$
 
 ## Footnotes
 
@@ -218,7 +243,7 @@ This text has a footnote reference[^1] and another one[^2].
 
       {/* Collapsed Sidebar */}
       {isSidebarCollapsed && (
-        <div className="w-[60px] bg-white border-r border-[#CCCCCC] flex flex-col items-center relative">
+        <div className="w-[60px] bg-white border-r border-[#CCCCCC] flex flex-col items-center">
           {/* Logo at top */}
           <div className="py-3 border-b border-[#CCCCCC] w-full flex items-center justify-center">
             <img
@@ -229,22 +254,24 @@ This text has a footnote reference[^1] and another one[^2].
           </div>
 
           {/* Vertical Toggle */}
-          <div className="py-3">
+          <div className="py-3 flex-1">
             <ViewToggle currentMode={viewMode} onModeChange={setViewMode} vertical={true} />
           </div>
 
           {/* Expand Button - Fixed at bottom */}
-          <button
-            onClick={handleToggleSidebar}
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 w-10 h-10 bg-white rounded-full shadow-md hover:shadow-lg flex items-center justify-center transition-all border border-[#CCCCCC]"
-            aria-label="Show sidebar"
-          >
-            <img
-              src="/hide_side_bar_icon.svg"
-              alt="Show sidebar"
-              className="h-4 w-4"
-            />
-          </button>
+          <div className="py-4">
+            <button
+              onClick={handleToggleSidebar}
+              className="p-2 hover:bg-[#E9E9E9] rounded transition-colors"
+              aria-label="Show sidebar"
+            >
+              <img
+                src="/hide_side_bar_icon.svg"
+                alt="Show sidebar"
+                className="h-4 w-4 rotate-180"
+              />
+            </button>
+          </div>
         </div>
       )}
 
@@ -275,7 +302,6 @@ This text has a footnote reference[^1] and another one[^2].
                   ref={editorRef}
                   value={markdown}
                   onChange={setMarkdown}
-                  placeholder="Start typing your markdown..."
                   scrollToLine={scrollToLine}
                 />
               </div>
@@ -285,16 +311,20 @@ This text has a footnote reference[^1] and another one[^2].
           {/* Split Resize Handle */}
           {viewMode === 'split' && (
             <div
-              className="w-1 bg-[#999999] cursor-col-resize hover:bg-[#666666] active:bg-[#666666] transition-colors flex-shrink-0"
+              className="w-[5px] bg-[#999999] cursor-col-resize hover:bg-[#666666] active:bg-[#666666] transition-colors flex-shrink-0 flex flex-col items-center justify-center gap-[3px]"
               onMouseDown={handleSplitResizeStart}
-            />
+            >
+              <div className="w-[3px] h-[3px] rounded-full bg-white/60" />
+              <div className="w-[3px] h-[3px] rounded-full bg-white/60" />
+              <div className="w-[3px] h-[3px] rounded-full bg-white/60" />
+            </div>
           )}
 
           {/* Preview */}
           {(viewMode === 'preview' || viewMode === 'split') && (
             <div
               className="overflow-hidden"
-              style={{ width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 4px)` : '100%' }}
+              style={{ width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 5px)` : '100%' }}
             >
               <MarkdownPreview content={markdown} />
             </div>

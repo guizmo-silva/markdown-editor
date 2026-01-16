@@ -30,7 +30,13 @@
     "insertLinkedImage": "Verlinktes Bild einfügen",
     "imageUrl": "Bild-URL",
     "altText": "Alternativtext (Alt)",
-    "insert": "Einfügen"
+    "insert": "Einfügen",
+    "alert": "Hinweis",
+    "alertNote": "Notiz",
+    "alertTip": "Tipp",
+    "alertImportant": "Wichtig",
+    "alertWarning": "Warnung",
+    "alertCaution": "Vorsicht"
   },
   "sidebar": {
     "title": "Elemente",

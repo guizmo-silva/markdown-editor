@@ -207,3 +207,42 @@
 .markdown-preview > *:last-child {
   margin-bottom: 0 !important;
 }
+
+/* GitHub-style Alerts - Enhanced with backgrounds */
+.markdown-preview .markdown-alert {
+  border-radius: 6px;
+}
+
+.markdown-preview .markdown-alert > :first-child {
+  margin-top: 0;
+}
+
+.markdown-preview .markdown-alert-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+/* NOTE - Blue */
+.markdown-preview .markdown-alert-note {
+  background-color: rgba(9, 105, 218, 0.1);
+}
+
+/* TIP - Green */
+.markdown-preview .markdown-alert-tip {
+  background-color: rgba(26, 127, 55, 0.1);
+}
+
+/* IMPORTANT - Purple */
+.markdown-preview .markdown-alert-important {
+  background-color: rgba(130, 80, 223, 0.1);
+}
+
+/* WARNING - Yellow/Orange */
+.markdown-preview .markdown-alert-warning {
+  background-color: rgba(154, 103, 0, 0.1);
+}
+
+/* CAUTION - Red */
+.markdown-preview .markdown-alert-caution {
+  background-color: rgba(207, 34, 46, 0.1);
+}

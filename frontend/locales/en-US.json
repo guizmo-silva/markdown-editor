@@ -30,7 +30,13 @@
     "insertLinkedImage": "Insert linked image",
     "imageUrl": "Image URL",
     "altText": "Alt text",
-    "insert": "Insert"
+    "insert": "Insert",
+    "alert": "Alert",
+    "alertNote": "Note",
+    "alertTip": "Tip",
+    "alertImportant": "Important",
+    "alertWarning": "Warning",
+    "alertCaution": "Caution"
   },
   "sidebar": {
     "title": "Assets",

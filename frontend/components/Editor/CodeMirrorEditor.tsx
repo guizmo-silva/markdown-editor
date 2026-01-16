@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState, useImperativeHandle, forwardRef } from 'react';
-import { EditorState, Compartment } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine } from '@codemirror/view';
+import { EditorState, Compartment, StateEffect, StateField } from '@codemirror/state';
+import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine, Decoration, DecorationSet } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -60,7 +60,7 @@ const markdownHighlighting = HighlightStyle.define([
   { tag: tags.meta, color: '#999999' },
 
   // Content - base text
-  { tag: tags.content, color: '#666666' },
+  { tag: tags.content, color: '#404040' },
 
   // Comments
   { tag: tags.comment, color: '#999999', fontStyle: 'italic' },
@@ -78,7 +78,7 @@ const editorTheme = EditorView.theme({
     lineHeight: '20px',
     padding: '8px 0',
     caretColor: '#333',
-    color: '#666666',
+    color: '#404040',
   },
   '.cm-line': {
     padding: '0 8px',
@@ -116,10 +116,43 @@ const editorTheme = EditorView.theme({
   '.cm-scroller': {
     overflow: 'auto',
   },
+  // Flash highlight for navigation
+  '.cm-flash-highlight': {
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    transition: 'background-color 0.5s ease-out',
+  },
+  '.cm-flash-highlight-fade': {
+    backgroundColor: 'transparent',
+  },
 });
 
 // Compartment for dynamic spellcheck configuration
 const spellcheckCompartment = new Compartment();
+
+// Effect to trigger line highlight flash
+const flashLineEffect = StateEffect.define<{ from: number; to: number } | null>();
+
+// Decoration for the flash highlight
+const flashHighlightMark = Decoration.line({ class: 'cm-flash-highlight' });
+
+// StateField to manage flash highlight decoration
+const flashHighlightField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    for (const effect of tr.effects) {
+      if (effect.is(flashLineEffect)) {
+        if (effect.value === null) {
+          return Decoration.none;
+        }
+        return Decoration.set([flashHighlightMark.range(effect.value.from)]);
+      }
+    }
+    return decorations;
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
 
 const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   value,
@@ -215,6 +248,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         EditorView.lineWrapping,
         placeholder ? EditorView.contentAttributes.of({ 'data-placeholder': placeholder }) : [],
         spellcheckCompartment.of(getSpellcheckAttrs()),
+        flashHighlightField,
       ],
     });
 
@@ -264,19 +298,37 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     }
   }, [value]);
 
-  // Scroll to line
+  // Scroll to line with flash highlight effect
   useEffect(() => {
     if (!scrollToLine || !viewRef.current) return;
 
     const view = viewRef.current;
-    const line = view.state.doc.line(Math.min(scrollToLine, view.state.doc.lines));
+    const lineNumber = Math.min(scrollToLine, view.state.doc.lines);
+    const line = view.state.doc.line(lineNumber);
 
+    // Scroll and select
     view.dispatch({
       selection: { anchor: line.from },
       scrollIntoView: true,
     });
 
+    // Add flash highlight
+    view.dispatch({
+      effects: flashLineEffect.of({ from: line.from, to: line.to }),
+    });
+
+    // Remove flash highlight after animation
+    const timeout = setTimeout(() => {
+      if (viewRef.current) {
+        viewRef.current.dispatch({
+          effects: flashLineEffect.of(null),
+        });
+      }
+    }, 600);
+
     view.focus();
+
+    return () => clearTimeout(timeout);
   }, [scrollToLine]);
 
   return (

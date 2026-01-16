@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import AssetSection from './AssetSection';
 import LogoMenu from './LogoMenu';
 import { FileBrowser } from '@/components/FileBrowser';
@@ -9,6 +9,9 @@ import { ViewToggle, ViewMode } from '@/components/ViewToggle';
 import { parseMarkdownAssets, type MarkdownAssets } from '@/utils/markdownParser';
 
 type SectionId = 'headings' | 'images' | 'links' | 'alerts' | 'footnotes' | 'tables';
+
+const SECTION_MIN_PERCENT = 20; // Minimum 20% for each section
+const SECTION_MAX_PERCENT = 80; // Maximum 80% for each section
 
 interface AssetsSidebarProps {
   markdown: string;
@@ -45,6 +48,11 @@ export default function AssetsSidebar({
 
   // Trigger for collapsing all files in FileBrowser
   const [filesCollapseTrigger, setFilesCollapseTrigger] = useState(0);
+
+  // State for section divider resize
+  const [contentSectionPercent, setContentSectionPercent] = useState(50);
+  const [isResizingSection, setIsResizingSection] = useState(false);
+  const sectionContainerRef = useRef<HTMLDivElement>(null);
 
   // Parse markdown to extract all assets
   const assets: MarkdownAssets = useMemo(() => {
@@ -83,6 +91,49 @@ export default function AssetsSidebar({
     }
   };
 
+  // Section divider resize handlers
+  const handleSectionResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingSection(true);
+  }, []);
+
+  const handleSectionResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizingSection || !sectionContainerRef.current) return;
+
+    const container = sectionContainerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const relativeY = e.clientY - containerRect.top;
+    const percentage = (relativeY / containerRect.height) * 100;
+
+    if (percentage >= SECTION_MIN_PERCENT && percentage <= SECTION_MAX_PERCENT) {
+      setContentSectionPercent(percentage);
+    } else if (percentage < SECTION_MIN_PERCENT) {
+      setContentSectionPercent(SECTION_MIN_PERCENT);
+    } else if (percentage > SECTION_MAX_PERCENT) {
+      setContentSectionPercent(SECTION_MAX_PERCENT);
+    }
+  }, [isResizingSection]);
+
+  const handleSectionResizeEnd = useCallback(() => {
+    setIsResizingSection(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizingSection) {
+      document.addEventListener('mousemove', handleSectionResizeMove);
+      document.addEventListener('mouseup', handleSectionResizeEnd);
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleSectionResizeMove);
+      document.removeEventListener('mouseup', handleSectionResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizingSection, handleSectionResizeMove, handleSectionResizeEnd]);
+
   return (
     <div className="h-full bg-white border-r border-[#CCCCCC] flex flex-col relative" style={{ width }}>
       {/* Top Section: Logo and View Toggle */}
@@ -94,11 +145,14 @@ export default function AssetsSidebar({
         <ViewToggle currentMode={viewMode} onModeChange={onViewModeChange} />
       </div>
 
-      {/* Content Section - Scrollable */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Conteúdo Section */}
-        <div className="border-b border-[#CCCCCC]">
-          <div className="pl-[20px] pr-3 py-3">
+      {/* Sections Container */}
+      <div ref={sectionContainerRef} className="flex-1 flex flex-col overflow-hidden">
+        {/* Conteúdo Section - with independent scroll */}
+        <div
+          className="overflow-hidden flex flex-col"
+          style={{ height: `${contentSectionPercent}%` }}
+        >
+          <div className="pl-[20px] pr-3 py-3 flex-shrink-0">
             <h2
               className="text-[20px] font-bold text-[#000] cursor-pointer hover:text-[#666666] transition-colors"
               style={{ fontFamily: 'Roboto Mono, monospace' }}
@@ -108,6 +162,7 @@ export default function AssetsSidebar({
               {t('sidebar.content')}
             </h2>
           </div>
+          <div className="flex-1 overflow-y-auto">
 
           {/* Headings Section */}
           <AssetSection title={t('sidebar.headings', 'Titulo')} count={assets.headings.length} mdSymbol="#" isOpen={openSections.headings} onToggle={(isOpen) => handleSectionToggle('headings', isOpen)}>
@@ -303,11 +358,23 @@ export default function AssetsSidebar({
               );
             })}
           </AssetSection>
+          </div>
         </div>
 
-        {/* Arquivos Section */}
-        <div>
-          <div className="pl-[20px] pr-3 py-3">
+        {/* Section Divider - Resizable (larger hit area, thin visual line) */}
+        <div
+          className="h-[11px] cursor-row-resize flex-shrink-0 flex items-center group"
+          onMouseDown={handleSectionResizeStart}
+        >
+          <div className="w-full h-[1px] bg-[#CCCCCC] group-hover:bg-[#999999] group-active:bg-[#999999] transition-colors" />
+        </div>
+
+        {/* Arquivos Section - with independent scroll */}
+        <div
+          className="overflow-hidden flex flex-col"
+          style={{ height: `calc(${100 - contentSectionPercent}% - 11px)` }}
+        >
+          <div className="pl-[20px] pr-3 py-3 flex-shrink-0">
             <h2
               className="text-[20px] font-bold text-[#000] cursor-pointer hover:text-[#666666] transition-colors"
               style={{ fontFamily: 'Roboto Mono, monospace' }}
@@ -317,24 +384,37 @@ export default function AssetsSidebar({
               {t('fileBrowser.title')}
             </h2>
           </div>
-          <FileBrowser onFileSelect={onFileSelect} collapseAllTrigger={filesCollapseTrigger} />
+          <div className="flex-1 overflow-y-auto">
+            <FileBrowser onFileSelect={onFileSelect} collapseAllTrigger={filesCollapseTrigger} />
+          </div>
         </div>
       </div>
 
-      {/* Collapse Button - Fixed at bottom right */}
-      {onToggleCollapse && (
+      {/* Bottom Section - Export and Collapse buttons */}
+      <div className="flex-shrink-0 px-4 py-4 flex items-center justify-between">
+        {/* Export Button */}
         <button
-          onClick={onToggleCollapse}
-          className="absolute bottom-4 right-4 w-10 h-10 bg-white rounded-full shadow-md hover:shadow-lg flex items-center justify-center transition-all border border-[#CCCCCC]"
-          aria-label="Toggle sidebar"
+          className="px-4 py-2 bg-[#000] text-white text-[12px] font-medium rounded hover:bg-[#333] transition-colors"
+          style={{ fontFamily: 'Roboto Mono, monospace' }}
         >
-          <img
-            src="/hide_side_bar_icon.svg"
-            alt="Toggle sidebar"
-            className="h-4 w-4"
-          />
+          {t('buttons.export')}
         </button>
-      )}
+
+        {/* Collapse Button */}
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className="p-2 hover:bg-[#E9E9E9] rounded transition-colors"
+            aria-label="Toggle sidebar"
+          >
+            <img
+              src="/hide_side_bar_icon.svg"
+              alt="Toggle sidebar"
+              className="h-4 w-4"
+            />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

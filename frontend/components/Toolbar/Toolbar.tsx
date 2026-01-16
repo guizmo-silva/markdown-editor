@@ -25,6 +25,7 @@ export default function Toolbar({
 }: ToolbarProps) {
   const { t } = useTranslation();
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
+  const [showAlertMenu, setShowAlertMenu] = useState(false);
 
   // Helper to get editor handle (works with both textarea and CodeMirror)
   const getEditor = (): EditorHandle | null => {
@@ -38,6 +39,7 @@ export default function Toolbar({
   const [imageUrl, setImageUrl] = useState('');
   const [imageAlt, setImageAlt] = useState('');
   const headingButtonRef = useRef<HTMLDivElement>(null);
+  const alertButtonRef = useRef<HTMLDivElement>(null);
   const quoteButtonRef = useRef<HTMLDivElement>(null);
   const imageButtonRef = useRef<HTMLDivElement>(null);
   const tableButtonRef = useRef<HTMLDivElement>(null);
@@ -51,6 +53,9 @@ export default function Toolbar({
       if (headingButtonRef.current && !headingButtonRef.current.contains(event.target as Node)) {
         setShowHeadingMenu(false);
       }
+      if (alertButtonRef.current && !alertButtonRef.current.contains(event.target as Node)) {
+        setShowAlertMenu(false);
+      }
       if (quoteButtonRef.current && !quoteButtonRef.current.contains(event.target as Node)) {
         setShowQuoteMenu(false);
       }
@@ -63,14 +68,14 @@ export default function Toolbar({
       }
     };
 
-    if (showHeadingMenu || showQuoteMenu || showImageMenu || showTableMenu) {
+    if (showHeadingMenu || showAlertMenu || showQuoteMenu || showImageMenu || showTableMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showHeadingMenu, showQuoteMenu, showImageMenu, showTableMenu]);
+  }, [showHeadingMenu, showAlertMenu, showQuoteMenu, showImageMenu, showTableMenu]);
 
   // Helper function to wrap selected text or insert at cursor
   const wrapText = (prefix: string, suffix: string, placeholder: string = '') => {
@@ -276,6 +281,26 @@ export default function Toolbar({
     { level: 5, label: 'H5', description: 'Título 5' },
     { level: 6, label: 'H6', description: 'Título 6' },
   ];
+
+  // Alert handlers
+  const handleAlert = (type: string) => {
+    const alertText = `> [!${type.toUpperCase()}]\n> `;
+    insertText(alertText);
+    setShowAlertMenu(false);
+  };
+
+  const handleAlertClick = () => {
+    setShowAlertMenu(true);
+  };
+
+  const alertOptions = [
+    { type: 'NOTE', label: 'Note', description: t('toolbar.alertNote'), color: '#0969da' },
+    { type: 'TIP', label: 'Tip', description: t('toolbar.alertTip'), color: '#1a7f37' },
+    { type: 'IMPORTANT', label: 'Important', description: t('toolbar.alertImportant'), color: '#8250df' },
+    { type: 'WARNING', label: 'Warning', description: t('toolbar.alertWarning'), color: '#9a6700' },
+    { type: 'CAUTION', label: 'Caution', description: t('toolbar.alertCaution'), color: '#cf222e' },
+  ];
+
   const handleSubscript = () => toggleFormat('<sub>', '</sub>', 'subscript');
   const handleSuperscript = () => toggleFormat('<sup>', '</sup>', 'superscript');
   const handleBulletList = () => addLinePrefix('- ');
@@ -634,6 +659,37 @@ export default function Toolbar({
         </div>
 
         {buttonsAfterTable.map((button, index) => renderButton(button, index + 200))}
+
+        {/* Alert button with dropdown */}
+        <div className="relative flex-shrink-0" ref={alertButtonRef}>
+          <button
+            onClick={handleAlertClick}
+            className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
+            aria-label={t('toolbar.alert')}
+            title={t('toolbar.alert')}
+          >
+            <img src="/Alerts_icon.svg" alt={t('toolbar.alert')} className="w-6 h-6" />
+          </button>
+
+          {showAlertMenu && (
+            <div className="absolute top-full right-0 mt-1 bg-white border border-[#CCCCCC] rounded shadow-lg z-50 min-w-[180px]">
+              {alertOptions.map((option) => (
+                <button
+                  key={option.type}
+                  onClick={() => handleAlert(option.type)}
+                  className="w-full px-3 py-1.5 text-left hover:bg-[#E9E9E9] flex items-center gap-2 text-sm"
+                >
+                  <span
+                    className="w-3 h-3 rounded-sm flex-shrink-0"
+                    style={{ backgroundColor: option.color }}
+                  />
+                  <span className="font-semibold text-[#666666]">{option.label}</span>
+                  <span className="text-[#999999] text-xs">{option.description}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modal for linked image */}
