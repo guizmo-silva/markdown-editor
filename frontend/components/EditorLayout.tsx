@@ -219,7 +219,7 @@ This text has a footnote reference[^1] and another one[^2].
   }, [isResizing, handleResizeMove, handleResizeEnd]);
 
   return (
-    <div className="h-screen w-screen flex flex-row bg-white">
+    <div className="h-screen w-screen flex flex-row bg-[var(--bg-primary)]">
       {/* Sidebar - Full height on the left */}
       {!isSidebarCollapsed && (
         <div className="relative flex" style={{ width: sidebarWidth }}>
@@ -235,7 +235,7 @@ This text has a footnote reference[^1] and another one[^2].
           />
           {/* Resize Handle */}
           <div
-            className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-[#999999] transition-colors z-10"
+            className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-[var(--split-line)] transition-colors z-10"
             onMouseDown={handleResizeStart}
           />
         </div>
@@ -243,9 +243,9 @@ This text has a footnote reference[^1] and another one[^2].
 
       {/* Collapsed Sidebar */}
       {isSidebarCollapsed && (
-        <div className="w-[60px] bg-white border-r border-[#CCCCCC] flex flex-col items-center">
+        <div className="w-[60px] bg-[var(--bg-primary)] border-r border-[var(--border-primary)] flex flex-col items-center">
           {/* Logo at top */}
-          <div className="py-3 border-b border-[#CCCCCC] w-full flex items-center justify-center">
+          <div className="py-3 border-b border-[var(--border-primary)] w-full flex items-center justify-center">
             <img
               src="/Logo.svg"
               alt="MD Logo"
@@ -262,7 +262,7 @@ This text has a footnote reference[^1] and another one[^2].
           <div className="py-4">
             <button
               onClick={handleToggleSidebar}
-              className="p-2 hover:bg-[#E9E9E9] rounded transition-colors"
+              className="p-2 hover:bg-[var(--bg-secondary)] rounded transition-colors"
               aria-label="Show sidebar"
             >
               <img
@@ -311,12 +311,12 @@ This text has a footnote reference[^1] and another one[^2].
           {/* Split Resize Handle */}
           {viewMode === 'split' && (
             <div
-              className="w-[5px] bg-[#999999] cursor-col-resize hover:bg-[#666666] active:bg-[#666666] transition-colors flex-shrink-0 flex flex-col items-center justify-center gap-[3px]"
+              className="w-[5px] bg-[var(--split-line)] cursor-col-resize hover:bg-[var(--text-secondary)] active:bg-[var(--text-secondary)] transition-colors flex-shrink-0 flex flex-col items-center justify-center gap-[3px]"
               onMouseDown={handleSplitResizeStart}
             >
-              <div className="w-[3px] h-[3px] rounded-full bg-white/60" />
-              <div className="w-[3px] h-[3px] rounded-full bg-white/60" />
-              <div className="w-[3px] h-[3px] rounded-full bg-white/60" />
+              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-primary)]/60" />
+              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-primary)]/60" />
+              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-primary)]/60" />
             </div>
           )}
 

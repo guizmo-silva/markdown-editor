@@ -135,7 +135,7 @@ export default function AssetsSidebar({
   }, [isResizingSection, handleSectionResizeMove, handleSectionResizeEnd]);
 
   return (
-    <div className="h-full bg-white border-r border-[#CCCCCC] flex flex-col relative" style={{ width }}>
+    <div className="h-full bg-[var(--bg-primary)] border-r border-[var(--border-primary)] flex flex-col relative" style={{ width }}>
       {/* Top Section: Logo and View Toggle */}
       <div className="pl-[20px] pr-4 pt-[20px] pb-3 flex items-center justify-between gap-3">
         {/* Logo with Menu */}
@@ -154,7 +154,7 @@ export default function AssetsSidebar({
         >
           <div className="pl-[20px] pr-3 py-3 flex-shrink-0">
             <h2
-              className="text-[20px] font-bold text-[#000] cursor-pointer hover:text-[#666666] transition-colors"
+              className="text-[20px] font-bold text-[var(--text-primary)] cursor-pointer hover:text-[var(--text-secondary)] transition-colors"
               style={{ fontFamily: 'Roboto Mono, monospace' }}
               onClick={handleCollapseAllContent}
               title="Click to collapse all"
@@ -168,24 +168,29 @@ export default function AssetsSidebar({
           <AssetSection title={t('sidebar.headings', 'Titulo')} count={assets.headings.length} mdSymbol="#" isOpen={openSections.headings} onToggle={(isOpen) => handleSectionToggle('headings', isOpen)}>
             {assets.headings.map((heading, index) => {
               const isLast = index === assets.headings.length - 1;
+              const indentPx = (heading.level - 1) * 8;
+              const lineWidth = 12 + indentPx; // Base 12px + extra indent
               return (
                 <div
                   key={index}
                   onClick={() => handleItemClick(heading.line)}
-                  className={`mb-1 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                  style={{ paddingLeft: `${(heading.level - 1) * 8 + 8}px` }}
+                  className={`mb-1 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  style={{ paddingLeft: `${indentPx + 8}px` }}
                 >
                   {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
+                  <div
+                    className="absolute top-[14px] h-[1px] bg-[var(--border-primary)]"
+                    style={{ left: '-12px', width: `${lineWidth}px` }}
+                  ></div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[10px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {'#'.repeat(heading.level)}
                     </span>
-                    <span className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {heading.text}
                     </span>
-                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       (Line {heading.line})
                     </span>
                   </div>
@@ -202,20 +207,20 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(image.line)}
-                  className={`mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                 >
                   {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {image.alt}
                     </span>
-                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       (Line {image.line})
                     </span>
                   </div>
-                  <div className="text-[10px] text-[#666666] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                  <div className="text-[10px] text-[var(--text-secondary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                     {image.url}
                   </div>
                 </div>
@@ -231,29 +236,29 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(link.line)}
-                  className={`mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                 >
                   {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     {link.isExternal ? (
-                      <svg className="w-3 h-3 text-[#666666] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                     ) : (
-                      <svg className="w-3 h-3 text-[#666666] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                       </svg>
                     )}
-                    <span className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {link.text}
                     </span>
-                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       (Line {link.line})
                     </span>
                   </div>
-                  <div className="text-[10px] text-[#666666] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                  <div className="text-[10px] text-[var(--text-secondary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                     {link.url}
                   </div>
                 </div>
@@ -269,10 +274,10 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(alert.line)}
-                  className={`mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                 >
                   {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span
@@ -287,11 +292,11 @@ export default function AssetsSidebar({
                     >
                       {alert.type}
                     </span>
-                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       (Line {alert.line})
                     </span>
                   </div>
-                  <div className="text-[11px] text-[#000] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                  <div className="text-[11px] text-[var(--text-primary)] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                     {alert.content}
                   </div>
                 </div>
@@ -307,21 +312,21 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(footnote.line)}
-                  className={`mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                 >
                   {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       [^{footnote.id}]
                     </span>
-                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       (Line {footnote.line})
                     </span>
                   </div>
                   {footnote.definition && (
-                    <div className="text-[10px] text-[#666666] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <div className="text-[10px] text-[var(--text-secondary)] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {footnote.definition}
                     </div>
                   )}
@@ -338,20 +343,20 @@ export default function AssetsSidebar({
                 <div
                   key={index}
                   onClick={() => handleItemClick(table.line)}
-                  className={`mb-2 p-2 hover:bg-[#F0F0F0] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                 >
                   {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[#CCCCCC]"></div>
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-[11px] text-[#000] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {table.header}
                     </span>
-                    <span className="text-[9px] text-[#999999]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       (Line {table.line})
                     </span>
                   </div>
-                  <div className="text-[10px] text-[#666666]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                  <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                     {table.rows} rows × {table.cols} columns
                   </div>
                 </div>
@@ -366,7 +371,7 @@ export default function AssetsSidebar({
           className="h-[11px] cursor-row-resize flex-shrink-0 flex items-center group"
           onMouseDown={handleSectionResizeStart}
         >
-          <div className="w-full h-[1px] bg-[#CCCCCC] group-hover:bg-[#999999] group-active:bg-[#999999] transition-colors" />
+          <div className="w-full h-[1px] bg-[var(--border-primary)] group-hover:bg-[var(--split-line)] group-active:bg-[var(--split-line)] transition-colors" />
         </div>
 
         {/* Arquivos Section - with independent scroll */}
@@ -376,7 +381,7 @@ export default function AssetsSidebar({
         >
           <div className="pl-[20px] pr-3 py-3 flex-shrink-0">
             <h2
-              className="text-[20px] font-bold text-[#000] cursor-pointer hover:text-[#666666] transition-colors"
+              className="text-[20px] font-bold text-[var(--text-primary)] cursor-pointer hover:text-[var(--text-secondary)] transition-colors"
               style={{ fontFamily: 'Roboto Mono, monospace' }}
               onClick={handleCollapseAllFiles}
               title="Click to collapse all"
@@ -394,8 +399,9 @@ export default function AssetsSidebar({
       <div className="flex-shrink-0 px-4 py-4 flex items-center justify-between">
         {/* Export Button */}
         <button
-          className="px-4 py-2 bg-[#000] text-white text-[12px] font-medium rounded hover:bg-[#333] transition-colors"
+          className="px-4 py-2 bg-[var(--button-bg)] text-[var(--text-button)] text-[12px] font-medium rounded hover:bg-[var(--button-hover)] transition-colors"
           style={{ fontFamily: 'Roboto Mono, monospace' }}
+          title={t('tooltips.export')}
         >
           {t('buttons.export')}
         </button>
@@ -404,7 +410,7 @@ export default function AssetsSidebar({
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="p-2 hover:bg-[#E9E9E9] rounded transition-colors"
+            className="p-2 hover:bg-[var(--bg-secondary)] rounded transition-colors"
             aria-label="Toggle sidebar"
           >
             <img

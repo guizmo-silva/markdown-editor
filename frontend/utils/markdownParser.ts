@@ -117,8 +117,29 @@ export function parseAlerts(markdown: string): AlertElement[] {
   lines.forEach((line, index) => {
     alertTypes.forEach(type => {
       if (line.includes(`[!${type}]`)) {
-        // Get the content after the alert marker
-        const content = line.replace(`[!${type}]`, '').trim();
+        // Get content from subsequent blockquote lines
+        let content = '';
+        let nextIndex = index + 1;
+
+        // Collect content from following lines that start with >
+        while (nextIndex < lines.length) {
+          const nextLine = lines[nextIndex];
+          // Check if line continues the blockquote
+          if (nextLine.match(/^>\s*/)) {
+            const lineContent = nextLine.replace(/^>\s*/, '').trim();
+            // Stop if we hit another alert marker
+            if (alertTypes.some(t => lineContent.includes(`[!${t}]`))) {
+              break;
+            }
+            if (lineContent) {
+              content += (content ? ' ' : '') + lineContent;
+            }
+            nextIndex++;
+          } else {
+            break;
+          }
+        }
+
         alerts.push({
           line: index + 1,
           type: type as AlertElement['type'],

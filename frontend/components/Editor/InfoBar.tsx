@@ -64,9 +64,9 @@ export default function InfoBar({
   };
 
   return (
-    <div className="h-[24px] bg-[#E9E9E9] flex items-center justify-between px-4 border-t border-[#CCCCCC]">
+    <div className="h-[24px] bg-[var(--bg-secondary)] flex items-center justify-between px-4 border-t border-[var(--border-primary)]">
       {/* Left side - Cursor position */}
-      <div className="flex items-center gap-4 text-[10px] text-[#666666]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+      <div className="flex items-center gap-4 text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
         <span>Line: {line}</span>
         <span>|</span>
         <span>Col: {column}</span>
@@ -76,8 +76,8 @@ export default function InfoBar({
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setShowSpellcheckMenu(!showSpellcheckMenu)}
-          className={`text-[10px] px-2 py-0.5 rounded hover:bg-[#DADADA] transition-colors ${
-            spellcheckEnabled ? 'text-[#666666]' : 'text-[#999999]'
+          className={`text-[10px] px-2 py-0.5 rounded hover:bg-[var(--hover-bg)] transition-colors ${
+            spellcheckEnabled ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'
           }`}
           style={{ fontFamily: 'Roboto Mono, monospace' }}
         >
@@ -85,48 +85,48 @@ export default function InfoBar({
         </button>
 
         {showSpellcheckMenu && (
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-white border border-[#CCCCCC] rounded shadow-lg z-50 min-w-[200px]">
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[200px] overflow-hidden">
             {/* Toggle spellcheck */}
             <button
               onClick={() => {
                 onSpellcheckToggle(!spellcheckEnabled);
               }}
-              className="w-full px-3 py-2 text-left hover:bg-[#E9E9E9] flex items-center gap-2 text-sm border-b border-[#CCCCCC]"
+              className="w-full px-3 py-2 text-left hover:bg-[var(--hover-bg)] flex items-center gap-2 text-sm border-b border-[var(--border-primary)]"
             >
               <span className={`w-4 h-4 flex items-center justify-center rounded border ${
-                spellcheckEnabled ? 'bg-[#333] border-[#333]' : 'border-[#999]'
+                spellcheckEnabled ? 'bg-[var(--text-primary)] border-[var(--text-primary)]' : 'border-[var(--text-muted)]'
               }`}>
                 {spellcheckEnabled && (
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3 text-[var(--bg-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
               </span>
-              <span className="text-[#666666]">{t('infobar.enableSpellcheck')}</span>
+              <span className="text-[var(--text-secondary)]">{t('infobar.enableSpellcheck')}</span>
             </button>
 
             {/* Language selection */}
             <div className="py-1">
-              <div className="px-3 py-1 text-xs text-[#999999]">{t('infobar.selectLanguage')}</div>
+              <div className="px-3 py-1 text-xs text-[var(--text-muted)]">{t('infobar.selectLanguage')}</div>
               {Object.entries(SPELLCHECK_LANGUAGES).map(([code, lang]) => (
                 <button
                   key={code}
                   onClick={() => handleSelectLanguage(code)}
                   disabled={!spellcheckEnabled}
-                  className={`w-full px-3 py-1.5 text-left hover:bg-[#E9E9E9] flex items-center gap-2 text-sm ${
+                  className={`w-full px-3 py-1.5 text-left hover:bg-[var(--hover-bg)] flex items-center gap-2 text-sm ${
                     !spellcheckEnabled ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
                   <span className={`w-4 h-4 flex items-center justify-center rounded-full border ${
-                    spellcheckLanguage === code ? 'border-[#333]' : 'border-[#999]'
+                    spellcheckLanguage === code ? 'border-[var(--text-primary)]' : 'border-[var(--text-muted)]'
                   }`}>
                     {spellcheckLanguage === code && (
-                      <span className="w-2 h-2 rounded-full bg-[#333]" />
+                      <span className="w-2 h-2 rounded-full bg-[var(--text-primary)]" />
                     )}
                   </span>
-                  <span className="text-[#666666]">{lang.name}</span>
+                  <span className="text-[var(--text-secondary)]">{lang.name}</span>
                   {code === i18n.language && (
-                    <span className="text-[10px] text-[#999999] ml-auto">({t('infobar.current')})</span>
+                    <span className="text-[10px] text-[var(--text-muted)] ml-auto">({t('infobar.current')})</span>
                   )}
                 </button>
               ))}
@@ -136,7 +136,7 @@ export default function InfoBar({
       </div>
 
       {/* Right side - Character count */}
-      <div className="text-[10px] text-[#666666]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+      <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
         Characters: {characters}
       </div>
     </div>

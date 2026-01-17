@@ -9,6 +9,7 @@ import { languages } from '@codemirror/language-data';
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/components/ThemeProvider';
 import InfoBar from './InfoBar';
 
 // Interface to expose textarea-like API for compatibility with Toolbar
@@ -28,46 +29,51 @@ interface CodeMirrorEditorProps {
 }
 
 // Markdown syntax highlighting for light mode (bg: #D8D8D8)
-const markdownHighlighting = HighlightStyle.define([
-  // Headers - darker and bold
+const lightHighlighting = HighlightStyle.define([
   { tag: tags.heading1, color: '#1a1a1a', fontWeight: 'bold' },
   { tag: tags.heading2, color: '#1a1a1a', fontWeight: 'bold' },
   { tag: tags.heading3, color: '#2a2a2a', fontWeight: 'bold' },
   { tag: tags.heading4, color: '#3a3a3a', fontWeight: 'bold' },
   { tag: tags.heading5, color: '#3a3a3a', fontWeight: 'bold' },
   { tag: tags.heading6, color: '#4a4a4a', fontWeight: 'bold' },
-
-  // Emphasis
   { tag: tags.emphasis, fontStyle: 'italic', color: '#4a4a4a' },
   { tag: tags.strong, fontWeight: 'bold', color: '#2a2a2a' },
   { tag: tags.strikethrough, textDecoration: 'line-through', color: '#888888' },
-
-  // Code - inline and blocks
   { tag: tags.monospace, fontFamily: 'Roboto Mono, monospace', backgroundColor: 'rgba(0,0,0,0.1)', color: '#c7254e' },
-
-  // Links
   { tag: tags.link, color: '#0066cc', textDecoration: 'underline' },
   { tag: tags.url, color: '#0066cc' },
-
-  // Lists
   { tag: tags.list, color: '#555555' },
-
-  // Quotes
   { tag: tags.quote, color: '#555555', fontStyle: 'italic' },
-
-  // Meta characters (markdown symbols like #, *, _, etc.)
   { tag: tags.processingInstruction, color: '#999999' },
   { tag: tags.meta, color: '#999999' },
-
-  // Content - base text
   { tag: tags.content, color: '#404040' },
-
-  // Comments
   { tag: tags.comment, color: '#999999', fontStyle: 'italic' },
 ]);
 
-// Custom theme matching your app's design
-const editorTheme = EditorView.theme({
+// Markdown syntax highlighting for dark mode (bg: #272727)
+const darkHighlighting = HighlightStyle.define([
+  { tag: tags.heading1, color: '#FFFFFF', fontWeight: 'bold' },
+  { tag: tags.heading2, color: '#FFFFFF', fontWeight: 'bold' },
+  { tag: tags.heading3, color: '#E5E5E5', fontWeight: 'bold' },
+  { tag: tags.heading4, color: '#D0D0D0', fontWeight: 'bold' },
+  { tag: tags.heading5, color: '#D0D0D0', fontWeight: 'bold' },
+  { tag: tags.heading6, color: '#BEBEBE', fontWeight: 'bold' },
+  { tag: tags.emphasis, fontStyle: 'italic', color: '#CCCCCC' },
+  { tag: tags.strong, fontWeight: 'bold', color: '#FFFFFF' },
+  { tag: tags.strikethrough, textDecoration: 'line-through', color: '#888888' },
+  { tag: tags.monospace, fontFamily: 'Roboto Mono, monospace', backgroundColor: 'rgba(255,255,255,0.1)', color: '#ff8fa3' },
+  { tag: tags.link, color: '#6cb6ff', textDecoration: 'underline' },
+  { tag: tags.url, color: '#6cb6ff' },
+  { tag: tags.list, color: '#CCCCCC' },
+  { tag: tags.quote, color: '#AAAAAA', fontStyle: 'italic' },
+  { tag: tags.processingInstruction, color: '#888888' },
+  { tag: tags.meta, color: '#888888' },
+  { tag: tags.content, color: '#BEBEBE' },
+  { tag: tags.comment, color: '#777777', fontStyle: 'italic' },
+]);
+
+// Light theme for CodeMirror
+const lightTheme = EditorView.theme({
   '&': {
     backgroundColor: '#D8D8D8',
     height: '100%',
@@ -116,18 +122,118 @@ const editorTheme = EditorView.theme({
   '.cm-scroller': {
     overflow: 'auto',
   },
-  // Flash highlight for navigation
-  '.cm-flash-highlight': {
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
-    transition: 'background-color 0.5s ease-out',
+  '@keyframes flash-fade': {
+    '0%': { backgroundColor: 'rgba(255, 220, 100, 0.6)' },
+    '30%': { backgroundColor: 'rgba(255, 220, 100, 0.6)' },
+    '100%': { backgroundColor: 'transparent' },
   },
-  '.cm-flash-highlight-fade': {
-    backgroundColor: 'transparent',
+  '.cm-flash-highlight': {
+    animation: 'flash-fade 800ms ease-out forwards',
   },
 });
 
+// Dark theme for CodeMirror
+const darkTheme = EditorView.theme({
+  '&': {
+    backgroundColor: '#272727',
+    height: '100%',
+  },
+  '.cm-content': {
+    fontFamily: 'Roboto Mono, monospace',
+    fontSize: '12px',
+    lineHeight: '20px',
+    padding: '8px 0',
+    caretColor: '#FFFFFF',
+    color: '#BEBEBE',
+  },
+  '.cm-line': {
+    padding: '0 8px',
+  },
+  '.cm-gutters': {
+    backgroundColor: '#676767',
+    color: '#E5E5E5',
+    border: 'none',
+    fontFamily: 'Roboto Mono, monospace',
+    fontSize: '12px',
+    lineHeight: '20px',
+  },
+  '.cm-lineNumbers .cm-gutterElement': {
+    padding: '0 8px 0 4px',
+    minWidth: '40px',
+  },
+  '.cm-activeLineGutter': {
+    backgroundColor: '#3a3a3a',
+  },
+  '.cm-activeLine': {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  '.cm-selectionBackground': {
+    backgroundColor: 'rgba(255, 255, 255, 0.15) !important',
+  },
+  '&.cm-focused .cm-selectionBackground': {
+    backgroundColor: 'rgba(255, 255, 255, 0.2) !important',
+  },
+  '.cm-cursor': {
+    borderLeftColor: '#FFFFFF',
+  },
+  '.cm-placeholder': {
+    color: '#888888',
+  },
+  '.cm-scroller': {
+    overflow: 'auto',
+  },
+  '@keyframes flash-fade-dark': {
+    '0%': { backgroundColor: 'rgba(100, 180, 255, 0.4)' },
+    '30%': { backgroundColor: 'rgba(100, 180, 255, 0.4)' },
+    '100%': { backgroundColor: 'transparent' },
+  },
+  '.cm-flash-highlight': {
+    animation: 'flash-fade-dark 800ms ease-out forwards',
+  },
+});
+
+// Compartment for dynamic theme switching
+const themeCompartment = new Compartment();
+
 // Compartment for dynamic spellcheck configuration
 const spellcheckCompartment = new Compartment();
+
+// Helper function to create format toggle commands for keyboard shortcuts
+const createFormatCommand = (prefix: string, suffix: string) => {
+  return (view: EditorView): boolean => {
+    const { from, to } = view.state.selection.main;
+    const selectedText = view.state.sliceDoc(from, to);
+
+    // Check if text is already formatted by looking at surrounding characters
+    const beforeText = view.state.sliceDoc(Math.max(0, from - prefix.length), from);
+    const afterText = view.state.sliceDoc(to, to + suffix.length);
+
+    if (beforeText === prefix && afterText === suffix) {
+      // Remove formatting
+      view.dispatch({
+        changes: [
+          { from: from - prefix.length, to: from, insert: '' },
+          { from: to, to: to + suffix.length, insert: '' }
+        ],
+        selection: { anchor: from - prefix.length, head: to - prefix.length }
+      });
+    } else {
+      // Add formatting
+      view.dispatch({
+        changes: { from, to, insert: prefix + selectedText + suffix },
+        selection: { anchor: from + prefix.length, head: to + prefix.length }
+      });
+    }
+    return true;
+  };
+};
+
+// Keymap for formatting shortcuts (Mod = Ctrl on Windows/Linux, Cmd on macOS)
+const formatKeymap = keymap.of([
+  { key: 'Mod-b', run: createFormatCommand('**', '**') },   // Bold
+  { key: 'Mod-i', run: createFormatCommand('*', '*') },     // Italic
+  { key: 'Mod-Shift-x', run: createFormatCommand('~~', '~~') }, // Strikethrough
+]);
 
 // Effect to trigger line highlight flash
 const flashLineEffect = StateEffect.define<{ from: number; to: number } | null>();
@@ -162,12 +268,20 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   onEditorReady,
 }, ref) => {
   const { i18n } = useTranslation();
+  const { theme } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [characterCount, setCharacterCount] = useState(0);
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
   const [spellcheckLanguage, setSpellcheckLanguage] = useState(i18n.language);
+
+  // Get theme extensions based on current theme
+  const getThemeExtensions = useCallback((isDark: boolean) => {
+    return isDark
+      ? [darkTheme, syntaxHighlighting(darkHighlighting)]
+      : [lightTheme, syntaxHighlighting(lightHighlighting)];
+  }, []);
 
   // Expose textarea-like API through ref
   useImperativeHandle(ref, () => ({
@@ -226,6 +340,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       }
     });
 
+    const isDark = theme === 'dark';
     const state = EditorState.create({
       doc: value,
       extensions: [
@@ -233,6 +348,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         highlightActiveLineGutter(),
         highlightActiveLine(),
         history(),
+        formatKeymap,
         keymap.of([
           ...defaultKeymap,
           ...historyKeymap,
@@ -242,8 +358,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           base: markdownLanguage,
           codeLanguages: languages,
         }),
-        syntaxHighlighting(markdownHighlighting),
-        editorTheme,
+        themeCompartment.of(getThemeExtensions(isDark)),
         updateListener,
         EditorView.lineWrapping,
         placeholder ? EditorView.contentAttributes.of({ 'data-placeholder': placeholder }) : [],
@@ -281,6 +396,17 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     });
   }, [spellcheckEnabled, spellcheckLanguage, getSpellcheckAttrs]);
 
+  // Update theme when it changes
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    const isDark = theme === 'dark';
+    view.dispatch({
+      effects: themeCompartment.reconfigure(getThemeExtensions(isDark)),
+    });
+  }, [theme, getThemeExtensions]);
+
   // Sync external value changes
   useEffect(() => {
     const view = viewRef.current;
@@ -312,19 +438,19 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       scrollIntoView: true,
     });
 
-    // Add flash highlight
+    // Add flash highlight (CSS animation handles the fade)
     view.dispatch({
       effects: flashLineEffect.of({ from: line.from, to: line.to }),
     });
 
-    // Remove flash highlight after animation
+    // Remove decoration after animation completes (800ms)
     const timeout = setTimeout(() => {
       if (viewRef.current) {
         viewRef.current.dispatch({
           effects: flashLineEffect.of(null),
         });
       }
-    }, 600);
+    }, 850);
 
     view.focus();
 
@@ -332,7 +458,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   }, [scrollToLine]);
 
   return (
-    <div className="flex flex-col h-full bg-[#D8D8D8]">
+    <div className="flex flex-col h-full bg-[var(--bg-code)]">
       {/* Editor Area */}
       <div ref={editorRef} className="flex-1 overflow-hidden" suppressHydrationWarning />
 

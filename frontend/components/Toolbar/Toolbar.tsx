@@ -497,7 +497,7 @@ export default function Toolbar({
       <button
         key={index}
         onClick={button.onClick}
-        className="w-6 h-6 flex-shrink-0 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
+        className="w-6 h-6 flex-shrink-0 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
         aria-label={label}
         title={label}
       >
@@ -508,7 +508,7 @@ export default function Toolbar({
 
   return (
     <>
-      <div className="min-h-[40px] bg-[#E9E9E9] flex items-center justify-center flex-wrap px-3 py-2 gap-2 border-b border-[#CCCCCC]">
+      <div className="min-h-[40px] bg-[var(--bg-secondary)] flex items-center justify-center flex-wrap px-3 py-2 gap-2 border-b border-[var(--border-primary)]">
         {buttonsBeforeHeading.map(renderButton)}
 
         {/* Heading button with dropdown */}
@@ -517,7 +517,7 @@ export default function Toolbar({
             onMouseDown={handleHeadingMouseDown}
             onMouseUp={handleHeadingMouseUp}
             onMouseLeave={handleHeadingMouseLeave}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
+            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.heading')}
             title={t('toolbar.heading')}
           >
@@ -525,15 +525,15 @@ export default function Toolbar({
           </button>
 
           {showHeadingMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-[#CCCCCC] rounded shadow-lg z-50 min-w-[120px]">
+            <div className="absolute top-full left-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[120px] overflow-hidden">
               {headingOptions.map((option) => (
                 <button
                   key={option.level}
                   onClick={() => handleHeading(option.level)}
-                  className="w-full px-3 py-1.5 text-left hover:bg-[#E9E9E9] flex items-center gap-2 text-sm"
+                  className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
                 >
-                  <span className="font-bold text-[#666666]">{option.label}</span>
-                  <span className="text-[#999999] text-xs">{option.description}</span>
+                  <span className="font-bold text-[var(--text-secondary)]">{option.label}</span>
+                  <span className="text-[var(--text-muted)] text-xs">{option.description}</span>
                 </button>
               ))}
             </div>
@@ -546,7 +546,7 @@ export default function Toolbar({
             onMouseDown={handleQuoteMouseDown}
             onMouseUp={handleQuoteMouseUp}
             onMouseLeave={handleQuoteMouseLeave}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
+            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.blockquote')}
             title={t('toolbar.blockquote')}
           >
@@ -554,15 +554,15 @@ export default function Toolbar({
           </button>
 
           {showQuoteMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-[#CCCCCC] rounded shadow-lg z-50 min-w-[180px]">
+            <div className="absolute top-full left-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
               {quoteOptions.map((option) => (
                 <button
                   key={option.level}
                   onClick={() => handleQuote(option.level)}
-                  className="w-full px-3 py-1.5 text-left hover:bg-[#E9E9E9] flex items-center gap-2 text-sm"
+                  className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
                 >
-                  <span className="font-bold text-[#666666] font-mono">{option.label}</span>
-                  <span className="text-[#999999] text-xs">{option.description}</span>
+                  <span className="font-bold text-[var(--text-secondary)] font-mono">{option.label}</span>
+                  <span className="text-[var(--text-muted)] text-xs">{option.description}</span>
                 </button>
               ))}
             </div>
@@ -577,7 +577,7 @@ export default function Toolbar({
             onMouseDown={handleImageMouseDown}
             onMouseUp={handleImageMouseUp}
             onMouseLeave={handleImageMouseLeave}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
+            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.image')}
             title={t('toolbar.image')}
           >
@@ -585,18 +585,18 @@ export default function Toolbar({
           </button>
 
           {showImageMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-[#CCCCCC] rounded shadow-lg z-50 min-w-[180px]">
+            <div className="absolute top-full left-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
               <button
                 onClick={handleLocalImage}
-                className="w-full px-3 py-1.5 text-left hover:bg-[#E9E9E9] flex items-center gap-2 text-sm"
+                className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
               >
-                <span className="text-[#666666]">{t('toolbar.localImage')}</span>
+                <span className="text-[var(--text-secondary)]">{t('toolbar.localImage')}</span>
               </button>
               <button
                 onClick={handleLinkedImage}
-                className="w-full px-3 py-1.5 text-left hover:bg-[#E9E9E9] flex items-center gap-2 text-sm"
+                className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
               >
-                <span className="text-[#666666]">{t('toolbar.linkedImage')}</span>
+                <span className="text-[var(--text-secondary)]">{t('toolbar.linkedImage')}</span>
               </button>
             </div>
           )}
@@ -617,7 +617,7 @@ export default function Toolbar({
             onMouseDown={handleTableMouseDown}
             onMouseUp={handleTableMouseUp}
             onMouseLeave={handleTableMouseLeave}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
+            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.table')}
             title={t('toolbar.table')}
           >
@@ -625,8 +625,8 @@ export default function Toolbar({
           </button>
 
           {showTableMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-[#CCCCCC] rounded shadow-lg z-50 p-2">
-              <div className="text-xs text-[#666] mb-2 text-center">
+            <div className="absolute top-full left-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 p-2">
+              <div className="text-xs text-[var(--text-secondary)] mb-2 text-center">
                 {tableHover.rows > 0 && tableHover.cols > 0
                   ? `${tableHover.rows} × ${tableHover.cols}`
                   : t('toolbar.selectTableSize')}
@@ -644,8 +644,8 @@ export default function Toolbar({
                         key={`${rowIndex}-${colIndex}`}
                         className={`w-4 h-4 border cursor-pointer transition-colors ${
                           isHighlighted
-                            ? 'bg-[#666] border-[#555]'
-                            : 'bg-white border-[#CCCCCC] hover:border-[#999]'
+                            ? 'bg-[var(--text-secondary)] border-[var(--text-secondary)]'
+                            : 'bg-[var(--bg-primary)] border-[var(--border-primary)] hover:border-[var(--text-muted)]'
                         }`}
                         onMouseEnter={() => setTableHover({ rows: rowIndex + 1, cols: colIndex + 1 })}
                         onClick={() => handleTableGridClick(rowIndex + 1, colIndex + 1)}
@@ -664,7 +664,7 @@ export default function Toolbar({
         <div className="relative flex-shrink-0" ref={alertButtonRef}>
           <button
             onClick={handleAlertClick}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[#DADADA] rounded transition-colors"
+            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.alert')}
             title={t('toolbar.alert')}
           >
@@ -672,19 +672,19 @@ export default function Toolbar({
           </button>
 
           {showAlertMenu && (
-            <div className="absolute top-full right-0 mt-1 bg-white border border-[#CCCCCC] rounded shadow-lg z-50 min-w-[180px]">
+            <div className="absolute top-full right-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
               {alertOptions.map((option) => (
                 <button
                   key={option.type}
                   onClick={() => handleAlert(option.type)}
-                  className="w-full px-3 py-1.5 text-left hover:bg-[#E9E9E9] flex items-center gap-2 text-sm"
+                  className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
                 >
                   <span
                     className="w-3 h-3 rounded-sm flex-shrink-0"
                     style={{ backgroundColor: option.color }}
                   />
-                  <span className="font-semibold text-[#666666]">{option.label}</span>
-                  <span className="text-[#999999] text-xs">{option.description}</span>
+                  <span className="font-semibold text-[var(--text-secondary)]">{option.label}</span>
+                  <span className="text-[var(--text-muted)] text-xs">{option.description}</span>
                 </button>
               ))}
             </div>
@@ -695,30 +695,30 @@ export default function Toolbar({
       {/* Modal for linked image */}
       {showImageModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-[400px] max-w-[90vw]">
-            <h3 className="text-lg font-semibold text-[#333] mb-4">{t('toolbar.insertLinkedImage')}</h3>
+          <div className="bg-[var(--dropdown-bg)] rounded-lg shadow-xl p-6 w-[400px] max-w-[90vw]">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('toolbar.insertLinkedImage')}</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-[#666] mb-1">{t('toolbar.imageUrl')}</label>
+                <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('toolbar.imageUrl')}</label>
                 <input
                   type="text"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                   placeholder="https://exemplo.com/imagem.png"
-                  className="w-full px-3 py-2 border border-[#CCCCCC] rounded focus:outline-none focus:border-[#666] text-[#252525]"
+                  className="w-full px-3 py-2 border border-[var(--border-primary)] rounded focus:outline-none focus:border-[var(--text-secondary)] bg-[var(--bg-primary)] text-[var(--text-preview)]"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-[#666] mb-1">{t('toolbar.altText')}</label>
+                <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('toolbar.altText')}</label>
                 <input
                   type="text"
                   value={imageAlt}
                   onChange={(e) => setImageAlt(e.target.value)}
                   placeholder="Descrição da imagem"
-                  className="w-full px-3 py-2 border border-[#CCCCCC] rounded focus:outline-none focus:border-[#666] text-[#252525]"
+                  className="w-full px-3 py-2 border border-[var(--border-primary)] rounded focus:outline-none focus:border-[var(--text-secondary)] bg-[var(--bg-primary)] text-[var(--text-preview)]"
                 />
               </div>
             </div>
@@ -726,13 +726,13 @@ export default function Toolbar({
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={handleImageModalCancel}
-                className="px-4 py-2 text-[#666] hover:bg-[#E9E9E9] rounded transition-colors"
+                className="px-4 py-2 text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] rounded transition-colors"
               >
                 {t('buttons.cancel')}
               </button>
               <button
                 onClick={handleImageModalConfirm}
-                className="px-4 py-2 bg-[#333] text-white rounded hover:bg-[#555] transition-colors"
+                className="px-4 py-2 bg-[var(--button-bg)] text-[var(--text-button)] rounded hover:bg-[var(--button-hover)] transition-colors"
               >
                 {t('toolbar.insert')}
               </button>

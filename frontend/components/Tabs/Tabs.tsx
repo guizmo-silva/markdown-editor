@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Tab {
   id: string;
@@ -25,6 +26,7 @@ export default function Tabs({
   onTabClose,
   onNewTab
 }: TabsProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(activeTabId);
 
   const handleTabClick = (tabId: string) => {
@@ -42,7 +44,7 @@ export default function Tabs({
   };
 
   return (
-    <div className="h-[30px] bg-white flex items-stretch pl-0 pr-2">
+    <div className="h-[30px] bg-[var(--bg-primary)] flex items-stretch pl-0 pr-2">
       {tabs.map((tab) => (
         <div
           key={tab.id}
@@ -50,8 +52,8 @@ export default function Tabs({
           className={`
             px-3 flex items-center gap-2 cursor-pointer
             ${activeTab === tab.id
-              ? 'bg-[#E9E9E9]'
-              : 'bg-white border-2 border-[#E9E9E9] border-b-0 hover:bg-[#F5F5F5]'
+              ? 'bg-[var(--tab-bg)]'
+              : 'bg-[var(--bg-primary)] border-2 border-[var(--tab-bg)] border-b-0 hover:bg-[var(--hover-bg-subtle)]'
             }
             transition-colors
           `}
@@ -63,7 +65,7 @@ export default function Tabs({
           }}
         >
           <span
-            className="text-[10px] font-medium select-none text-[#999999]"
+            className="text-[10px] font-medium select-none text-[var(--tab-text)]"
             style={{ fontFamily: 'Roboto Mono, monospace' }}
           >
             {tab.title}
@@ -82,11 +84,12 @@ export default function Tabs({
       {/* New Tab Button */}
       <button
         onClick={handleNewTab}
-        className="flex items-center justify-center hover:bg-[#E9E9E9] rounded transition-colors self-center ml-2"
-        aria-label="New tab"
+        className="flex items-center justify-center hover:bg-[var(--tab-bg)] rounded transition-colors self-center ml-2"
+        aria-label={t('tooltips.newTab')}
+        title={t('tooltips.newTab')}
         style={{ width: '14px', height: '14px' }}
       >
-        <img src="/new_tab_bttn.svg" alt="New tab" className="w-full h-full" />
+        <img src="/new_tab_bttn.svg" alt={t('tooltips.newTab')} className="w-full h-full" />
       </button>
     </div>
   );

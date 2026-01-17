@@ -89,11 +89,11 @@ interface MarkdownPreviewProps {
 
 export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
   return (
-    <div className="h-full w-full flex flex-col bg-white">
+    <div className="h-full w-full flex flex-col bg-[var(--bg-primary)]">
       {/* Preview content area */}
       <div className="flex-1 overflow-auto p-8">
         <div
-          className="markdown-preview text-[#252525]"
+          className="markdown-preview text-[var(--text-preview)]"
           style={{ fontFamily: 'var(--font-roboto-flex), sans-serif' }}
         >
           <ReactMarkdown

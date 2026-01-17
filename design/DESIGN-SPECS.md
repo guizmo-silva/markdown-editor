@@ -25,6 +25,18 @@
 - Code view BG: #D8D8D8
 - SPlit view line: #999999
 
+## Paleta de Cores - Dark Mode
+- Background: #121212
+- Content & Icons: #FFF
+- BG Icon & Tab: #676767
+- Tab & Line Number: #E5E5E5
+- Bttn TXT: #000
+- Code fold icon & outlines: #666666
+- Code TXT: #BEBEBE
+- Formated txt view: #CCCCCC
+- Code view BG: #272727
+- SPlit view line: #CDCDCD
+
 
 ## Tipografia
 - Font família: [Roboto Mono - Interface e código] [Roboto Flex - Visão do texto formatado]

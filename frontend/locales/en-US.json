@@ -79,5 +79,10 @@
     "enableSpellcheck": "Enable spellcheck",
     "selectLanguage": "Spellcheck language",
     "current": "current"
+  },
+  "tooltips": {
+    "newTab": "New tab",
+    "export": "Export document",
+    "menu": "Menu"
   }
 }

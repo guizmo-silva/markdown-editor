@@ -30,14 +30,14 @@ export default function PreviewInfoBar({ content }: PreviewInfoBarProps) {
   }, [content]);
 
   return (
-    <div className="h-[24px] bg-[#E9E9E9] flex items-center justify-between px-4 border-t border-[#CCCCCC]">
+    <div className="h-[24px] bg-[var(--bg-secondary)] flex items-center justify-between px-4 border-t border-[var(--border-primary)]">
       {/* Left side - Word count */}
-      <div className="flex items-center gap-4 text-[10px] text-[#666666]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+      <div className="flex items-center gap-4 text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
         <span>Words: {stats.words}</span>
       </div>
 
       {/* Right side - Character count */}
-      <div className="text-[10px] text-[#666666]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+      <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
         Characters: {stats.characters}
       </div>
     </div>

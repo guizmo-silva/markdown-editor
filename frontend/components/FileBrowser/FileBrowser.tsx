@@ -61,7 +61,7 @@ function FileTreeItem({ item, level, onSelect, collapseAllTrigger }: { item: Fil
     <div>
       <div
         onClick={handleClick}
-        className="flex items-center gap-1 px-2 py-1 hover:bg-[#F0F0F0] cursor-pointer transition-colors"
+        className="flex items-center gap-1 px-2 py-1 hover:bg-[var(--hover-bg)] cursor-pointer transition-colors"
         style={{ paddingLeft: `${level * 12 + 20}px` }}
       >
         {/* Folder expand/collapse icon */}
@@ -78,17 +78,17 @@ function FileTreeItem({ item, level, onSelect, collapseAllTrigger }: { item: Fil
 
         {/* File/Folder icon */}
         {item.type === 'folder' ? (
-          <svg className="w-3 h-3 flex-shrink-0 text-[#666666]" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
             <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
           </svg>
         ) : (
-          <svg className="w-3 h-3 flex-shrink-0 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         )}
 
         {/* Name */}
-        <span className="text-[11px] text-[#000] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+        <span className="text-[11px] text-[var(--text-primary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
           {item.name}
         </span>
       </div>

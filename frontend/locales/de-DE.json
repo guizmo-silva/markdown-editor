@@ -79,5 +79,10 @@
     "enableSpellcheck": "Rechtschreibprüfung aktivieren",
     "selectLanguage": "Sprache der Prüfung",
     "current": "aktuell"
+  },
+  "tooltips": {
+    "newTab": "Neuer Tab",
+    "export": "Dokument exportieren",
+    "menu": "Menü"
   }
 }

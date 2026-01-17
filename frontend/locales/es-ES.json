@@ -79,5 +79,10 @@
     "enableSpellcheck": "Activar corrector ortográfico",
     "selectLanguage": "Idioma del corrector",
     "current": "actual"
+  },
+  "tooltips": {
+    "newTab": "Nueva pestaña",
+    "export": "Exportar documento",
+    "menu": "Menú"
   }
 }

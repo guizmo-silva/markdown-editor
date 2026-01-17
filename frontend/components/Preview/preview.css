@@ -2,6 +2,7 @@
 .markdown-preview {
   line-height: 1.6;
   word-wrap: break-word;
+  color: var(--text-preview);
 }
 
 /* Headings */
@@ -11,7 +12,7 @@
   margin-top: 24px;
   margin-bottom: 16px;
   line-height: 1.25;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-primary);
   padding-bottom: 0.3em;
 }
 
@@ -21,7 +22,7 @@
   margin-top: 24px;
   margin-bottom: 16px;
   line-height: 1.25;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-primary);
   padding-bottom: 0.3em;
 }
 
@@ -55,7 +56,7 @@
   margin-top: 24px;
   margin-bottom: 16px;
   line-height: 1.25;
-  color: #666666;
+  color: var(--text-secondary);
 }
 
 /* Paragraphs */
@@ -68,6 +69,10 @@
 .markdown-preview a {
   color: #0969da;
   text-decoration: none;
+}
+
+.dark .markdown-preview a {
+  color: #6cb6ff;
 }
 
 .markdown-preview a:hover {
@@ -121,8 +126,8 @@
 .markdown-preview blockquote {
   margin: 0 0 16px 0;
   padding: 0 1em;
-  color: #666666;
-  border-left: 0.25em solid #d0d7de;
+  color: var(--text-secondary);
+  border-left: 0.25em solid var(--border-primary);
 }
 
 .markdown-preview blockquote > :first-child {
@@ -142,6 +147,11 @@
   border-radius: 6px;
   font-family: 'Roboto Mono', monospace;
   color: #c7254e;
+}
+
+.dark .markdown-preview .inline-code {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ff8fa3;
 }
 
 /* Code Blocks - styles in prism-theme.css */
@@ -164,22 +174,22 @@
 .markdown-preview table th {
   font-weight: 700;
   padding: 6px 13px;
-  border: 1px solid #d0d7de;
-  background-color: #f6f8fa;
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-secondary);
 }
 
 .markdown-preview table td {
   padding: 6px 13px;
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--border-primary);
 }
 
 .markdown-preview table tr {
-  background-color: #ffffff;
-  border-top: 1px solid #d0d7de;
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
 }
 
 .markdown-preview table tr:nth-child(2n) {
-  background-color: #f6f8fa;
+  background-color: var(--bg-secondary);
 }
 
 /* Horizontal Rule */
@@ -187,7 +197,7 @@
   height: 0.25em;
   padding: 0;
   margin: 24px 0;
-  background-color: #d0d7de;
+  background-color: var(--border-primary);
   border: 0;
 }
 

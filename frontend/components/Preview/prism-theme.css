@@ -226,3 +226,119 @@
 .markdown-preview .code-block.language-rust .token.lifetime {
   color: #e36209;
 }
+
+/* ===== Dark Mode Theme ===== */
+
+/* Code block container - dark mode */
+.dark .markdown-preview .code-block {
+  background-color: #272727;
+}
+
+.dark .markdown-preview .code-block code {
+  color: #CCCCCC;
+}
+
+/* Base token color - dark mode */
+.dark .markdown-preview .code-block .token {
+  color: #CCCCCC;
+}
+
+/* Comments - dark mode */
+.dark .markdown-preview .code-block .token.comment,
+.dark .markdown-preview .code-block .token.prolog,
+.dark .markdown-preview .code-block .token.doctype,
+.dark .markdown-preview .code-block .token.cdata {
+  color: #8b949e;
+}
+
+/* Punctuation - dark mode */
+.dark .markdown-preview .code-block .token.punctuation {
+  color: #CCCCCC;
+}
+
+/* Strings - dark mode */
+.dark .markdown-preview .code-block .token.string,
+.dark .markdown-preview .code-block .token.attr-value {
+  color: #a5d6ff;
+}
+
+/* Keywords - dark mode */
+.dark .markdown-preview .code-block .token.keyword {
+  color: #ff7b72;
+}
+
+/* Operators - dark mode */
+.dark .markdown-preview .code-block .token.operator {
+  color: #ff7b72;
+}
+
+/* Numbers and booleans - dark mode */
+.dark .markdown-preview .code-block .token.number,
+.dark .markdown-preview .code-block .token.boolean {
+  color: #79c0ff;
+}
+
+/* Functions - dark mode */
+.dark .markdown-preview .code-block .token.function {
+  color: #d2a8ff;
+}
+
+/* Classes and types - dark mode */
+.dark .markdown-preview .code-block .token.class-name,
+.dark .markdown-preview .code-block .token.builtin {
+  color: #d2a8ff;
+}
+
+/* Variables and properties - dark mode */
+.dark .markdown-preview .code-block .token.property,
+.dark .markdown-preview .code-block .token.constant,
+.dark .markdown-preview .code-block .token.symbol {
+  color: #79c0ff;
+}
+
+/* Tags (HTML/XML) - dark mode */
+.dark .markdown-preview .code-block .token.tag {
+  color: #7ee787;
+}
+
+/* Attribute names - dark mode */
+.dark .markdown-preview .code-block .token.attr-name {
+  color: #d2a8ff;
+}
+
+/* Selectors (CSS) - dark mode */
+.dark .markdown-preview .code-block .token.selector {
+  color: #d2a8ff;
+}
+
+/* Regex - dark mode */
+.dark .markdown-preview .code-block .token.regex {
+  color: #a5d6ff;
+}
+
+/* Important - dark mode */
+.dark .markdown-preview .code-block .token.important {
+  color: #ff7b72;
+}
+
+/* Entity - dark mode */
+.dark .markdown-preview .code-block .token.entity {
+  color: #d2a8ff;
+}
+
+/* URL - dark mode */
+.dark .markdown-preview .code-block .token.url {
+  color: #a5d6ff;
+}
+
+/* Inserted - dark mode */
+.dark .markdown-preview .code-block .token.inserted {
+  color: #7ee787;
+  background-color: rgba(63, 185, 80, 0.15);
+}
+
+/* Deleted - dark mode */
+.dark .markdown-preview .code-block .token.deleted {
+  color: #ffa198;
+  background-color: rgba(248, 81, 73, 0.15);
+}

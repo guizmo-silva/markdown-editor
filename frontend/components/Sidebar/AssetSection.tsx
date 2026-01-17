@@ -37,11 +37,11 @@ export default function AssetSection({ title, count, children, defaultOpen = fal
       {/* Section Header */}
       <button
         onClick={handleToggle}
-        className="w-full flex items-center justify-between pl-[20px] pr-3 py-2 hover:bg-[#F0F0F0] transition-colors"
+        className="w-full flex items-center justify-between pl-[20px] pr-3 py-2 hover:bg-[var(--hover-bg)] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[12px] font-bold text-[#000]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-            {title} {mdSymbol && <span className="text-[#666666]">{mdSymbol}</span>}
+          <span className="text-[12px] font-bold text-[var(--text-primary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+            {title} {mdSymbol && <span className="text-[var(--text-secondary)]">{mdSymbol}</span>}
           </span>
           <img
             src="/element_fold_icon.svg"
@@ -57,7 +57,7 @@ export default function AssetSection({ title, count, children, defaultOpen = fal
           {count > 0 ? (
             <div className="relative pl-[32px] pb-2">
               {/* Main vertical tree line - will be hidden after last element via CSS */}
-              <div className="absolute left-[20px] top-0 bottom-0 w-[1px] bg-[#CCCCCC] tree-line"></div>
+              <div className="absolute left-[20px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
 
               {/* Container for children with tree connectors */}
               <div className="relative">
@@ -66,7 +66,7 @@ export default function AssetSection({ title, count, children, defaultOpen = fal
             </div>
           ) : (
             <div className="pl-[32px]">
-              <p className="text-[11px] text-[#999999] italic" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+              <p className="text-[11px] text-[var(--text-muted)] italic" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                 No items
               </p>
             </div>

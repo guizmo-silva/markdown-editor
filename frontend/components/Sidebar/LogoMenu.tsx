@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface Language {
   code: string;
@@ -19,8 +20,9 @@ const languages: Language[] = [
 
 export default function LogoMenu() {
   const { t, i18n } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const isDarkMode = theme === 'dark';
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
@@ -41,8 +43,7 @@ export default function LogoMenu() {
   };
 
   const handleDarkModeToggle = () => {
-    setIsDarkMode(!isDarkMode);
-    // TODO: Implement actual dark mode
+    toggleTheme();
   };
 
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
@@ -53,7 +54,8 @@ export default function LogoMenu() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center hover:opacity-80 transition-opacity cursor-pointer"
-        aria-label="Open menu"
+        aria-label={t('tooltips.menu')}
+        title={t('tooltips.menu')}
       >
         <img
           src="/Logo.svg"
@@ -65,12 +67,12 @@ export default function LogoMenu() {
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className="absolute top-full left-0 mt-2 w-[200px] bg-white border border-[#CCCCCC] rounded-lg shadow-lg z-50 overflow-hidden"
+          className="absolute top-full left-0 mt-2 w-[200px] bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 overflow-hidden"
           style={{ fontFamily: 'Roboto Mono, monospace' }}
         >
           {/* Language Section */}
-          <div className="p-3 border-b border-[#EEEEEE]">
-            <div className="text-[10px] text-[#999999] uppercase tracking-wider mb-2">
+          <div className="p-3 border-b border-[var(--border-secondary)]">
+            <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-2">
               {t('menu.language')}
             </div>
             <div className="space-y-1">
@@ -80,8 +82,8 @@ export default function LogoMenu() {
                   onClick={() => handleLanguageChange(lang.code)}
                   className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-[12px] transition-colors ${
                     currentLanguage.code === lang.code
-                      ? 'bg-[#F0F0F0] text-[#000]'
-                      : 'text-[#666666] hover:bg-[#F5F5F5] hover:text-[#000]'
+                      ? 'bg-[var(--hover-bg)] text-[var(--text-primary)]'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--hover-bg-subtle)] hover:text-[var(--text-primary)]'
                   }`}
                 >
                   <span>{lang.flag}</span>
@@ -98,12 +100,12 @@ export default function LogoMenu() {
 
           {/* Dark Mode Section */}
           <div className="p-3">
-            <div className="text-[10px] text-[#999999] uppercase tracking-wider mb-2">
+            <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-2">
               {t('menu.appearance')}
             </div>
             <button
               onClick={handleDarkModeToggle}
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded text-[12px] text-[#666666] hover:bg-[#F5F5F5] hover:text-[#000] transition-colors"
+              className="w-full flex items-center justify-between px-2 py-1.5 rounded text-[12px] text-[var(--text-secondary)] hover:bg-[var(--hover-bg-subtle)] hover:text-[var(--text-primary)] transition-colors"
             >
               <div className="flex items-center gap-2">
                 {isDarkMode ? (
@@ -121,12 +123,12 @@ export default function LogoMenu() {
               {/* Toggle Switch */}
               <div
                 className={`w-8 h-4 rounded-full transition-colors relative ${
-                  isDarkMode ? 'bg-[#000]' : 'bg-[#CCCCCC]'
+                  isDarkMode ? 'bg-[var(--text-primary)]' : 'bg-[var(--border-primary)]'
                 }`}
               >
                 <div
-                  className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${
-                    isDarkMode ? 'translate-x-4' : 'translate-x-0.5'
+                  className={`absolute top-0.5 w-3 h-3 rounded-full shadow transition-transform ${
+                    isDarkMode ? 'translate-x-4 bg-[var(--bg-primary)]' : 'translate-x-0.5 bg-white'
                   }`}
                 />
               </div>
