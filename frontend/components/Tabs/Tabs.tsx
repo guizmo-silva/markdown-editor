@@ -18,11 +18,8 @@ interface TabsProps {
 }
 
 export default function Tabs({
-  tabs = [
-    { id: '1', title: 'Example Document01' },
-    { id: '2', title: 'Example Document02' }
-  ],
-  activeTabId = '1',
+  tabs = [{ id: 'untitled', title: 'Untitled' }],
+  activeTabId = 'untitled',
   onTabChange,
   onTabClose,
   onNewTab

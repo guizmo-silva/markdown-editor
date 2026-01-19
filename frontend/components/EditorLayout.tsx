@@ -9,6 +9,7 @@ import { Tabs } from './Tabs';
 import { Toolbar } from './Toolbar';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
+import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml } from '@/services/api';
 
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
@@ -30,101 +31,13 @@ export default function EditorLayout() {
   const [isResizingSplit, setIsResizingSplit] = useState(false);
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<CodeMirrorHandle>(null);
-  const [markdown, setMarkdown] = useState(`# Welcome to Markdown Editor
-
-Start typing your markdown here...
-
-## Features
-- **Real-time preview**
-- *Line numbers*
-- ~~Character count~~
-- \`Tab support\`
-- Click assets in sidebar to navigate[^1]
-
-## Images
-
-Here's an example image:
-![Markdown Logo](https://markdown-here.com/img/icon256.png)
-![Another Image](https://via.placeholder.com/150)
-
-## Links
-
-Check out these resources:
-- [GitHub](https://github.com)
-- [Markdown Guide](https://www.markdownguide.org)
-- [Internal link](#features)
-
-## Code Example
-
-\`\`\`javascript
-function hello() {
-  console.log("Hello, World!");
-}
-\`\`\`
-
-## Table
-
-| Feature | Status |
-|---------|--------|
-| Editor  | ✅ Done |
-| Preview | ✅ Done |
-| Sidebar | ✅ Done |
-| Export  | 🔄 TODO |
-
-## Alerts
-
-> [!NOTE]
-> This is a note alert with important information.
-
-> [!TIP]
-> Here's a helpful tip for you!
-
-> [!IMPORTANT]
-> Pay attention to this important message.
-
-> [!WARNING]
-> Be careful with this warning.
-
-> [!CAUTION]
-> This is a caution alert.
-
-## Blockquote
-
-> This is a blockquote example.
-> It can span multiple lines.
-
----
-
-**Bold text** and *italic text* work perfectly!
-
-## Math Formulas
-
-Inline math: $E = mc^2$ and $a^2 + b^2 = c^2$
-
-Block math (Quadratic Formula):
-
-$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
-
-Summation:
-
-$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$
-
-Integral:
-
-$$\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$
-
-Matrix:
-
-$$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$$
-
-## Footnotes
-
-This text has a footnote reference[^1] and another one[^2].
-
-[^1]: This is the first footnote definition.
-[^2]: This is the second footnote with more details.`);
+  const [markdown, setMarkdown] = useState('');
 
   const [scrollToLine, setScrollToLine] = useState<number | undefined>();
+  const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
 
   const handleNavigateToLine = (line: number) => {
     setScrollToLine(line);
@@ -132,10 +45,97 @@ This text has a footnote reference[^1] and another one[^2].
     setTimeout(() => setScrollToLine(undefined), 100);
   };
 
-  const handleFileSelect = (filePath: string) => {
-    // TODO: Load file content from backend
+  const handleFileSelect = async (filePath: string) => {
     console.log('Selected file:', filePath);
-    // For now, just log the selection
+    setIsLoading(true);
+    try {
+      const content = await readFile(filePath);
+      setMarkdown(content);
+      setCurrentFilePath(filePath);
+    } catch (err) {
+      console.error('Failed to load file:', err);
+      alert(err instanceof Error ? err.message : 'Failed to load file');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!currentFilePath) {
+      alert('No file selected. Please select or create a file first.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await saveFile(currentFilePath, markdown);
+      console.log('File saved:', currentFilePath);
+    } catch (err) {
+      console.error('Failed to save file:', err);
+      alert(err instanceof Error ? err.message : 'Failed to save file');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCreateFile = async (fileName: string) => {
+    try {
+      await createFile(fileName, '# New File\n\nStart writing here...');
+      setFileRefreshTrigger(prev => prev + 1);
+      // Select the new file
+      await handleFileSelect(fileName);
+    } catch (err) {
+      console.error('Failed to create file:', err);
+      alert(err instanceof Error ? err.message : 'Failed to create file');
+    }
+  };
+
+  const handleDeleteFile = async (filePath: string) => {
+    if (!confirm(`Are you sure you want to delete ${filePath}?`)) {
+      return;
+    }
+    try {
+      await deleteFile(filePath);
+      setFileRefreshTrigger(prev => prev + 1);
+      // Clear editor if we deleted the current file
+      if (currentFilePath === filePath) {
+        setCurrentFilePath(null);
+        setMarkdown('');
+      }
+    } catch (err) {
+      console.error('Failed to delete file:', err);
+      alert(err instanceof Error ? err.message : 'Failed to delete file');
+    }
+  };
+
+  const handleRenameFile = async (oldPath: string, newPath: string) => {
+    try {
+      await renameFile(oldPath, newPath);
+      setFileRefreshTrigger(prev => prev + 1);
+      // Update current file path if we renamed the current file
+      if (currentFilePath === oldPath) {
+        setCurrentFilePath(newPath);
+      }
+    } catch (err) {
+      console.error('Failed to rename file:', err);
+      alert(err instanceof Error ? err.message : 'Failed to rename file');
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportToHtml(markdown, currentFilePath || 'export');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentFilePath?.replace(/\.md$/, '') || 'export'}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export:', err);
+      alert(err instanceof Error ? err.message : 'Failed to export');
+    }
   };
 
   const handleToggleSidebar = () => {
@@ -252,9 +252,11 @@ This text has a footnote reference[^1] and another one[^2].
             onViewModeChange={setViewMode}
             onNavigateToLine={handleNavigateToLine}
             onFileSelect={handleFileSelect}
+            onExport={handleExport}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={handleToggleSidebar}
             width={sidebarWidth}
+            fileRefreshTrigger={fileRefreshTrigger}
           />
           {/* Resize Handle */}
           <div

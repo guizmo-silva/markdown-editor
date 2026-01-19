@@ -1,4 +1,15 @@
 /* Markdown Preview Styles */
+
+/* Override CSS variables for light mode in preview container when global theme is dark */
+.preview-container:not(.dark) {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #E9E9E9;
+  --bg-code: #D8D8D8;
+  --text-preview: #252525;
+  --text-secondary: #666666;
+  --border-primary: #CCCCCC;
+}
+
 .markdown-preview {
   line-height: 1.6;
   word-wrap: break-word;
@@ -71,7 +82,7 @@
   text-decoration: none;
 }
 
-.dark .markdown-preview a {
+.preview-container.dark .markdown-preview a {
   color: #6cb6ff;
 }
 
@@ -149,7 +160,7 @@
   color: #c7254e;
 }
 
-.dark .markdown-preview .inline-code {
+.preview-container.dark .markdown-preview .inline-code {
   background-color: rgba(255, 255, 255, 0.1);
   color: #ff8fa3;
 }
@@ -190,6 +201,15 @@
 
 .markdown-preview table tr:nth-child(2n) {
   background-color: var(--bg-secondary);
+}
+
+/* Tables - Dark Mode */
+.preview-container.dark .markdown-preview table th {
+  background-color: #1e1e1e;
+}
+
+.preview-container.dark .markdown-preview table tr:nth-child(2n) {
+  background-color: #1a1a1a;
 }
 
 /* Horizontal Rule */

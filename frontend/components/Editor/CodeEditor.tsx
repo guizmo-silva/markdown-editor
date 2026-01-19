@@ -16,6 +16,8 @@ const CodeEditor = forwardRef<HTMLTextAreaElement, CodeEditorProps>(
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [characterCount, setCharacterCount] = useState(0);
+  const [spellcheckEnabled, setSpellcheckEnabled] = useState(false);
+  const [spellcheckLanguage, setSpellcheckLanguage] = useState('pt-BR');
 
   // Sync forwarded ref with internal ref
   useEffect(() => {
@@ -158,6 +160,10 @@ const CodeEditor = forwardRef<HTMLTextAreaElement, CodeEditorProps>(
         line={cursorPosition.line}
         column={cursorPosition.column}
         characters={characterCount}
+        spellcheckEnabled={spellcheckEnabled}
+        spellcheckLanguage={spellcheckLanguage}
+        onSpellcheckToggle={setSpellcheckEnabled}
+        onSpellcheckLanguageChange={setSpellcheckLanguage}
       />
     </div>
   );

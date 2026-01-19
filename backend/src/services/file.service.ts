@@ -2,19 +2,20 @@ import fs from 'fs/promises';
 import path from 'path';
 import { validatePath } from '../utils/security.js';
 
-const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT || '/workspace';
+// Use getter to ensure env is loaded when accessed
+const getWorkspaceRoot = () => process.env.WORKSPACE_ROOT || '/workspace';
 
 export interface FileInfo {
   name: string;
   path: string;
-  type: 'file' | 'directory';
+  type: 'file' | 'folder';
   extension?: string;
   size?: number;
   modifiedAt?: string;
 }
 
 export const listDirectory = async (relativePath: string): Promise<FileInfo[]> => {
-  const safePath = await validatePath(relativePath, WORKSPACE_ROOT);
+  const safePath = await validatePath(relativePath, getWorkspaceRoot());
 
   const entries = await fs.readdir(safePath, { withFileTypes: true });
 
@@ -25,8 +26,8 @@ export const listDirectory = async (relativePath: string): Promise<FileInfo[]> =
 
       return {
         name: entry.name,
-        path: path.relative(WORKSPACE_ROOT, fullPath),
-        type: entry.isDirectory() ? 'directory' : 'file',
+        path: path.relative(getWorkspaceRoot(), fullPath),
+        type: entry.isDirectory() ? 'folder' : 'file',
         extension: entry.isFile() ? path.extname(entry.name) : undefined,
         size: stats.size,
         modifiedAt: stats.mtime.toISOString(),
@@ -34,14 +35,14 @@ export const listDirectory = async (relativePath: string): Promise<FileInfo[]> =
     })
   );
 
-  // Filter to show only .md files and directories
+  // Filter to show only .md files and folders
   return fileInfos.filter(
-    (info) => info.type === 'directory' || info.extension === '.md'
+    (info) => info.type === 'folder' || info.extension === '.md'
   );
 };
 
 export const readFileContent = async (relativePath: string): Promise<string> => {
-  const safePath = await validatePath(relativePath, WORKSPACE_ROOT);
+  const safePath = await validatePath(relativePath, getWorkspaceRoot());
   return await fs.readFile(safePath, 'utf-8');
 };
 
@@ -49,7 +50,7 @@ export const writeFileContent = async (
   relativePath: string,
   content: string
 ): Promise<void> => {
-  const safePath = await validatePath(relativePath, WORKSPACE_ROOT);
+  const safePath = await validatePath(relativePath, getWorkspaceRoot());
   await fs.writeFile(safePath, content, 'utf-8');
 };
 
@@ -57,7 +58,7 @@ export const createNewFile = async (
   relativePath: string,
   content: string = ''
 ): Promise<void> => {
-  const safePath = await validatePath(relativePath, WORKSPACE_ROOT);
+  const safePath = await validatePath(relativePath, getWorkspaceRoot());
 
   // Check if file already exists
   try {
@@ -77,7 +78,7 @@ export const createNewFile = async (
 };
 
 export const deleteFileOrDirectory = async (relativePath: string): Promise<void> => {
-  const safePath = await validatePath(relativePath, WORKSPACE_ROOT);
+  const safePath = await validatePath(relativePath, getWorkspaceRoot());
 
   const stats = await fs.stat(safePath);
   if (stats.isDirectory()) {
@@ -91,8 +92,8 @@ export const renameFileOrDirectory = async (
   oldRelativePath: string,
   newRelativePath: string
 ): Promise<void> => {
-  const oldSafePath = await validatePath(oldRelativePath, WORKSPACE_ROOT);
-  const newSafePath = await validatePath(newRelativePath, WORKSPACE_ROOT);
+  const oldSafePath = await validatePath(oldRelativePath, getWorkspaceRoot());
+  const newSafePath = await validatePath(newRelativePath, getWorkspaceRoot());
 
   await fs.rename(oldSafePath, newSafePath);
 };

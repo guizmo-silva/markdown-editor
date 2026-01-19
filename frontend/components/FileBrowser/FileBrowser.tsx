@@ -3,42 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemedIcon } from '@/utils/useThemedIcon';
-
-interface FileItem {
-  name: string;
-  type: 'file' | 'folder';
-  path: string;
-  children?: FileItem[];
-}
+import { listFiles, type FileItem } from '@/services/api';
 
 interface FileBrowserProps {
   onFileSelect?: (filePath: string) => void;
   collapseAllTrigger?: number; // Increment to trigger collapse all
+  refreshTrigger?: number; // Increment to trigger refresh
 }
-
-// Mock data - will be replaced with real API calls
-const mockFiles: FileItem[] = [
-  {
-    name: 'Documents',
-    type: 'folder',
-    path: '/documents',
-    children: [
-      { name: 'README.md', type: 'file', path: '/documents/README.md' },
-      { name: 'Notes.md', type: 'file', path: '/documents/Notes.md' },
-    ],
-  },
-  {
-    name: 'Projects',
-    type: 'folder',
-    path: '/projects',
-    children: [
-      { name: 'Project1.md', type: 'file', path: '/projects/Project1.md' },
-      { name: 'Project2.md', type: 'file', path: '/projects/Project2.md' },
-    ],
-  },
-  { name: 'Welcome.md', type: 'file', path: '/Welcome.md' },
-  { name: 'TODO.md', type: 'file', path: '/TODO.md' },
-];
 
 function FileTreeItem({ item, level, onSelect, collapseAllTrigger }: { item: FileItem; level: number; onSelect: (path: string) => void; collapseAllTrigger?: number }) {
   const { getIconPath } = useThemedIcon();
@@ -104,8 +75,30 @@ function FileTreeItem({ item, level, onSelect, collapseAllTrigger }: { item: Fil
   );
 }
 
-export default function FileBrowser({ onFileSelect, collapseAllTrigger }: FileBrowserProps) {
+export default function FileBrowser({ onFileSelect, collapseAllTrigger, refreshTrigger }: FileBrowserProps) {
   const { t } = useTranslation();
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load files on mount and when refreshTrigger changes
+  useEffect(() => {
+    const loadFiles = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const fileList = await listFiles();
+        setFiles(fileList);
+      } catch (err) {
+        console.error('Failed to load files:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load files');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadFiles();
+  }, [refreshTrigger]);
 
   const handleFileSelect = (filePath: string) => {
     console.log('Selected file:', filePath);
@@ -114,11 +107,35 @@ export default function FileBrowser({ onFileSelect, collapseAllTrigger }: FileBr
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="py-4 px-4 text-[11px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+        {t('sidebar.loading', 'Loading...')}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-4 px-4 text-[11px] text-red-500" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+        {error}
+      </div>
+    );
+  }
+
+  if (files.length === 0) {
+    return (
+      <div className="py-4 px-4 text-[11px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+        {t('sidebar.noFiles', 'No files found')}
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* File Tree */}
       <div className="py-2">
-        {mockFiles.map((item, index) => (
+        {files.map((item, index) => (
           <FileTreeItem key={index} item={item} level={0} onSelect={handleFileSelect} collapseAllTrigger={collapseAllTrigger} />
         ))}
       </div>

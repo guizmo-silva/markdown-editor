@@ -20,9 +20,11 @@ interface AssetsSidebarProps {
   onViewModeChange: (mode: ViewMode) => void;
   onNavigateToLine?: (line: number) => void;
   onFileSelect?: (filePath: string) => void;
+  onExport?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   width?: number;
+  fileRefreshTrigger?: number;
 }
 
 export default function AssetsSidebar({
@@ -31,9 +33,11 @@ export default function AssetsSidebar({
   onViewModeChange,
   onNavigateToLine,
   onFileSelect,
+  onExport,
   isCollapsed = false,
   onToggleCollapse,
-  width = 230
+  width = 230,
+  fileRefreshTrigger
 }: AssetsSidebarProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
@@ -167,204 +171,216 @@ export default function AssetsSidebar({
           <div className="flex-1 overflow-y-auto">
 
           {/* Headings Section */}
-          <AssetSection title={t('sidebar.headings', 'Titulo')} count={assets.headings.length} mdSymbol="#" isOpen={openSections.headings} onToggle={(isOpen) => handleSectionToggle('headings', isOpen)}>
-            {assets.headings.map((heading, index) => {
-              const isLast = index === assets.headings.length - 1;
-              const indentPx = (heading.level - 1) * 8;
-              const lineWidth = 12 + indentPx; // Base 12px + extra indent
-              return (
-                <div
-                  key={index}
-                  onClick={() => handleItemClick(heading.line)}
-                  className={`mb-1 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                  style={{ paddingLeft: `${indentPx + 8}px` }}
-                >
-                  {/* Horizontal connector from vertical line to item */}
+          {assets.headings.length > 0 && (
+            <AssetSection title={t('sidebar.headings', 'Titulo')} count={assets.headings.length} mdSymbol="#" isOpen={openSections.headings} onToggle={(isOpen) => handleSectionToggle('headings', isOpen)}>
+              {assets.headings.map((heading, index) => {
+                const isLast = index === assets.headings.length - 1;
+                const indentPx = (heading.level - 1) * 8;
+                const lineWidth = 12 + indentPx; // Base 12px + extra indent
+                return (
                   <div
-                    className="absolute top-[14px] h-[1px] bg-[var(--border-primary)]"
-                    style={{ left: '-12px', width: `${lineWidth}px` }}
-                  ></div>
+                    key={index}
+                    onClick={() => handleItemClick(heading.line)}
+                    className={`mb-1 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                    style={{ paddingLeft: `${indentPx + 8}px` }}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div
+                      className="absolute top-[14px] h-[1px] bg-[var(--border-primary)]"
+                      style={{ left: '-12px', width: `${lineWidth}px` }}
+                    ></div>
 
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {'#'.repeat(heading.level)}
-                    </span>
-                    <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {heading.text}
-                    </span>
-                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      (Line {heading.line})
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {'#'.repeat(heading.level)}
+                      </span>
+                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {heading.text}
+                      </span>
+                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        (Line {heading.line})
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </AssetSection>
+                );
+              })}
+            </AssetSection>
+          )}
 
           {/* Images Section */}
-          <AssetSection title={t('sidebar.images', 'Imagens')} count={assets.images.length} mdSymbol="![]" isOpen={openSections.images} onToggle={(isOpen) => handleSectionToggle('images', isOpen)}>
-            {assets.images.map((image, index) => {
-              const isLast = index === assets.images.length - 1;
-              return (
-                <div
-                  key={index}
-                  onClick={() => handleItemClick(image.line)}
-                  className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                >
-                  {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+          {assets.images.length > 0 && (
+            <AssetSection title={t('sidebar.images', 'Imagens')} count={assets.images.length} mdSymbol="![]" isOpen={openSections.images} onToggle={(isOpen) => handleSectionToggle('images', isOpen)}>
+              {assets.images.map((image, index) => {
+                const isLast = index === assets.images.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(image.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {image.alt}
-                    </span>
-                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      (Line {image.line})
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {image.alt}
+                      </span>
+                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        (Line {image.line})
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-[var(--text-secondary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      {image.url}
+                    </div>
                   </div>
-                  <div className="text-[10px] text-[var(--text-secondary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    {image.url}
-                  </div>
-                </div>
-              );
-            })}
-          </AssetSection>
+                );
+              })}
+            </AssetSection>
+          )}
 
           {/* Links Section */}
-          <AssetSection title={t('sidebar.links', 'Links')} count={assets.links.length} mdSymbol="[]()" isOpen={openSections.links} onToggle={(isOpen) => handleSectionToggle('links', isOpen)}>
-            {assets.links.map((link, index) => {
-              const isLast = index === assets.links.length - 1;
-              return (
-                <div
-                  key={index}
-                  onClick={() => handleItemClick(link.line)}
-                  className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                >
-                  {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+          {assets.links.length > 0 && (
+            <AssetSection title={t('sidebar.links', 'Links')} count={assets.links.length} mdSymbol="[]()" isOpen={openSections.links} onToggle={(isOpen) => handleSectionToggle('links', isOpen)}>
+              {assets.links.map((link, index) => {
+                const isLast = index === assets.links.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(link.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    {link.isExternal ? (
-                      <svg className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    ) : (
-                      <svg className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                    )}
-                    <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {link.text}
-                    </span>
-                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      (Line {link.line})
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      {link.isExternal ? (
+                        <svg className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                      )}
+                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {link.text}
+                      </span>
+                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        (Line {link.line})
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-[var(--text-secondary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      {link.url}
+                    </div>
                   </div>
-                  <div className="text-[10px] text-[var(--text-secondary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    {link.url}
-                  </div>
-                </div>
-              );
-            })}
-          </AssetSection>
+                );
+              })}
+            </AssetSection>
+          )}
 
           {/* Alerts Section */}
-          <AssetSection title={t('sidebar.alerts', 'Alerts')} count={assets.alerts.length} mdSymbol="[!]" isOpen={openSections.alerts} onToggle={(isOpen) => handleSectionToggle('alerts', isOpen)}>
-            {assets.alerts.map((alert, index) => {
-              const isLast = index === assets.alerts.length - 1;
-              return (
-                <div
-                  key={index}
-                  onClick={() => handleItemClick(alert.line)}
-                  className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                >
-                  {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+          {assets.alerts.length > 0 && (
+            <AssetSection title={t('sidebar.alerts', 'Alerts')} count={assets.alerts.length} mdSymbol="[!]" isOpen={openSections.alerts} onToggle={(isOpen) => handleSectionToggle('alerts', isOpen)}>
+              {assets.alerts.map((alert, index) => {
+                const isLast = index === assets.alerts.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(alert.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                        alert.type === 'NOTE' ? 'bg-blue-100 text-blue-800' :
-                        alert.type === 'TIP' ? 'bg-green-100 text-green-800' :
-                        alert.type === 'IMPORTANT' ? 'bg-purple-100 text-purple-800' :
-                        alert.type === 'WARNING' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}
-                      style={{ fontFamily: 'Roboto Mono, monospace' }}
-                    >
-                      {alert.type}
-                    </span>
-                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      (Line {alert.line})
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                          alert.type === 'NOTE' ? 'bg-blue-100 text-blue-800' :
+                          alert.type === 'TIP' ? 'bg-green-100 text-green-800' :
+                          alert.type === 'IMPORTANT' ? 'bg-purple-100 text-purple-800' :
+                          alert.type === 'WARNING' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}
+                        style={{ fontFamily: 'Roboto Mono, monospace' }}
+                      >
+                        {alert.type}
+                      </span>
+                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        (Line {alert.line})
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-[var(--text-primary)] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      {alert.content}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-[var(--text-primary)] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    {alert.content}
-                  </div>
-                </div>
-              );
-            })}
-          </AssetSection>
+                );
+              })}
+            </AssetSection>
+          )}
 
           {/* Footnotes Section */}
-          <AssetSection title={t('sidebar.footnotes', 'Footnotes')} count={assets.footnotes.length} mdSymbol="[^]" isOpen={openSections.footnotes} onToggle={(isOpen) => handleSectionToggle('footnotes', isOpen)}>
-            {assets.footnotes.map((footnote, index) => {
-              const isLast = index === assets.footnotes.length - 1;
-              return (
-                <div
-                  key={index}
-                  onClick={() => handleItemClick(footnote.line)}
-                  className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                >
-                  {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+          {assets.footnotes.length > 0 && (
+            <AssetSection title={t('sidebar.footnotes', 'Footnotes')} count={assets.footnotes.length} mdSymbol="[^]" isOpen={openSections.footnotes} onToggle={(isOpen) => handleSectionToggle('footnotes', isOpen)}>
+              {assets.footnotes.map((footnote, index) => {
+                const isLast = index === assets.footnotes.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(footnote.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      [^{footnote.id}]
-                    </span>
-                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      (Line {footnote.line})
-                    </span>
-                  </div>
-                  {footnote.definition && (
-                    <div className="text-[10px] text-[var(--text-secondary)] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {footnote.definition}
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        [^{footnote.id}]
+                      </span>
+                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        (Line {footnote.line})
+                      </span>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </AssetSection>
+                    {footnote.definition && (
+                      <div className="text-[10px] text-[var(--text-secondary)] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {footnote.definition}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </AssetSection>
+          )}
 
           {/* Tables Section */}
-          <AssetSection title={t('sidebar.tables', 'Tables')} count={assets.tables.length} mdSymbol="|" isOpen={openSections.tables} onToggle={(isOpen) => handleSectionToggle('tables', isOpen)}>
-            {assets.tables.map((table, index) => {
-              const isLast = index === assets.tables.length - 1;
-              return (
-                <div
-                  key={index}
-                  onClick={() => handleItemClick(table.line)}
-                  className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                >
-                  {/* Horizontal connector from vertical line to item */}
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+          {assets.tables.length > 0 && (
+            <AssetSection title={t('sidebar.tables', 'Tables')} count={assets.tables.length} mdSymbol="|" isOpen={openSections.tables} onToggle={(isOpen) => handleSectionToggle('tables', isOpen)}>
+              {assets.tables.map((table, index) => {
+                const isLast = index === assets.tables.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(table.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {table.header}
-                    </span>
-                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      (Line {table.line})
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {table.header}
+                      </span>
+                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        (Line {table.line})
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      {table.rows} rows × {table.cols} columns
+                    </div>
                   </div>
-                  <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                    {table.rows} rows × {table.cols} columns
-                  </div>
-                </div>
-              );
-            })}
-          </AssetSection>
+                );
+              })}
+            </AssetSection>
+          )}
           </div>
         </div>
 
@@ -392,7 +408,7 @@ export default function AssetsSidebar({
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <FileBrowser onFileSelect={onFileSelect} collapseAllTrigger={filesCollapseTrigger} />
+            <FileBrowser onFileSelect={onFileSelect} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
           </div>
         </div>
       </div>
@@ -401,6 +417,7 @@ export default function AssetsSidebar({
       <div className="flex-shrink-0 px-4 py-4 flex items-center justify-between">
         {/* Export Button */}
         <button
+          onClick={onExport}
           className="px-4 py-2 bg-[var(--button-bg)] text-[var(--text-button)] text-[12px] font-medium rounded hover:bg-[var(--button-hover)] transition-colors"
           style={{ fontFamily: 'Roboto Mono, monospace' }}
           title={t('tooltips.export')}

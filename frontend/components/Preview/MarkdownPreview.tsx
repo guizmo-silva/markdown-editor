@@ -96,7 +96,7 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme }: M
   const textColor = isDark ? '#BEBEBE' : '#333333';
 
   return (
-    <div className={`h-full w-full flex flex-col ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
+    <div className={`h-full w-full flex flex-col preview-container ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
       {/* Preview content area */}
       <div className="flex-1 overflow-auto p-8">
         <div

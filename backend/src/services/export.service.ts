@@ -1,14 +1,21 @@
-// Simple HTML conversion for Phase 1
-// Will be enhanced with proper markdown library
+import { marked } from 'marked';
 
-export const convertToHTML = async (markdown: string): Promise<string> => {
-  // Basic conversion - will be replaced with proper library (marked, remark, etc)
+// Configure marked with GFM (GitHub Flavored Markdown)
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+});
+
+export const convertToHTML = async (markdown: string, title: string = 'Markdown Export'): Promise<string> => {
+  // Convert markdown to HTML using marked
+  const contentHtml = await marked.parse(markdown);
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Markdown Export</title>
+  <title>${escapeHTML(title)}</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -17,6 +24,17 @@ export const convertToHTML = async (markdown: string): Promise<string> => {
       margin: 0 auto;
       padding: 2rem;
       color: #333;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+    }
+    h1 { font-size: 2em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+    h3 { font-size: 1.25em; }
+    p {
+      margin: 1em 0;
     }
     pre {
       background: #f4f4f4;
@@ -29,11 +47,16 @@ export const convertToHTML = async (markdown: string): Promise<string> => {
       background: #f4f4f4;
       padding: 0.2rem 0.4rem;
       border-radius: 3px;
-      font-family: 'Courier New', monospace;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.9em;
+    }
+    pre code {
+      background: none;
+      padding: 0;
     }
     blockquote {
       border-left: 4px solid #ddd;
-      margin: 0;
+      margin: 1em 0;
       padding-left: 1rem;
       color: #666;
     }
@@ -49,13 +72,44 @@ export const convertToHTML = async (markdown: string): Promise<string> => {
     }
     table th {
       background: #f4f4f4;
+      font-weight: 600;
+    }
+    table tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    ul, ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+    li {
+      margin: 0.25em 0;
+    }
+    a {
+      color: #0366d6;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 2em 0;
+    }
+    .task-list-item {
+      list-style-type: none;
+    }
+    .task-list-item input {
+      margin-right: 0.5em;
     }
   </style>
 </head>
 <body>
-  <pre>${escapeHTML(markdown)}</pre>
-  <hr>
-  <p><em>Note: Full markdown rendering will be implemented in next phase</em></p>
+  ${contentHtml}
 </body>
 </html>`;
 
