@@ -3,6 +3,7 @@
 import { RefObject, useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CodeMirrorHandle } from '@/components/Editor';
+import { useThemedIcon } from '@/utils/useThemedIcon';
 
 // Unified interface for textarea-like editors
 interface EditorHandle {
@@ -24,6 +25,7 @@ export default function Toolbar({
   onChange
 }: ToolbarProps) {
   const { t } = useTranslation();
+  const { getIconPath } = useThemedIcon();
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const [showAlertMenu, setShowAlertMenu] = useState(false);
 
@@ -469,24 +471,24 @@ export default function Toolbar({
   const handleHorizontalLine = () => insertText('\n---\n');
 
   const buttonsBeforeHeading = [
-    { icon: '/Bold_icon.svg', translationKey: 'toolbar.bold', onClick: handleBold },
-    { icon: '/Italic_icon.svg', translationKey: 'toolbar.italic', onClick: handleItalic },
-    { icon: '/Strike_icon.svg', translationKey: 'toolbar.strikethrough', onClick: handleStrikethrough },
+    { icon: getIconPath('Bold_icon.svg'), translationKey: 'toolbar.bold', onClick: handleBold },
+    { icon: getIconPath('Italic_icon.svg'), translationKey: 'toolbar.italic', onClick: handleItalic },
+    { icon: getIconPath('Strike_icon.svg'), translationKey: 'toolbar.strikethrough', onClick: handleStrikethrough },
   ];
 
   const buttonsBetweenQuoteAndImage = [
-    { icon: '/NumberedList_icon.svg', translationKey: 'toolbar.orderedList', onClick: handleNumberedList },
-    { icon: '/List_icon.svg', translationKey: 'toolbar.unorderedList', onClick: handleBulletList },
-    { icon: '/InLineCode_icon.svg', translationKey: 'toolbar.code', onClick: handleInlineCode },
-    { icon: '/CodeBlock_icon.svg', translationKey: 'toolbar.codeBlock', onClick: handleCodeBlock },
-    { icon: '/URL_icon.svg', translationKey: 'toolbar.link', onClick: handleLink },
+    { icon: getIconPath('NumberedList_icon.svg'), translationKey: 'toolbar.orderedList', onClick: handleNumberedList },
+    { icon: getIconPath('List_icon.svg'), translationKey: 'toolbar.unorderedList', onClick: handleBulletList },
+    { icon: getIconPath('InLineCode_icon.svg'), translationKey: 'toolbar.code', onClick: handleInlineCode },
+    { icon: getIconPath('CodeBlock_icon.svg'), translationKey: 'toolbar.codeBlock', onClick: handleCodeBlock },
+    { icon: getIconPath('URL_icon.svg'), translationKey: 'toolbar.link', onClick: handleLink },
   ];
 
   const buttonsAfterTable = [
-    { icon: '/Line_icon.svg', translationKey: 'toolbar.horizontalRule', onClick: handleHorizontalLine },
-    { icon: '/Task_icon.svg', translationKey: 'toolbar.taskList', onClick: handleTask },
-    { icon: '/Sobrescrito_icon.svg', translationKey: 'toolbar.superscript', onClick: handleSuperscript },
-    { icon: '/Subescrito_icon.svg', translationKey: 'toolbar.subscript', onClick: handleSubscript }
+    { icon: getIconPath('Line_icon.svg'), translationKey: 'toolbar.horizontalRule', onClick: handleHorizontalLine },
+    { icon: getIconPath('Task_icon.svg'), translationKey: 'toolbar.taskList', onClick: handleTask },
+    { icon: getIconPath('Sobrescrito_icon.svg'), translationKey: 'toolbar.superscript', onClick: handleSuperscript },
+    { icon: getIconPath('Subescrito_icon.svg'), translationKey: 'toolbar.subscript', onClick: handleSubscript }
   ];
 
   const GRID_SIZE = 8;
@@ -521,7 +523,7 @@ export default function Toolbar({
             aria-label={t('toolbar.heading')}
             title={t('toolbar.heading')}
           >
-            <img src="/Heading_icon.svg" alt={t('toolbar.heading')} className="w-6 h-6" />
+            <img src={getIconPath('Heading_icon.svg')} alt={t('toolbar.heading')} className="w-6 h-6" />
           </button>
 
           {showHeadingMenu && (
@@ -550,7 +552,7 @@ export default function Toolbar({
             aria-label={t('toolbar.blockquote')}
             title={t('toolbar.blockquote')}
           >
-            <img src="/Quote_icon.svg" alt={t('toolbar.blockquote')} className="w-6 h-6" />
+            <img src={getIconPath('Quote_icon.svg')} alt={t('toolbar.blockquote')} className="w-6 h-6" />
           </button>
 
           {showQuoteMenu && (
@@ -581,7 +583,7 @@ export default function Toolbar({
             aria-label={t('toolbar.image')}
             title={t('toolbar.image')}
           >
-            <img src="/Image_icon.svg" alt={t('toolbar.image')} className="w-6 h-6" />
+            <img src={getIconPath('Image_icon.svg')} alt={t('toolbar.image')} className="w-6 h-6" />
           </button>
 
           {showImageMenu && (
@@ -621,7 +623,7 @@ export default function Toolbar({
             aria-label={t('toolbar.table')}
             title={t('toolbar.table')}
           >
-            <img src="/Table_icon.svg" alt={t('toolbar.table')} className="w-6 h-6" />
+            <img src={getIconPath('Table_icon.svg')} alt={t('toolbar.table')} className="w-6 h-6" />
           </button>
 
           {showTableMenu && (
@@ -668,7 +670,7 @@ export default function Toolbar({
             aria-label={t('toolbar.alert')}
             title={t('toolbar.alert')}
           >
-            <img src="/Alerts_icon.svg" alt={t('toolbar.alert')} className="w-6 h-6" />
+            <img src={getIconPath('Alerts_icon.svg')} alt={t('toolbar.alert')} className="w-6 h-6" />
           </button>
 
           {showAlertMenu && (

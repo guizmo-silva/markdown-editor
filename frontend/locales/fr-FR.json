@@ -74,6 +74,10 @@
     "newFolder": "Nouveau dossier"
   },
   "infobar": {
+    "line": "Ligne",
+    "column": "Col",
+    "characters": "Caractères",
+    "words": "Mots",
     "spellcheck": "Correcteur",
     "spellcheckOff": "Correcteur: Désactivé",
     "enableSpellcheck": "Activer le correcteur orthographique",

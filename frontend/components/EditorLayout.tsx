@@ -7,6 +7,8 @@ import { AssetsSidebar } from './Sidebar';
 import { ViewToggle, type ViewMode } from './ViewToggle';
 import { Tabs } from './Tabs';
 import { Toolbar } from './Toolbar';
+import { useThemedIcon } from '@/utils/useThemedIcon';
+import { useTheme } from './ThemeProvider';
 
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
@@ -14,8 +16,14 @@ const SPLIT_MIN_PERCENT = 20; // Minimum 20% for each panel
 const SPLIT_MAX_PERCENT = 80; // Maximum 80% for each panel
 
 export default function EditorLayout() {
+  const { getIconPath } = useThemedIcon();
+  const { theme: globalTheme } = useTheme();
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Independent theme state for each view
+  const [editorTheme, setEditorTheme] = useState<'light' | 'dark'>('light');
+  const [previewTheme, setPreviewTheme] = useState<'light' | 'dark'>('light');
   const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_MIN_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const [splitPosition, setSplitPosition] = useState(50); // Percentage for code editor width
@@ -134,6 +142,21 @@ This text has a footnote reference[^1] and another one[^2].
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  // Sync view themes when global theme changes
+  useEffect(() => {
+    setEditorTheme(globalTheme);
+    setPreviewTheme(globalTheme);
+  }, [globalTheme]);
+
+  // Toggle individual view themes
+  const toggleEditorTheme = () => {
+    setEditorTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const togglePreviewTheme = () => {
+    setPreviewTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
   // Sidebar resize handlers
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -247,7 +270,7 @@ This text has a footnote reference[^1] and another one[^2].
           {/* Logo at top */}
           <div className="py-3 border-b border-[var(--border-primary)] w-full flex items-center justify-center">
             <img
-              src="/Logo.svg"
+              src={getIconPath('Logo.svg')}
               alt="MD Logo"
               className="h-[32px] w-auto"
             />
@@ -266,7 +289,7 @@ This text has a footnote reference[^1] and another one[^2].
               aria-label="Show sidebar"
             >
               <img
-                src="/hide_side_bar_icon.svg"
+                src={getIconPath('hide_side_bar_icon.svg')}
                 alt="Show sidebar"
                 className="h-4 w-4 rotate-180"
               />
@@ -303,6 +326,8 @@ This text has a footnote reference[^1] and another one[^2].
                   value={markdown}
                   onChange={setMarkdown}
                   scrollToLine={scrollToLine}
+                  viewTheme={editorTheme}
+                  onToggleTheme={toggleEditorTheme}
                 />
               </div>
             </div>
@@ -314,9 +339,9 @@ This text has a footnote reference[^1] and another one[^2].
               className="w-[5px] bg-[var(--split-line)] cursor-col-resize hover:bg-[var(--text-secondary)] active:bg-[var(--text-secondary)] transition-colors flex-shrink-0 flex flex-col items-center justify-center gap-[3px]"
               onMouseDown={handleSplitResizeStart}
             >
-              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-primary)]/60" />
-              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-primary)]/60" />
-              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-primary)]/60" />
+              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
+              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
+              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
             </div>
           )}
 
@@ -326,7 +351,11 @@ This text has a footnote reference[^1] and another one[^2].
               className="overflow-hidden"
               style={{ width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 5px)` : '100%' }}
             >
-              <MarkdownPreview content={markdown} />
+              <MarkdownPreview
+                content={markdown}
+                viewTheme={previewTheme}
+                onToggleTheme={togglePreviewTheme}
+              />
             </div>
           )}
         </div>

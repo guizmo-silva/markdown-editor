@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
+import { useThemedIcon } from '@/utils/useThemedIcon';
 
 interface Language {
   code: string;
@@ -21,6 +22,7 @@ const languages: Language[] = [
 export default function LogoMenu() {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
+  const { getIconPath } = useThemedIcon();
   const [isOpen, setIsOpen] = useState(false);
   const isDarkMode = theme === 'dark';
   const menuRef = useRef<HTMLDivElement>(null);
@@ -58,7 +60,7 @@ export default function LogoMenu() {
         title={t('tooltips.menu')}
       >
         <img
-          src="/Logo.svg"
+          src={getIconPath('Logo.svg')}
           alt="MD Logo"
           className="h-[32px] w-auto"
         />

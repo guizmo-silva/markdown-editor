@@ -74,6 +74,10 @@
     "newFolder": "New folder"
   },
   "infobar": {
+    "line": "Line",
+    "column": "Col",
+    "characters": "Characters",
+    "words": "Words",
     "spellcheck": "Spellcheck",
     "spellcheckOff": "Spellcheck: Off",
     "enableSpellcheck": "Enable spellcheck",

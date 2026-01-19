@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useThemedIcon } from '@/utils/useThemedIcon';
 
 interface Tab {
   id: string;
@@ -27,6 +28,7 @@ export default function Tabs({
   onNewTab
 }: TabsProps) {
   const { t } = useTranslation();
+  const { getIconPath } = useThemedIcon();
   const [activeTab, setActiveTab] = useState(activeTabId);
 
   const handleTabClick = (tabId: string) => {
@@ -76,7 +78,7 @@ export default function Tabs({
             aria-label="Close tab"
             style={{ width: '5px', height: '6px' }}
           >
-            <img src="/close_tab_bttn.svg" alt="Close" className="w-full h-full" />
+            <img src={getIconPath('close_tab_bttn.svg')} alt="Close" className="w-full h-full" />
           </button>
         </div>
       ))}
@@ -89,7 +91,7 @@ export default function Tabs({
         title={t('tooltips.newTab')}
         style={{ width: '14px', height: '14px' }}
       >
-        <img src="/new_tab_bttn.svg" alt={t('tooltips.newTab')} className="w-full h-full" />
+        <img src={getIconPath('new_tab_bttn.svg')} alt={t('tooltips.newTab')} className="w-full h-full" />
       </button>
     </div>
   );

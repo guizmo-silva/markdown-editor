@@ -5,9 +5,11 @@ import { useMemo } from 'react';
 
 interface PreviewInfoBarProps {
   content: string;
+  viewTheme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
-export default function PreviewInfoBar({ content }: PreviewInfoBarProps) {
+export default function PreviewInfoBar({ content, viewTheme, onToggleTheme }: PreviewInfoBarProps) {
   const { t } = useTranslation();
 
   // Calculate statistics
@@ -29,16 +31,58 @@ export default function PreviewInfoBar({ content }: PreviewInfoBarProps) {
     return { characters, words };
   }, [content]);
 
+  const isDark = viewTheme === 'dark';
+
+  // Theme-specific colors
+  const bgColor = isDark ? '#676767' : '#E9E9E9';
+  const borderColor = isDark ? '#CDCDCD' : '#999999';
+  const textColor = isDark ? '#E5E5E5' : '#666666';
+  const hoverBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+
   return (
-    <div className="h-[24px] bg-[var(--bg-secondary)] flex items-center justify-between px-4 border-t border-[var(--border-primary)]">
+    <div
+      className="h-[24px] flex items-center justify-between px-4"
+      style={{
+        backgroundColor: bgColor,
+        borderTop: `1px solid ${borderColor}`
+      }}
+    >
       {/* Left side - Word count */}
-      <div className="flex items-center gap-4 text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-        <span>Words: {stats.words}</span>
+      <div
+        className="flex items-center gap-4 text-[10px]"
+        style={{ fontFamily: 'Roboto Mono, monospace', color: textColor }}
+      >
+        <span>{t('infobar.words')}: {stats.words}</span>
       </div>
 
+      {/* Center - Theme toggle icon */}
+      {onToggleTheme && (
+        <button
+          onClick={onToggleTheme}
+          className="p-1 rounded transition-colors"
+          style={{ color: textColor }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          aria-label="Toggle theme"
+        >
+          {viewTheme === 'dark' ? (
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          )}
+        </button>
+      )}
+
       {/* Right side - Character count */}
-      <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-        Characters: {stats.characters}
+      <div
+        className="text-[10px]"
+        style={{ fontFamily: 'Roboto Mono, monospace', color: textColor }}
+      >
+        {t('infobar.characters')}: {stats.characters}
       </div>
     </div>
   );

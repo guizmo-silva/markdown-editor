@@ -26,6 +26,8 @@ interface CodeMirrorEditorProps {
   placeholder?: string;
   scrollToLine?: number;
   onEditorReady?: (view: EditorView) => void;
+  viewTheme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 // Markdown syntax highlighting for light mode (bg: #D8D8D8)
@@ -99,7 +101,7 @@ const lightTheme = EditorView.theme({
   },
   '.cm-lineNumbers .cm-gutterElement': {
     padding: '0 8px 0 4px',
-    minWidth: '40px',
+    minWidth: '32px',
   },
   '.cm-activeLineGutter': {
     backgroundColor: '#D8D8D8',
@@ -159,7 +161,7 @@ const darkTheme = EditorView.theme({
   },
   '.cm-lineNumbers .cm-gutterElement': {
     padding: '0 8px 0 4px',
-    minWidth: '40px',
+    minWidth: '32px',
   },
   '.cm-activeLineGutter': {
     backgroundColor: '#3a3a3a',
@@ -266,9 +268,13 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   placeholder,
   scrollToLine,
   onEditorReady,
+  viewTheme,
+  onToggleTheme,
 }, ref) => {
   const { i18n } = useTranslation();
-  const { theme } = useTheme();
+  const { theme: globalTheme } = useTheme();
+  // Use viewTheme if provided, otherwise fall back to global theme
+  const theme = viewTheme ?? globalTheme;
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
@@ -471,6 +477,8 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         spellcheckLanguage={spellcheckLanguage}
         onSpellcheckToggle={setSpellcheckEnabled}
         onSpellcheckLanguageChange={setSpellcheckLanguage}
+        viewTheme={theme}
+        onToggleTheme={onToggleTheme}
       />
     </div>
   );

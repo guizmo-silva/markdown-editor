@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useThemedIcon } from '@/utils/useThemedIcon';
 
 interface FileItem {
   name: string;
@@ -40,6 +41,7 @@ const mockFiles: FileItem[] = [
 ];
 
 function FileTreeItem({ item, level, onSelect, collapseAllTrigger }: { item: FileItem; level: number; onSelect: (path: string) => void; collapseAllTrigger?: number }) {
+  const { getIconPath } = useThemedIcon();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Collapse when trigger changes
@@ -66,14 +68,11 @@ function FileTreeItem({ item, level, onSelect, collapseAllTrigger }: { item: Fil
       >
         {/* Folder expand/collapse icon */}
         {item.type === 'folder' && (
-          <svg
+          <img
+            src={getIconPath('element_fold_icon.svg')}
+            alt={isExpanded ? 'Collapse' : 'Expand'}
             className={`w-3 h-3 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          />
         )}
 
         {/* File/Folder icon */}

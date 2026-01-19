@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useThemedIcon } from '@/utils/useThemedIcon';
 
 interface AssetSectionProps {
   title: string;
@@ -14,6 +14,7 @@ interface AssetSectionProps {
 }
 
 export default function AssetSection({ title, count, children, defaultOpen = false, mdSymbol, isOpen: controlledIsOpen, onToggle }: AssetSectionProps) {
+  const { getIconPath } = useThemedIcon();
   const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen);
 
   // Use controlled value if provided, otherwise use internal state
@@ -44,7 +45,7 @@ export default function AssetSection({ title, count, children, defaultOpen = fal
             {title} {mdSymbol && <span className="text-[var(--text-secondary)]">{mdSymbol}</span>}
           </span>
           <img
-            src="/element_fold_icon.svg"
+            src={getIconPath('element_fold_icon.svg')}
             alt={isOpen ? 'Expanded' : 'Collapsed'}
             className={`w-3 h-2 transition-transform ${isOpen ? '' : '-rotate-90'}`}
           />

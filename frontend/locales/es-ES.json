@@ -74,6 +74,10 @@
     "newFolder": "Nueva carpeta"
   },
   "infobar": {
+    "line": "Línea",
+    "column": "Col",
+    "characters": "Caracteres",
+    "words": "Palabras",
     "spellcheck": "Corrector",
     "spellcheckOff": "Corrector: Desactivado",
     "enableSpellcheck": "Activar corrector ortográfico",

@@ -74,6 +74,10 @@
     "newFolder": "Nova pasta"
   },
   "infobar": {
+    "line": "Linha",
+    "column": "Col",
+    "characters": "Caracteres",
+    "words": "Palavras",
     "spellcheck": "Correção",
     "spellcheckOff": "Correção: Desativada",
     "enableSpellcheck": "Ativar correção ortográfica",

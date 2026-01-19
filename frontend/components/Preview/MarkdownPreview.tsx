@@ -85,16 +85,23 @@ const sanitizeSchema = {
 
 interface MarkdownPreviewProps {
   content: string;
+  viewTheme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
-export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
+export default function MarkdownPreview({ content, viewTheme, onToggleTheme }: MarkdownPreviewProps) {
+  const isDark = viewTheme === 'dark';
+
+  // Theme-specific colors
+  const textColor = isDark ? '#BEBEBE' : '#333333';
+
   return (
-    <div className="h-full w-full flex flex-col bg-[var(--bg-primary)]">
+    <div className={`h-full w-full flex flex-col ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
       {/* Preview content area */}
       <div className="flex-1 overflow-auto p-8">
         <div
-          className="markdown-preview text-[var(--text-preview)]"
-          style={{ fontFamily: 'var(--font-roboto-flex), sans-serif' }}
+          className="markdown-preview"
+          style={{ fontFamily: 'var(--font-roboto-flex), sans-serif', color: textColor }}
         >
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath, remarkAlert]}
@@ -129,7 +136,11 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
       </div>
 
       {/* Info Bar */}
-      <PreviewInfoBar content={content} />
+      <PreviewInfoBar
+        content={content}
+        viewTheme={viewTheme}
+        onToggleTheme={onToggleTheme}
+      />
     </div>
   );
 }

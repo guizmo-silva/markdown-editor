@@ -7,6 +7,7 @@ import LogoMenu from './LogoMenu';
 import { FileBrowser } from '@/components/FileBrowser';
 import { ViewToggle, ViewMode } from '@/components/ViewToggle';
 import { parseMarkdownAssets, type MarkdownAssets } from '@/utils/markdownParser';
+import { useThemedIcon } from '@/utils/useThemedIcon';
 
 type SectionId = 'headings' | 'images' | 'links' | 'alerts' | 'footnotes' | 'tables';
 
@@ -35,6 +36,7 @@ export default function AssetsSidebar({
   width = 230
 }: AssetsSidebarProps) {
   const { t } = useTranslation();
+  const { getIconPath } = useThemedIcon();
 
   // State to track which sections are open
   const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>({
@@ -414,7 +416,7 @@ export default function AssetsSidebar({
             aria-label="Toggle sidebar"
           >
             <img
-              src="/hide_side_bar_icon.svg"
+              src={getIconPath('hide_side_bar_icon.svg')}
               alt="Toggle sidebar"
               className="h-4 w-4"
             />

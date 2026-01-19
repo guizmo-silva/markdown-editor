@@ -74,6 +74,10 @@
     "newFolder": "Neuer Ordner"
   },
   "infobar": {
+    "line": "Zeile",
+    "column": "Sp",
+    "characters": "Zeichen",
+    "words": "Wörter",
     "spellcheck": "Rechtschreibung",
     "spellcheckOff": "Rechtschreibung: Aus",
     "enableSpellcheck": "Rechtschreibprüfung aktivieren",
