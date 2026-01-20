@@ -63,8 +63,9 @@
   },
   "status": {
     "saved": "Guardado",
-    "unsaved": "No guardado",
-    "saving": "Guardando..."
+    "unsaved": "Modificado",
+    "saving": "Guardando...",
+    "error": "Error al guardar"
   },
   "dialogs": {
     "unsavedChanges": "Tienes cambios sin guardar. ¿Quieres guardar antes de cerrar?",
@@ -87,6 +88,13 @@
   "tooltips": {
     "newTab": "Nueva pestaña",
     "export": "Exportar documento",
-    "menu": "Menú"
+    "menu": "Menú",
+    "doubleClickRename": "Doble clic para renombrar"
+  },
+  "welcomeModal": {
+    "newDocument": "Nuevo Documento",
+    "recentDocuments": "Documentos recientes:",
+    "noFiles": "No se encontraron archivos",
+    "loading": "Cargando..."
   }
 }

@@ -28,6 +28,7 @@ interface CodeMirrorEditorProps {
   onEditorReady?: (view: EditorView) => void;
   viewTheme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  saveStatus?: 'saved' | 'saving' | 'unsaved' | 'error';
 }
 
 // Markdown syntax highlighting for light mode (bg: #D8D8D8)
@@ -270,6 +271,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   onEditorReady,
   viewTheme,
   onToggleTheme,
+  saveStatus,
 }, ref) => {
   const { i18n } = useTranslation();
   const { theme: globalTheme } = useTheme();
@@ -479,6 +481,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         onSpellcheckLanguageChange={setSpellcheckLanguage}
         viewTheme={theme}
         onToggleTheme={onToggleTheme}
+        saveStatus={saveStatus}
       />
     </div>
   );

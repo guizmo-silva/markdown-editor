@@ -63,8 +63,9 @@
   },
   "status": {
     "saved": "Saved",
-    "unsaved": "Unsaved",
-    "saving": "Saving..."
+    "unsaved": "Modified",
+    "saving": "Saving...",
+    "error": "Save error"
   },
   "dialogs": {
     "unsavedChanges": "You have unsaved changes. Do you want to save before closing?",
@@ -87,6 +88,13 @@
   "tooltips": {
     "newTab": "New tab",
     "export": "Export document",
-    "menu": "Menu"
+    "menu": "Menu",
+    "doubleClickRename": "Double-click to rename"
+  },
+  "welcomeModal": {
+    "newDocument": "New Document",
+    "recentDocuments": "Recent documents:",
+    "noFiles": "No files found",
+    "loading": "Loading..."
   }
 }

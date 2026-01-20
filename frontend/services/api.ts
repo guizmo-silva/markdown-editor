@@ -7,6 +7,8 @@ export interface FileItem {
   type: 'file' | 'folder';
   path: string;
   children?: FileItem[];
+  modifiedAt?: string;
+  size?: number;
 }
 
 /**

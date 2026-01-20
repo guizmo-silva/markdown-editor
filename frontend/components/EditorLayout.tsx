@@ -7,6 +7,7 @@ import { AssetsSidebar } from './Sidebar';
 import { ViewToggle, type ViewMode } from './ViewToggle';
 import { Tabs } from './Tabs';
 import { Toolbar } from './Toolbar';
+import { WelcomeModal } from './WelcomeModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
 import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml } from '@/services/api';
@@ -15,6 +16,16 @@ const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
 const SPLIT_MIN_PERCENT = 20; // Minimum 20% for each panel
 const SPLIT_MAX_PERCENT = 80; // Maximum 80% for each panel
+
+// Interface for tab data
+interface TabData {
+  id: string; // file path
+  content: string;
+  lastSavedContent: string;
+  isAutoNamed: boolean;
+  lastAutoRenamedTitle: string;
+  saveStatus: 'saved' | 'saving' | 'unsaved' | 'error';
+}
 
 export default function EditorLayout() {
   const { getIconPath } = useThemedIcon();
@@ -31,13 +42,104 @@ export default function EditorLayout() {
   const [isResizingSplit, setIsResizingSplit] = useState(false);
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<CodeMirrorHandle>(null);
-  const [markdown, setMarkdown] = useState('');
+
+  // Multi-tab state
+  const [tabs, setTabs] = useState<TabData[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
   const [scrollToLine, setScrollToLine] = useState<number | undefined>();
-  const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(true);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const AUTOSAVE_DELAY = 1000; // 1 second debounce
+
+  // Get active tab data
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  const markdown = activeTab?.content ?? '';
+  const saveStatus = activeTab?.saveStatus ?? 'saved';
+  const isAutoNamed = activeTab?.isAutoNamed ?? false;
+  const currentFilePath = activeTabId;
+
+  // Helper function to update a specific tab
+  const updateTab = useCallback((tabId: string, updates: Partial<TabData>) => {
+    setTabs(prevTabs => prevTabs.map(tab =>
+      tab.id === tabId ? { ...tab, ...updates } : tab
+    ));
+  }, []);
+
+  // Helper function to update tab ID (when file is renamed)
+  const updateTabId = useCallback((oldId: string, newId: string) => {
+    setTabs(prevTabs => prevTabs.map(tab =>
+      tab.id === oldId ? { ...tab, id: newId } : tab
+    ));
+    if (activeTabId === oldId) {
+      setActiveTabId(newId);
+    }
+  }, [activeTabId]);
+
+  // Set markdown content for active tab
+  const setMarkdown = useCallback((content: string | ((prev: string) => string)) => {
+    if (!activeTabId) return;
+    setTabs(prevTabs => prevTabs.map(tab => {
+      if (tab.id === activeTabId) {
+        const newContent = typeof content === 'function' ? content(tab.content) : content;
+        return { ...tab, content: newContent };
+      }
+      return tab;
+    }));
+  }, [activeTabId]);
+
+  // Add a new tab or switch to existing
+  const addOrSwitchToTab = useCallback((tabData: TabData) => {
+    setTabs(prevTabs => {
+      const existingTab = prevTabs.find(t => t.id === tabData.id);
+      if (existingTab) {
+        // Tab already exists, just switch to it
+        return prevTabs;
+      }
+      // Add new tab
+      return [...prevTabs, tabData];
+    });
+    setActiveTabId(tabData.id);
+  }, []);
+
+  // Close a tab
+  const closeTab = useCallback((tabId: string) => {
+    setTabs(prevTabs => {
+      // Don't close if it's the last tab
+      if (prevTabs.length <= 1) return prevTabs;
+
+      const newTabs = prevTabs.filter(t => t.id !== tabId);
+
+      // If we're closing the active tab, switch to another
+      if (activeTabId === tabId && newTabs.length > 0) {
+        const closedIndex = prevTabs.findIndex(t => t.id === tabId);
+        const newActiveIndex = Math.min(closedIndex, newTabs.length - 1);
+        setActiveTabId(newTabs[newActiveIndex].id);
+      }
+
+      return newTabs;
+    });
+  }, [activeTabId]);
+
+  // Extract first heading from markdown
+  const extractFirstHeading = useCallback((content: string): string | null => {
+    const match = content.match(/^#\s+(.+)$/m);
+    if (match && match[1]) {
+      // Clean the heading: remove special characters, trim, limit length
+      let heading = match[1].trim();
+      // Remove markdown formatting like **bold** or *italic*
+      heading = heading.replace(/\*+/g, '').replace(/_+/g, '');
+      // Remove invalid filename characters
+      heading = heading.replace(/[<>:"/\\|?*]/g, '');
+      // Limit length
+      heading = heading.substring(0, 50).trim();
+      return heading || null;
+    }
+    return null;
+  }, []);
 
   const handleNavigateToLine = (line: number) => {
     setScrollToLine(line);
@@ -47,11 +149,26 @@ export default function EditorLayout() {
 
   const handleFileSelect = async (filePath: string) => {
     console.log('Selected file:', filePath);
+
+    // Check if tab already exists
+    const existingTab = tabs.find(t => t.id === filePath);
+    if (existingTab) {
+      setActiveTabId(filePath);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const content = await readFile(filePath);
-      setMarkdown(content);
-      setCurrentFilePath(filePath);
+      const newTab: TabData = {
+        id: filePath,
+        content,
+        lastSavedContent: content,
+        isAutoNamed: false,
+        lastAutoRenamedTitle: '',
+        saveStatus: 'saved'
+      };
+      addOrSwitchToTab(newTab);
     } catch (err) {
       console.error('Failed to load file:', err);
       alert(err instanceof Error ? err.message : 'Failed to load file');
@@ -60,32 +177,54 @@ export default function EditorLayout() {
     }
   };
 
-  const handleSave = async () => {
-    if (!currentFilePath) {
-      alert('No file selected. Please select or create a file first.');
+  const handleSave = useCallback(async (tabId?: string, content?: string) => {
+    const targetTabId = tabId ?? activeTabId;
+    if (!targetTabId) return;
+
+    const tab = tabs.find(t => t.id === targetTabId);
+    if (!tab) return;
+
+    const contentToSave = content ?? tab.content;
+
+    // Skip if content hasn't changed
+    if (contentToSave === tab.lastSavedContent) {
       return;
     }
+
     setIsSaving(true);
+    updateTab(targetTabId, { saveStatus: 'saving' });
     try {
-      await saveFile(currentFilePath, markdown);
-      console.log('File saved:', currentFilePath);
+      await saveFile(targetTabId, contentToSave);
+      updateTab(targetTabId, { lastSavedContent: contentToSave, saveStatus: 'saved' });
+      console.log('File saved:', targetTabId);
     } catch (err) {
       console.error('Failed to save file:', err);
-      alert(err instanceof Error ? err.message : 'Failed to save file');
+      updateTab(targetTabId, { saveStatus: 'error' });
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [activeTabId, tabs, updateTab]);
 
-  const handleCreateFile = async (fileName: string) => {
+  const handleCreateFile = async (fileName: string, markAsAutoNamed: boolean = false): Promise<boolean> => {
+    const initialContent = '# ';
     try {
-      await createFile(fileName, '# New File\n\nStart writing here...');
+      await createFile(fileName, initialContent);
       setFileRefreshTrigger(prev => prev + 1);
-      // Select the new file
-      await handleFileSelect(fileName);
+
+      // Create new tab for the file
+      const newTab: TabData = {
+        id: fileName,
+        content: initialContent,
+        lastSavedContent: initialContent,
+        isAutoNamed: markAsAutoNamed,
+        lastAutoRenamedTitle: '',
+        saveStatus: 'saved'
+      };
+      addOrSwitchToTab(newTab);
+      return true;
     } catch (err) {
       console.error('Failed to create file:', err);
-      alert(err instanceof Error ? err.message : 'Failed to create file');
+      return false;
     }
   };
 
@@ -96,11 +235,8 @@ export default function EditorLayout() {
     try {
       await deleteFile(filePath);
       setFileRefreshTrigger(prev => prev + 1);
-      // Clear editor if we deleted the current file
-      if (currentFilePath === filePath) {
-        setCurrentFilePath(null);
-        setMarkdown('');
-      }
+      // Close tab if we deleted its file
+      closeTab(filePath);
     } catch (err) {
       console.error('Failed to delete file:', err);
       alert(err instanceof Error ? err.message : 'Failed to delete file');
@@ -111,10 +247,54 @@ export default function EditorLayout() {
     try {
       await renameFile(oldPath, newPath);
       setFileRefreshTrigger(prev => prev + 1);
-      // Update current file path if we renamed the current file
-      if (currentFilePath === oldPath) {
-        setCurrentFilePath(newPath);
-      }
+      // Update tab ID if we renamed its file
+      updateTabId(oldPath, newPath);
+    } catch (err) {
+      console.error('Failed to rename file:', err);
+      alert(err instanceof Error ? err.message : 'Failed to rename file');
+    }
+  };
+
+  const handleNewDocumentFromModal = async () => {
+    const timestamp = new Date().toISOString().slice(0, 10);
+    let fileName = `novo-documento-${timestamp}.md`;
+    let counter = 1;
+
+    // Try to create the file, if it fails (already exists), try with a counter
+    // Mark as auto-named so it can be renamed based on first heading
+    let success = await handleCreateFile(fileName, true);
+    while (!success && counter < 100) {
+      fileName = `novo-documento-${timestamp}-${counter}.md`;
+      success = await handleCreateFile(fileName, true);
+      counter++;
+    }
+
+    if (success) {
+      setShowWelcomeModal(false);
+    }
+  };
+
+  const handleFileSelectFromModal = async (filePath: string) => {
+    await handleFileSelect(filePath);
+    setShowWelcomeModal(false);
+  };
+
+  // Handle tab rename (double-click on tab)
+  const handleTabRename = async (tabId: string, newName: string) => {
+    // Get directory path from tab id (file path)
+    const lastSlash = tabId.lastIndexOf('/');
+    const directory = lastSlash > 0 ? tabId.substring(0, lastSlash + 1) : '';
+    const newPath = directory + newName;
+
+    // Don't rename if it's the same name
+    if (newPath === tabId) return;
+
+    try {
+      await renameFile(tabId, newPath);
+      // Update tab: change ID and disable auto-rename
+      updateTabId(tabId, newPath);
+      updateTab(newPath, { isAutoNamed: false, lastAutoRenamedTitle: '' });
+      setFileRefreshTrigger(prev => prev + 1);
     } catch (err) {
       console.error('Failed to rename file:', err);
       alert(err instanceof Error ? err.message : 'Failed to rename file');
@@ -147,6 +327,103 @@ export default function EditorLayout() {
     setEditorTheme(globalTheme);
     setPreviewTheme(globalTheme);
   }, [globalTheme]);
+
+  // Autosave with debounce
+  useEffect(() => {
+    // Clear any existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Don't autosave if no active tab or content hasn't changed
+    if (!activeTab || activeTab.content === activeTab.lastSavedContent) {
+      return;
+    }
+
+    // Mark as unsaved immediately when content changes
+    if (activeTab.saveStatus !== 'unsaved') {
+      updateTab(activeTab.id, { saveStatus: 'unsaved' });
+    }
+
+    // Set up debounced save
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      handleSave(activeTab.id, activeTab.content);
+    }, AUTOSAVE_DELAY);
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [activeTab, handleSave, updateTab]);
+
+  // Save before page unload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Check if any tab has unsaved changes
+      const unsavedTabs = tabs.filter(t => t.content !== t.lastSavedContent);
+      if (unsavedTabs.length > 0) {
+        // Try to save all unsaved tabs
+        unsavedTabs.forEach(tab => {
+          saveFile(tab.id, tab.content).catch(console.error);
+        });
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [tabs]);
+
+  // Auto-rename file based on first heading when file is auto-named
+  useEffect(() => {
+    if (!activeTab || !activeTab.isAutoNamed || activeTab.saveStatus === 'saving') return;
+
+    const heading = extractFirstHeading(activeTab.content);
+    if (!heading || heading === activeTab.lastAutoRenamedTitle) return;
+
+    // Only auto-rename if the heading is different and meaningful
+    const newFileName = `${heading}.md`;
+    const lastSlash = activeTab.id.lastIndexOf('/');
+    const directory = lastSlash > 0 ? activeTab.id.substring(0, lastSlash + 1) : '';
+    const currentFileName = activeTab.id.substring(lastSlash + 1);
+
+    // Don't rename if it's already the same name
+    if (newFileName === currentFileName) {
+      updateTab(activeTab.id, { lastAutoRenamedTitle: heading });
+      return;
+    }
+
+    // Debounce the rename to avoid too many API calls
+    const renameTimeout = setTimeout(async () => {
+      const newPath = directory + newFileName;
+      const currentTabId = activeTab.id;
+      const currentContent = activeTab.content;
+
+      try {
+        // First save current content
+        await saveFile(currentTabId, currentContent);
+        // Then rename
+        await renameFile(currentTabId, newPath);
+        // Update tab ID and state
+        updateTabId(currentTabId, newPath);
+        updateTab(newPath, {
+          lastSavedContent: currentContent,
+          lastAutoRenamedTitle: heading,
+          saveStatus: 'saved'
+        });
+        setFileRefreshTrigger(prev => prev + 1);
+      } catch (err) {
+        // If rename fails (e.g., file exists), just keep current name
+        console.log('Auto-rename skipped:', err);
+        updateTab(currentTabId, { lastAutoRenamedTitle: heading }); // Don't try again with same heading
+      }
+    }, 1500); // Wait 1.5s after typing stops
+
+    return () => clearTimeout(renameTimeout);
+  }, [activeTab, extractFirstHeading, updateTab, updateTabId]);
 
   // Toggle individual view themes
   const toggleEditorTheme = () => {
@@ -304,9 +581,16 @@ export default function EditorLayout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Tabs */}
         <Tabs
-          onTabChange={(tabId) => console.log('Tab changed to:', tabId)}
-          onTabClose={(tabId) => console.log('Tab closed:', tabId)}
-          onNewTab={() => console.log('New tab requested')}
+          tabs={tabs.map(tab => ({
+            id: tab.id,
+            title: tab.id.split('/').pop() || 'Untitled',
+            isUnsaved: tab.saveStatus === 'unsaved' || tab.saveStatus === 'saving'
+          }))}
+          activeTabId={activeTabId || ''}
+          onTabChange={(tabId) => setActiveTabId(tabId)}
+          onTabClose={(tabId) => closeTab(tabId)}
+          onNewTab={() => setShowWelcomeModal(true)}
+          onTabRename={handleTabRename}
         />
 
         {/* Content Area - Based on view mode */}
@@ -330,6 +614,7 @@ export default function EditorLayout() {
                   scrollToLine={scrollToLine}
                   viewTheme={editorTheme}
                   onToggleTheme={toggleEditorTheme}
+                  saveStatus={saveStatus}
                 />
               </div>
             </div>
@@ -362,6 +647,14 @@ export default function EditorLayout() {
           )}
         </div>
       </div>
+
+      {/* Welcome Modal */}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        onNewDocument={handleNewDocumentFromModal}
+        onFileSelect={handleFileSelectFromModal}
+      />
     </div>
   );
 }

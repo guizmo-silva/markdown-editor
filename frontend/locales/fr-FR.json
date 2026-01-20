@@ -63,8 +63,9 @@
   },
   "status": {
     "saved": "Enregistré",
-    "unsaved": "Non enregistré",
-    "saving": "Enregistrement..."
+    "unsaved": "Modifié",
+    "saving": "Enregistrement...",
+    "error": "Erreur de sauvegarde"
   },
   "dialogs": {
     "unsavedChanges": "Vous avez des modifications non enregistrées. Voulez-vous enregistrer avant de fermer?",
@@ -87,6 +88,13 @@
   "tooltips": {
     "newTab": "Nouvel onglet",
     "export": "Exporter le document",
-    "menu": "Menu"
+    "menu": "Menu",
+    "doubleClickRename": "Double-cliquez pour renommer"
+  },
+  "welcomeModal": {
+    "newDocument": "Nouveau Document",
+    "recentDocuments": "Documents récents:",
+    "noFiles": "Aucun fichier trouvé",
+    "loading": "Chargement..."
   }
 }

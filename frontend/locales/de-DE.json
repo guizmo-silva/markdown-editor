@@ -63,8 +63,9 @@
   },
   "status": {
     "saved": "Gespeichert",
-    "unsaved": "Nicht gespeichert",
-    "saving": "Speichern..."
+    "unsaved": "Geändert",
+    "saving": "Speichern...",
+    "error": "Speicherfehler"
   },
   "dialogs": {
     "unsavedChanges": "Sie haben nicht gespeicherte Änderungen. Möchten Sie vor dem Schließen speichern?",
@@ -87,6 +88,13 @@
   "tooltips": {
     "newTab": "Neuer Tab",
     "export": "Dokument exportieren",
-    "menu": "Menü"
+    "menu": "Menü",
+    "doubleClickRename": "Doppelklick zum Umbenennen"
+  },
+  "welcomeModal": {
+    "newDocument": "Neues Dokument",
+    "recentDocuments": "Letzte Dokumente:",
+    "noFiles": "Keine Dateien gefunden",
+    "loading": "Laden..."
   }
 }
