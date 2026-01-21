@@ -67,9 +67,10 @@ export function parseHeadings(markdown: string): HeadingElement[] {
 export function parseImages(markdown: string): ImageElement[] {
   const lines = markdown.split('\n');
   const images: ImageElement[] = [];
-  const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
 
   lines.forEach((line, index) => {
+    // Create regex inside loop to reset lastIndex for each line
+    const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
     let match;
     while ((match = imageRegex.exec(line)) !== null) {
       images.push({
@@ -87,10 +88,11 @@ export function parseImages(markdown: string): ImageElement[] {
 export function parseLinks(markdown: string): LinkElement[] {
   const lines = markdown.split('\n');
   const links: LinkElement[] = [];
-  // Match links but not images (negative lookbehind for !)
-  const linkRegex = /(?<!!)\[(.*?)\]\((.*?)\)/g;
 
   lines.forEach((line, index) => {
+    // Create regex inside loop to reset lastIndex for each line
+    // Match links but not images (negative lookbehind for !)
+    const linkRegex = /(?<!!)\[(.*?)\]\((.*?)\)/g;
     let match;
     while ((match = linkRegex.exec(line)) !== null) {
       const url = match[2];
@@ -155,12 +157,11 @@ export function parseAlerts(markdown: string): AlertElement[] {
 
 export function parseFootnotes(markdown: string): FootnoteElement[] {
   const lines = markdown.split('\n');
-  const footnotes: FootnoteElement[] = [];
   const footnoteMap = new Map<string, FootnoteElement>();
 
   // First pass: find all footnote references and definitions
   lines.forEach((line, index) => {
-    // Match footnote references [^1]
+    // Match footnote references [^1] - create regex inside loop
     const refRegex = /\[\^(\w+)\]/g;
     let match;
     while ((match = refRegex.exec(line)) !== null) {

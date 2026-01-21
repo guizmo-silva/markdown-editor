@@ -328,7 +328,11 @@ export default function EditorLayout() {
     setPreviewTheme(globalTheme);
   }, [globalTheme]);
 
-  // Autosave with debounce
+  // Track content changes for autosave - use content string as dependency, not the whole tabs array
+  const activeContent = activeTab?.content;
+  const activeLastSaved = activeTab?.lastSavedContent;
+
+  // Autosave with debounce - only triggered by content changes
   useEffect(() => {
     // Clear any existing timeout
     if (autoSaveTimeoutRef.current) {
@@ -336,18 +340,40 @@ export default function EditorLayout() {
     }
 
     // Don't autosave if no active tab or content hasn't changed
-    if (!activeTab || activeTab.content === activeTab.lastSavedContent) {
+    if (!activeTabId || activeContent === undefined || activeContent === activeLastSaved) {
       return;
     }
 
     // Mark as unsaved immediately when content changes
-    if (activeTab.saveStatus !== 'unsaved') {
-      updateTab(activeTab.id, { saveStatus: 'unsaved' });
-    }
+    setTabs(prevTabs => prevTabs.map(tab =>
+      tab.id === activeTabId && tab.saveStatus !== 'unsaved'
+        ? { ...tab, saveStatus: 'unsaved' }
+        : tab
+    ));
 
     // Set up debounced save
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      handleSave(activeTab.id, activeTab.content);
+    const tabIdToSave = activeTabId;
+    const contentToSave = activeContent;
+
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      setTabs(prevTabs => prevTabs.map(tab =>
+        tab.id === tabIdToSave ? { ...tab, saveStatus: 'saving' } : tab
+      ));
+
+      try {
+        await saveFile(tabIdToSave, contentToSave);
+        setTabs(prevTabs => prevTabs.map(tab =>
+          tab.id === tabIdToSave
+            ? { ...tab, lastSavedContent: contentToSave, saveStatus: 'saved' }
+            : tab
+        ));
+        console.log('Autosaved:', tabIdToSave);
+      } catch (err) {
+        console.error('Failed to autosave:', err);
+        setTabs(prevTabs => prevTabs.map(tab =>
+          tab.id === tabIdToSave ? { ...tab, saveStatus: 'error' } : tab
+        ));
+      }
     }, AUTOSAVE_DELAY);
 
     // Cleanup on unmount or when dependencies change
@@ -356,7 +382,7 @@ export default function EditorLayout() {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [activeTab, handleSave, updateTab]);
+  }, [activeTabId, activeContent, activeLastSaved]);
 
   // Save before page unload
   useEffect(() => {
@@ -378,52 +404,67 @@ export default function EditorLayout() {
   }, [tabs]);
 
   // Auto-rename file based on first heading when file is auto-named
-  useEffect(() => {
-    if (!activeTab || !activeTab.isAutoNamed || activeTab.saveStatus === 'saving') return;
+  const activeIsAutoNamed = activeTab?.isAutoNamed;
+  const activeSaveStatus = activeTab?.saveStatus;
+  const activeLastAutoRenamedTitle = activeTab?.lastAutoRenamedTitle;
 
-    const heading = extractFirstHeading(activeTab.content);
-    if (!heading || heading === activeTab.lastAutoRenamedTitle) return;
+  useEffect(() => {
+    if (!activeTabId || !activeContent || !activeIsAutoNamed || activeSaveStatus === 'saving') return;
+
+    const heading = extractFirstHeading(activeContent);
+    if (!heading || heading === activeLastAutoRenamedTitle) return;
 
     // Only auto-rename if the heading is different and meaningful
     const newFileName = `${heading}.md`;
-    const lastSlash = activeTab.id.lastIndexOf('/');
-    const directory = lastSlash > 0 ? activeTab.id.substring(0, lastSlash + 1) : '';
-    const currentFileName = activeTab.id.substring(lastSlash + 1);
+    const lastSlash = activeTabId.lastIndexOf('/');
+    const directory = lastSlash > 0 ? activeTabId.substring(0, lastSlash + 1) : '';
+    const currentFileName = activeTabId.substring(lastSlash + 1);
 
     // Don't rename if it's already the same name
     if (newFileName === currentFileName) {
-      updateTab(activeTab.id, { lastAutoRenamedTitle: heading });
+      setTabs(prevTabs => prevTabs.map(tab =>
+        tab.id === activeTabId ? { ...tab, lastAutoRenamedTitle: heading } : tab
+      ));
       return;
     }
 
     // Debounce the rename to avoid too many API calls
+    const currentTabId = activeTabId;
+    const contentToSave = activeContent;
+
     const renameTimeout = setTimeout(async () => {
       const newPath = directory + newFileName;
-      const currentTabId = activeTab.id;
-      const currentContent = activeTab.content;
 
       try {
         // First save current content
-        await saveFile(currentTabId, currentContent);
+        await saveFile(currentTabId, contentToSave);
         // Then rename
         await renameFile(currentTabId, newPath);
         // Update tab ID and state
-        updateTabId(currentTabId, newPath);
-        updateTab(newPath, {
-          lastSavedContent: currentContent,
-          lastAutoRenamedTitle: heading,
-          saveStatus: 'saved'
-        });
+        setTabs(prevTabs => prevTabs.map(tab =>
+          tab.id === currentTabId
+            ? {
+                ...tab,
+                id: newPath,
+                lastSavedContent: contentToSave,
+                lastAutoRenamedTitle: heading,
+                saveStatus: 'saved' as const
+              }
+            : tab
+        ));
+        setActiveTabId(newPath);
         setFileRefreshTrigger(prev => prev + 1);
       } catch (err) {
         // If rename fails (e.g., file exists), just keep current name
         console.log('Auto-rename skipped:', err);
-        updateTab(currentTabId, { lastAutoRenamedTitle: heading }); // Don't try again with same heading
+        setTabs(prevTabs => prevTabs.map(tab =>
+          tab.id === currentTabId ? { ...tab, lastAutoRenamedTitle: heading } : tab
+        ));
       }
     }, 1500); // Wait 1.5s after typing stops
 
     return () => clearTimeout(renameTimeout);
-  }, [activeTab, extractFirstHeading, updateTab, updateTabId]);
+  }, [activeTabId, activeContent, activeIsAutoNamed, activeSaveStatus, activeLastAutoRenamedTitle, extractFirstHeading]);
 
   // Toggle individual view themes
   const toggleEditorTheme = () => {

@@ -149,11 +149,10 @@ export default function Tabs({
           {tabs.length > 1 && (
             <button
               onClick={(e) => handleTabClose(e, tab.id)}
-              className="flex items-center justify-center hover:opacity-60 transition-opacity"
+              className="flex items-center justify-center hover:opacity-60 transition-opacity p-1.5 -mr-1"
               aria-label="Close tab"
-              style={{ width: '5px', height: '6px' }}
             >
-              <img src={getIconPath('close_tab_bttn.svg')} alt="Close" className="w-full h-full" />
+              <img src={getIconPath('close_tab_bttn.svg')} alt="Close" style={{ width: '7px', height: '8px' }} />
             </button>
           )}
         </div>

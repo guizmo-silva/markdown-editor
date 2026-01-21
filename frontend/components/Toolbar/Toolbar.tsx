@@ -157,8 +157,8 @@ export default function Toolbar({
           if (selectedText) {
             editor.setSelectionRange(start + prefix.length, end + prefix.length);
           } else {
-            const newPos = start + prefix.length + textToInsert.length;
-            editor.setSelectionRange(newPos, newPos);
+            // Selecionar o placeholder para que o usuário possa substituí-lo digitando
+            editor.setSelectionRange(start + prefix.length, start + prefix.length + textToInsert.length);
           }
           editor.focus();
         }, 0);
@@ -244,9 +244,66 @@ export default function Toolbar({
   const handleStrikethrough = () => toggleFormat('~~', '~~', 'strikethrough text');
 
   // Heading handlers with long press support
-  const handleHeading = (level: number = 1) => {
-    const prefix = '#'.repeat(level) + ' ';
-    addLinePrefix(prefix);
+  const handleHeading = (level?: number) => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const start = editor.selectionStart;
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = value.indexOf('\n', start);
+    const lineContent = value.substring(lineStart, lineEnd === -1 ? value.length : lineEnd);
+
+    // Check if line already has a heading (with or without space/text after)
+    const headingMatch = lineContent.match(/^(#{1,6})(\s|$)/);
+
+    let newLineContent: string;
+    let cursorOffset: number;
+
+    if (level !== undefined) {
+      // Specific level requested from dropdown menu
+      if (headingMatch) {
+        // Replace existing heading with new level
+        const hasSpace = headingMatch[2] === ' ';
+        const textAfterHeading = hasSpace ? lineContent.substring(headingMatch[0].length) : lineContent.substring(headingMatch[1].length);
+        newLineContent = '#'.repeat(level) + ' ' + textAfterHeading;
+        cursorOffset = level + 1 - headingMatch[1].length - (hasSpace ? 1 : 0);
+      } else {
+        // Add new heading
+        newLineContent = '#'.repeat(level) + ' ' + lineContent;
+        cursorOffset = level + 1;
+      }
+    } else {
+      // Quick click - increment heading level
+      if (headingMatch) {
+        const currentLevel = headingMatch[1].length;
+        // If already at max level (6), just refocus and return
+        if (currentLevel >= 6) {
+          setShowHeadingMenu(false);
+          editor.focus();
+          return;
+        }
+        // Increment level
+        const newLevel = currentLevel + 1;
+        const hasSpace = headingMatch[2] === ' ';
+        const textAfterHeading = hasSpace ? lineContent.substring(headingMatch[0].length) : lineContent.substring(headingMatch[1].length);
+        newLineContent = '#'.repeat(newLevel) + ' ' + textAfterHeading;
+        cursorOffset = hasSpace ? 1 : 2; // Added one # (and space if it wasn't there)
+      } else {
+        // Add H1
+        newLineContent = '# ' + lineContent;
+        cursorOffset = 2;
+      }
+    }
+
+    const newText = value.substring(0, lineStart) + newLineContent + value.substring(lineEnd === -1 ? value.length : lineEnd);
+    onChange(newText);
+
+    setTimeout(() => {
+      const newPos = start + cursorOffset;
+      editor.setSelectionRange(newPos, newPos);
+      editor.focus();
+    }, 0);
+
     setShowHeadingMenu(false);
   };
 
@@ -264,7 +321,7 @@ export default function Toolbar({
       longPressTimerRef.current = null;
     }
     if (!isLongPressRef.current) {
-      handleHeading(1);
+      handleHeading(); // No level = increment or add H1
     }
   };
 
@@ -309,9 +366,66 @@ export default function Toolbar({
   const handleNumberedList = () => addLinePrefix('1. ');
 
   // Quote handlers with long press support
-  const handleQuote = (level: number = 1) => {
-    const prefix = '>'.repeat(level) + ' ';
-    addLinePrefix(prefix);
+  const handleQuote = (level?: number) => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const start = editor.selectionStart;
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = value.indexOf('\n', start);
+    const lineContent = value.substring(lineStart, lineEnd === -1 ? value.length : lineEnd);
+
+    // Check if line already has a quote (with or without space/text after)
+    const quoteMatch = lineContent.match(/^(>{1,4})(\s|$)/);
+
+    let newLineContent: string;
+    let cursorOffset: number;
+
+    if (level !== undefined) {
+      // Specific level requested from dropdown menu
+      if (quoteMatch) {
+        // Replace existing quote with new level
+        const hasSpace = quoteMatch[2] === ' ';
+        const textAfterQuote = hasSpace ? lineContent.substring(quoteMatch[0].length) : lineContent.substring(quoteMatch[1].length);
+        newLineContent = '>'.repeat(level) + ' ' + textAfterQuote;
+        cursorOffset = level + 1 - quoteMatch[1].length - (hasSpace ? 1 : 0);
+      } else {
+        // Add new quote
+        newLineContent = '>'.repeat(level) + ' ' + lineContent;
+        cursorOffset = level + 1;
+      }
+    } else {
+      // Quick click - increment quote level
+      if (quoteMatch) {
+        const currentLevel = quoteMatch[1].length;
+        // If already at max level (4), just refocus and return
+        if (currentLevel >= 4) {
+          setShowQuoteMenu(false);
+          editor.focus();
+          return;
+        }
+        // Increment level
+        const newLevel = currentLevel + 1;
+        const hasSpace = quoteMatch[2] === ' ';
+        const textAfterQuote = hasSpace ? lineContent.substring(quoteMatch[0].length) : lineContent.substring(quoteMatch[1].length);
+        newLineContent = '>'.repeat(newLevel) + ' ' + textAfterQuote;
+        cursorOffset = hasSpace ? 1 : 2; // Added one > (and space if it wasn't there)
+      } else {
+        // Add level 1 quote
+        newLineContent = '> ' + lineContent;
+        cursorOffset = 2;
+      }
+    }
+
+    const newText = value.substring(0, lineStart) + newLineContent + value.substring(lineEnd === -1 ? value.length : lineEnd);
+    onChange(newText);
+
+    setTimeout(() => {
+      const newPos = start + cursorOffset;
+      editor.setSelectionRange(newPos, newPos);
+      editor.focus();
+    }, 0);
+
     setShowQuoteMenu(false);
   };
 
@@ -329,7 +443,7 @@ export default function Toolbar({
       longPressTimerRef.current = null;
     }
     if (!isLongPressRef.current) {
-      handleQuote(1);
+      handleQuote(); // No level = increment or add level 1
     }
   };
 

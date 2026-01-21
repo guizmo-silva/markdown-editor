@@ -284,6 +284,12 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
   const [spellcheckLanguage, setSpellcheckLanguage] = useState(i18n.language);
 
+  // Use ref to always have access to the latest onChange callback
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
   // Get theme extensions based on current theme
   const getThemeExtensions = useCallback((isDark: boolean) => {
     return isDark
@@ -340,7 +346,8 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         const newContent = update.state.doc.toString();
-        onChange(newContent);
+        // Use ref to always call the latest onChange callback
+        onChangeRef.current(newContent);
         setCharacterCount(newContent.length);
       }
       if (update.selectionSet) {
