@@ -23,6 +23,7 @@ const sanitizeSchema = {
     'svg',
     'path',
     'section',
+    'sup', // For footnote references
     // KaTeX math elements
     'math',
     'semantics',
@@ -55,13 +56,21 @@ const sanitizeSchema = {
     a: [
       ...(defaultSchema.attributes?.a || []),
       'href',
-      'dataFootnoteRef',
-      'dataFootnoteBackref',
-      ['className', /^data-footnote-backref$/],
+      'data-footnote-ref',
+      'data-footnote-backref',
+      'aria-describedby',
+      'aria-label',
     ],
     section: [
-      'dataFootnotes',
+      'data-footnotes',
       ['className', /^footnotes$/],
+    ],
+    li: [
+      ...(defaultSchema.attributes?.li || []),
+      'id',
+    ],
+    sup: [
+      ...(defaultSchema.attributes?.sup || []),
     ],
     div: [
       ...(defaultSchema.attributes?.div || []),

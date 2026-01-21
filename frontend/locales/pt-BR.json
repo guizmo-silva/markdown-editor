@@ -19,10 +19,13 @@
     "blockquote": "Citação",
     "codeBlock": "Bloco de código",
     "link": "Link",
+    "linkInline": "Link direto",
+    "linkReference": "Link de referência",
     "image": "Imagem",
     "table": "Tabela",
     "horizontalRule": "Linha horizontal",
     "subscript": "Subscrito",
+    "footnote": "Nota de rodapé",
     "superscript": "Sobrescrito",
     "localImage": "Importar local",
     "linkedImage": "Imagem linkada",
@@ -46,7 +49,11 @@
     "links": "Links",
     "alerts": "Alertas",
     "footnotes": "Notas de rodapé",
-    "tables": "Tabelas"
+    "tables": "Tabelas",
+    "quotes": "Citações",
+    "orderedLists": "Listas Numeradas",
+    "unorderedLists": "Listas com Marcadores",
+    "codeBlocks": "Blocos de Código"
   },
   "fileBrowser": {
     "title": "Arquivos"

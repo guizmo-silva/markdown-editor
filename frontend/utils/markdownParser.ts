@@ -44,6 +44,31 @@ export interface TableElement {
   raw: string;
 }
 
+export interface QuoteElement {
+  line: number;
+  content: string;
+  raw: string;
+}
+
+export interface OrderedListElement {
+  line: number;
+  items: string[];
+  raw: string;
+}
+
+export interface UnorderedListElement {
+  line: number;
+  items: string[];
+  raw: string;
+}
+
+export interface CodeBlockElement {
+  line: number;
+  language: string;
+  content: string;
+  raw: string;
+}
+
 export function parseHeadings(markdown: string): HeadingElement[] {
   const lines = markdown.split('\n');
   const headings: HeadingElement[] = [];
@@ -248,6 +273,166 @@ export function parseTables(markdown: string): TableElement[] {
   return tables;
 }
 
+export function parseQuotes(markdown: string): QuoteElement[] {
+  const lines = markdown.split('\n');
+  const quotes: QuoteElement[] = [];
+  const alertTypes = ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'];
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    // Match blockquotes that start with > (but not GitHub alerts)
+    if (line.match(/^>\s*/)) {
+      // Check if this is a GitHub alert (skip it)
+      const isAlert = alertTypes.some(type => line.includes(`[!${type}]`));
+      if (!isAlert) {
+        const startLine = i + 1;
+        let content = '';
+        let raw = '';
+
+        // Collect all consecutive blockquote lines
+        while (i < lines.length && lines[i].match(/^>\s*/)) {
+          const lineContent = lines[i].replace(/^>\s*/, '').trim();
+          // Stop if we hit an alert marker
+          if (alertTypes.some(type => lineContent.includes(`[!${type}]`))) {
+            break;
+          }
+          if (lineContent) {
+            content += (content ? ' ' : '') + lineContent;
+          }
+          raw += (raw ? '\n' : '') + lines[i];
+          i++;
+        }
+
+        if (content) {
+          quotes.push({
+            line: startLine,
+            content,
+            raw,
+          });
+        }
+        continue;
+      }
+    }
+    i++;
+  }
+
+  return quotes;
+}
+
+export function parseOrderedLists(markdown: string): OrderedListElement[] {
+  const lines = markdown.split('\n');
+  const lists: OrderedListElement[] = [];
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    // Match ordered list items: 1. item, 2. item, etc.
+    if (line.match(/^\s*\d+\.\s+/)) {
+      const startLine = i + 1;
+      const items: string[] = [];
+      let raw = '';
+
+      // Collect all consecutive ordered list items
+      while (i < lines.length && lines[i].match(/^\s*\d+\.\s+/)) {
+        const itemText = lines[i].replace(/^\s*\d+\.\s+/, '').trim();
+        items.push(itemText);
+        raw += (raw ? '\n' : '') + lines[i];
+        i++;
+      }
+
+      if (items.length > 0) {
+        lists.push({
+          line: startLine,
+          items,
+          raw,
+        });
+      }
+      continue;
+    }
+    i++;
+  }
+
+  return lists;
+}
+
+export function parseUnorderedLists(markdown: string): UnorderedListElement[] {
+  const lines = markdown.split('\n');
+  const lists: UnorderedListElement[] = [];
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    // Match unordered list items: - item, * item, + item
+    if (line.match(/^\s*[-*+]\s+/)) {
+      const startLine = i + 1;
+      const items: string[] = [];
+      let raw = '';
+
+      // Collect all consecutive unordered list items
+      while (i < lines.length && lines[i].match(/^\s*[-*+]\s+/)) {
+        const itemText = lines[i].replace(/^\s*[-*+]\s+/, '').trim();
+        items.push(itemText);
+        raw += (raw ? '\n' : '') + lines[i];
+        i++;
+      }
+
+      if (items.length > 0) {
+        lists.push({
+          line: startLine,
+          items,
+          raw,
+        });
+      }
+      continue;
+    }
+    i++;
+  }
+
+  return lists;
+}
+
+export function parseCodeBlocks(markdown: string): CodeBlockElement[] {
+  const lines = markdown.split('\n');
+  const codeBlocks: CodeBlockElement[] = [];
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    // Match code block start: ```language or ```
+    const codeBlockStart = line.match(/^```(\w*)/);
+    if (codeBlockStart) {
+      const startLine = i + 1;
+      const language = codeBlockStart[1] || 'plain';
+      let content = '';
+      let raw = line;
+      i++;
+
+      // Collect content until closing ```
+      while (i < lines.length && !lines[i].match(/^```\s*$/)) {
+        content += (content ? '\n' : '') + lines[i];
+        raw += '\n' + lines[i];
+        i++;
+      }
+
+      // Include closing ```
+      if (i < lines.length) {
+        raw += '\n' + lines[i];
+      }
+
+      codeBlocks.push({
+        line: startLine,
+        language,
+        content,
+        raw,
+      });
+    }
+    i++;
+  }
+
+  return codeBlocks;
+}
+
 export interface MarkdownAssets {
   headings: HeadingElement[];
   images: ImageElement[];
@@ -255,6 +440,10 @@ export interface MarkdownAssets {
   alerts: AlertElement[];
   footnotes: FootnoteElement[];
   tables: TableElement[];
+  quotes: QuoteElement[];
+  orderedLists: OrderedListElement[];
+  unorderedLists: UnorderedListElement[];
+  codeBlocks: CodeBlockElement[];
 }
 
 export function parseMarkdownAssets(markdown: string): MarkdownAssets {
@@ -265,5 +454,9 @@ export function parseMarkdownAssets(markdown: string): MarkdownAssets {
     alerts: parseAlerts(markdown),
     footnotes: parseFootnotes(markdown),
     tables: parseTables(markdown),
+    quotes: parseQuotes(markdown),
+    orderedLists: parseOrderedLists(markdown),
+    unorderedLists: parseUnorderedLists(markdown),
+    codeBlocks: parseCodeBlocks(markdown),
   };
 }

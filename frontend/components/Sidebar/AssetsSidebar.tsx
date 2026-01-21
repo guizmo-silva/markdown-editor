@@ -9,7 +9,7 @@ import { ViewToggle, ViewMode } from '@/components/ViewToggle';
 import { parseMarkdownAssets, type MarkdownAssets } from '@/utils/markdownParser';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 
-type SectionId = 'headings' | 'images' | 'links' | 'alerts' | 'footnotes' | 'tables';
+type SectionId = 'headings' | 'images' | 'links' | 'alerts' | 'footnotes' | 'tables' | 'quotes' | 'orderedLists' | 'unorderedLists' | 'codeBlocks';
 
 const SECTION_MIN_PERCENT = 20; // Minimum 20% for each section
 const SECTION_MAX_PERCENT = 80; // Maximum 80% for each section
@@ -50,6 +50,10 @@ export default function AssetsSidebar({
     alerts: false,
     footnotes: false,
     tables: false,
+    quotes: false,
+    orderedLists: false,
+    unorderedLists: false,
+    codeBlocks: false,
   });
 
   // Trigger for collapsing all files in FileBrowser
@@ -82,6 +86,10 @@ export default function AssetsSidebar({
         alerts: false,
         footnotes: false,
         tables: false,
+        quotes: false,
+        orderedLists: false,
+        unorderedLists: false,
+        codeBlocks: false,
       });
     }
   };
@@ -375,6 +383,130 @@ export default function AssetsSidebar({
                     </div>
                     <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                       {table.rows} rows × {table.cols} columns
+                    </div>
+                  </div>
+                );
+              })}
+            </AssetSection>
+          )}
+
+          {/* Quotes Section */}
+          {assets.quotes.length > 0 && (
+            <AssetSection title={t('sidebar.quotes', 'Quotes')} count={assets.quotes.length} mdSymbol=">" isOpen={openSections.quotes} onToggle={(isOpen) => handleSectionToggle('quotes', isOpen)}>
+              {assets.quotes.map((quote, index) => {
+                const isLast = index === assets.quotes.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(quote.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-[11px] text-[var(--text-primary)] font-medium line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {quote.content}
+                      </span>
+                    </div>
+                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      (Line {quote.line})
+                    </span>
+                  </div>
+                );
+              })}
+            </AssetSection>
+          )}
+
+          {/* Ordered Lists Section */}
+          {assets.orderedLists.length > 0 && (
+            <AssetSection title={t('sidebar.orderedLists', 'Numbered Lists')} count={assets.orderedLists.length} mdSymbol="1." isOpen={openSections.orderedLists} onToggle={(isOpen) => handleSectionToggle('orderedLists', isOpen)}>
+              {assets.orderedLists.map((list, index) => {
+                const isLast = index === assets.orderedLists.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(list.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {list.items[0]}
+                      </span>
+                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        (Line {list.line})
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      {list.items.length} {list.items.length === 1 ? 'item' : 'items'}
+                    </div>
+                  </div>
+                );
+              })}
+            </AssetSection>
+          )}
+
+          {/* Unordered Lists Section */}
+          {assets.unorderedLists.length > 0 && (
+            <AssetSection title={t('sidebar.unorderedLists', 'Bullet Lists')} count={assets.unorderedLists.length} mdSymbol="-" isOpen={openSections.unorderedLists} onToggle={(isOpen) => handleSectionToggle('unorderedLists', isOpen)}>
+              {assets.unorderedLists.map((list, index) => {
+                const isLast = index === assets.unorderedLists.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(list.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {list.items[0]}
+                      </span>
+                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        (Line {list.line})
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      {list.items.length} {list.items.length === 1 ? 'item' : 'items'}
+                    </div>
+                  </div>
+                );
+              })}
+            </AssetSection>
+          )}
+
+          {/* Code Blocks Section */}
+          {assets.codeBlocks.length > 0 && (
+            <AssetSection title={t('sidebar.codeBlocks', 'Code Blocks')} count={assets.codeBlocks.length} mdSymbol="```" isOpen={openSections.codeBlocks} onToggle={(isOpen) => handleSectionToggle('codeBlocks', isOpen)}>
+              {assets.codeBlocks.map((codeBlock, index) => {
+                const isLast = index === assets.codeBlocks.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(codeBlock.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[var(--bg-secondary)] text-[var(--text-secondary)]"
+                        style={{ fontFamily: 'Roboto Mono, monospace' }}
+                      >
+                        {codeBlock.language}
+                      </span>
+                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        (Line {codeBlock.line})
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-[var(--text-secondary)] line-clamp-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      {codeBlock.content.split('\n')[0] || 'Empty block'}
                     </div>
                   </div>
                 );

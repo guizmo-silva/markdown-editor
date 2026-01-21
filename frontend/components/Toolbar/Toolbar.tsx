@@ -34,6 +34,7 @@ export default function Toolbar({
     return textareaRef.current as EditorHandle | null;
   };
   const [showQuoteMenu, setShowQuoteMenu] = useState(false);
+  const [showLinkMenu, setShowLinkMenu] = useState(false);
   const [showImageMenu, setShowImageMenu] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showTableMenu, setShowTableMenu] = useState(false);
@@ -43,6 +44,7 @@ export default function Toolbar({
   const headingButtonRef = useRef<HTMLDivElement>(null);
   const alertButtonRef = useRef<HTMLDivElement>(null);
   const quoteButtonRef = useRef<HTMLDivElement>(null);
+  const linkButtonRef = useRef<HTMLDivElement>(null);
   const imageButtonRef = useRef<HTMLDivElement>(null);
   const tableButtonRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +63,9 @@ export default function Toolbar({
       if (quoteButtonRef.current && !quoteButtonRef.current.contains(event.target as Node)) {
         setShowQuoteMenu(false);
       }
+      if (linkButtonRef.current && !linkButtonRef.current.contains(event.target as Node)) {
+        setShowLinkMenu(false);
+      }
       if (imageButtonRef.current && !imageButtonRef.current.contains(event.target as Node)) {
         setShowImageMenu(false);
       }
@@ -70,14 +75,14 @@ export default function Toolbar({
       }
     };
 
-    if (showHeadingMenu || showAlertMenu || showQuoteMenu || showImageMenu || showTableMenu) {
+    if (showHeadingMenu || showAlertMenu || showQuoteMenu || showLinkMenu || showImageMenu || showTableMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showHeadingMenu, showAlertMenu, showQuoteMenu, showImageMenu, showTableMenu]);
+  }, [showHeadingMenu, showAlertMenu, showQuoteMenu, showLinkMenu, showImageMenu, showTableMenu]);
 
   // Helper function to wrap selected text or insert at cursor
   const wrapText = (prefix: string, suffix: string, placeholder: string = '') => {
@@ -461,7 +466,142 @@ export default function Toolbar({
     { level: 4, label: '>>>>', description: 'Citação nível 4' },
   ];
   const handleTask = () => toggleLinePrefix('- [ ] ', ['- [x] ', '- [X] ']);
-  const handleLink = () => wrapText('[', '](url)', 'link text');
+
+  // Link handlers with long press support
+  const handleLink = () => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const selectedText = value.substring(start, end);
+    const linkText = selectedText || 'link text';
+
+    const newText = value.substring(0, start) + '[' + linkText + '](url)' + value.substring(end);
+    onChange(newText);
+
+    setTimeout(() => {
+      // Select "link text" so user can type to replace it
+      const linkTextStart = start + 1; // After "["
+      const linkTextEnd = linkTextStart + linkText.length;
+      editor.setSelectionRange(linkTextStart, linkTextEnd);
+      editor.focus();
+    }, 0);
+
+    setShowLinkMenu(false);
+  };
+
+  const handleReferenceLink = () => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const selectedText = value.substring(start, end);
+    const linkText = selectedText || 'link text';
+    const refId = 'ref';
+
+    // Insert the link reference at cursor position
+    const linkMarkdown = `[${linkText}][${refId}]`;
+    const newText = value.substring(0, start) + linkMarkdown + value.substring(end);
+
+    // Add the reference definition at the end of the document
+    const refDefinition = `\n\n[${refId}]: url "title"`;
+    const finalText = newText + refDefinition;
+
+    onChange(finalText);
+
+    setTimeout(() => {
+      // Select "link text" so user can type to replace it
+      const linkTextStart = start + 1; // After "["
+      const linkTextEnd = linkTextStart + linkText.length;
+      editor.setSelectionRange(linkTextStart, linkTextEnd);
+      editor.focus();
+    }, 0);
+
+    setShowLinkMenu(false);
+  };
+
+  const handleLinkMouseDown = () => {
+    isLongPressRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      setShowLinkMenu(true);
+    }, 300);
+  };
+
+  const handleLinkMouseUp = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (!isLongPressRef.current) {
+      handleLink();
+    }
+  };
+
+  const handleLinkMouseLeave = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  // Footnote handler with auto-numbering
+  const handleFootnote = () => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    // Find all existing footnotes to determine the next number
+    const footnotePattern = /\[\^(\d+)\]/g;
+    const existingNumbers: number[] = [];
+    let match;
+    while ((match = footnotePattern.exec(value)) !== null) {
+      existingNumbers.push(parseInt(match[1], 10));
+    }
+
+    // Determine the next footnote number
+    const nextNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
+
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const selectedText = value.substring(start, end);
+    const hasSelection = selectedText.length > 0;
+
+    // Insert the footnote reference
+    const footnoteRef = `[^${nextNumber}]`;
+    const placeholder = 'footnote text';
+    const footnoteDefinition = `\n\n[^${nextNumber}]: ${placeholder}`;
+
+    if (hasSelection) {
+      // With selection: add reference after selected text, definition with placeholder at end
+      const newText = value.substring(0, end) + footnoteRef + value.substring(end);
+      const finalText = newText + footnoteDefinition;
+
+      onChange(finalText);
+
+      setTimeout(() => {
+        // Select the placeholder text in the definition for user to edit
+        const placeholderStart = finalText.length - placeholder.length;
+        const placeholderEnd = finalText.length;
+        editor.setSelectionRange(placeholderStart, placeholderEnd);
+        editor.focus();
+      }, 0);
+    } else {
+      // Without selection: insert reference at cursor, definition with placeholder at end
+      const newText = value.substring(0, start) + footnoteRef + value.substring(end);
+      const finalText = newText + footnoteDefinition;
+
+      onChange(finalText);
+
+      setTimeout(() => {
+        // Position cursor BEFORE the footnote reference so user can type text
+        editor.setSelectionRange(start, start);
+        editor.focus();
+      }, 0);
+    }
+  };
+
   const handleInlineCode = () => toggleFormat('`', '`', 'code');
   const handleCodeBlock = () => insertText('\n```\ncode\n```\n');
 
@@ -584,25 +724,28 @@ export default function Toolbar({
 
   const handleHorizontalLine = () => insertText('\n---\n');
 
-  const buttonsBeforeHeading = [
+  // Simple formatting buttons (don't create sidebar elements)
+  const simpleFormattingButtons = [
     { icon: getIconPath('Bold_icon.svg'), translationKey: 'toolbar.bold', onClick: handleBold },
     { icon: getIconPath('Italic_icon.svg'), translationKey: 'toolbar.italic', onClick: handleItalic },
     { icon: getIconPath('Strike_icon.svg'), translationKey: 'toolbar.strikethrough', onClick: handleStrikethrough },
+    { icon: getIconPath('InLineCode_icon.svg'), translationKey: 'toolbar.code', onClick: handleInlineCode },
+    { icon: getIconPath('Sobrescrito_icon.svg'), translationKey: 'toolbar.superscript', onClick: handleSuperscript },
+    { icon: getIconPath('Subescrito_icon.svg'), translationKey: 'toolbar.subscript', onClick: handleSubscript },
+    { icon: getIconPath('Line_icon.svg'), translationKey: 'toolbar.horizontalRule', onClick: handleHorizontalLine },
   ];
 
-  const buttonsBetweenQuoteAndImage = [
+  // Buttons that create sidebar elements (lists)
+  const listButtons = [
     { icon: getIconPath('NumberedList_icon.svg'), translationKey: 'toolbar.orderedList', onClick: handleNumberedList },
     { icon: getIconPath('List_icon.svg'), translationKey: 'toolbar.unorderedList', onClick: handleBulletList },
-    { icon: getIconPath('InLineCode_icon.svg'), translationKey: 'toolbar.code', onClick: handleInlineCode },
-    { icon: getIconPath('CodeBlock_icon.svg'), translationKey: 'toolbar.codeBlock', onClick: handleCodeBlock },
-    { icon: getIconPath('URL_icon.svg'), translationKey: 'toolbar.link', onClick: handleLink },
+    { icon: getIconPath('Task_icon.svg'), translationKey: 'toolbar.taskList', onClick: handleTask },
   ];
 
-  const buttonsAfterTable = [
-    { icon: getIconPath('Line_icon.svg'), translationKey: 'toolbar.horizontalRule', onClick: handleHorizontalLine },
-    { icon: getIconPath('Task_icon.svg'), translationKey: 'toolbar.taskList', onClick: handleTask },
-    { icon: getIconPath('Sobrescrito_icon.svg'), translationKey: 'toolbar.superscript', onClick: handleSuperscript },
-    { icon: getIconPath('Subescrito_icon.svg'), translationKey: 'toolbar.subscript', onClick: handleSubscript }
+  // Other sidebar element buttons
+  const otherSidebarButtons = [
+    { icon: getIconPath('CodeBlock_icon.svg'), translationKey: 'toolbar.codeBlock', onClick: handleCodeBlock },
+    { icon: getIconPath('Footnote_icon.svg'), translationKey: 'toolbar.footnote', onClick: handleFootnote },
   ];
 
   const GRID_SIZE = 8;
@@ -625,7 +768,11 @@ export default function Toolbar({
   return (
     <>
       <div className="min-h-[40px] bg-[var(--bg-secondary)] flex items-center justify-center flex-wrap px-3 py-2 gap-2 border-b border-[var(--border-primary)]">
-        {buttonsBeforeHeading.map(renderButton)}
+        {/* Simple formatting buttons */}
+        {simpleFormattingButtons.map(renderButton)}
+
+        {/* Vertical separator */}
+        <div className="w-px h-5 bg-[var(--border-primary)] mx-1 flex-shrink-0" />
 
         {/* Heading button with dropdown */}
         <div className="relative flex-shrink-0" ref={headingButtonRef}>
@@ -685,7 +832,39 @@ export default function Toolbar({
           )}
         </div>
 
-        {buttonsBetweenQuoteAndImage.map((button, index) => renderButton(button, index + 100))}
+        {/* List buttons */}
+        {listButtons.map((button, index) => renderButton(button, index + 100))}
+
+        {/* Link button with dropdown */}
+        <div className="relative flex-shrink-0" ref={linkButtonRef}>
+          <button
+            onMouseDown={handleLinkMouseDown}
+            onMouseUp={handleLinkMouseUp}
+            onMouseLeave={handleLinkMouseLeave}
+            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+            aria-label={t('toolbar.link')}
+            title={t('toolbar.link')}
+          >
+            <img src={getIconPath('URL_icon.svg')} alt={t('toolbar.link')} className="w-6 h-6" />
+          </button>
+
+          {showLinkMenu && (
+            <div className="absolute top-full left-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
+              <button
+                onClick={handleLink}
+                className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
+              >
+                <span className="text-[var(--text-secondary)]">{t('toolbar.linkInline')}</span>
+              </button>
+              <button
+                onClick={handleReferenceLink}
+                className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
+              >
+                <span className="text-[var(--text-secondary)]">{t('toolbar.linkReference')}</span>
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Image button with dropdown */}
         <div className="relative flex-shrink-0" ref={imageButtonRef}>
@@ -774,7 +953,8 @@ export default function Toolbar({
           )}
         </div>
 
-        {buttonsAfterTable.map((button, index) => renderButton(button, index + 200))}
+        {/* Other sidebar element buttons */}
+        {otherSidebarButtons.map((button, index) => renderButton(button, index + 200))}
 
         {/* Alert button with dropdown */}
         <div className="relative flex-shrink-0" ref={alertButtonRef}>

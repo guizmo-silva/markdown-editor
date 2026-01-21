@@ -19,10 +19,13 @@
     "blockquote": "Zitat",
     "codeBlock": "Codeblock",
     "link": "Link",
+    "linkInline": "Direkter Link",
+    "linkReference": "Referenzlink",
     "image": "Bild",
     "table": "Tabelle",
     "horizontalRule": "Horizontale Linie",
     "subscript": "Tiefgestellt",
+    "footnote": "Fußnote",
     "superscript": "Hochgestellt",
     "localImage": "Lokal importieren",
     "linkedImage": "Verlinktes Bild",
@@ -46,7 +49,11 @@
     "links": "Links",
     "alerts": "Warnungen",
     "footnotes": "Fußnoten",
-    "tables": "Tabellen"
+    "tables": "Tabellen",
+    "quotes": "Zitate",
+    "orderedLists": "Nummerierte Listen",
+    "unorderedLists": "Aufzählungslisten",
+    "codeBlocks": "Codeblöcke"
   },
   "fileBrowser": {
     "title": "Dateien"
