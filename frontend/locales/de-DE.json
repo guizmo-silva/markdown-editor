@@ -90,7 +90,8 @@
     "spellcheckOff": "Rechtschreibung: Aus",
     "enableSpellcheck": "Rechtschreibprüfung aktivieren",
     "selectLanguage": "Sprache der Prüfung",
-    "current": "aktuell"
+    "current": "aktuell",
+    "statistics": "Statistiken"
   },
   "tooltips": {
     "newTab": "Neuer Tab",

@@ -2,6 +2,9 @@
 
 Editor de markdown self-hosted. Primeiro será feita uma versão em docker com futura adaptação para aplicativo desktop (Windows/Linux) usando Electron ou Tauri.
 
+## Instruções básicas
+Não é necessário rodar o projeto com `npm run dev`.
+
 ---
 
 ## Stack Tecnológica

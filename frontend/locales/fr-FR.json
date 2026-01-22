@@ -90,7 +90,8 @@
     "spellcheckOff": "Correcteur: Désactivé",
     "enableSpellcheck": "Activer le correcteur orthographique",
     "selectLanguage": "Langue du correcteur",
-    "current": "actuel"
+    "current": "actuel",
+    "statistics": "Statistiques"
   },
   "tooltips": {
     "newTab": "Nouvel onglet",

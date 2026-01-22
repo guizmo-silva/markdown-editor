@@ -90,7 +90,8 @@
     "spellcheckOff": "Spellcheck: Off",
     "enableSpellcheck": "Enable spellcheck",
     "selectLanguage": "Spellcheck language",
-    "current": "current"
+    "current": "current",
+    "statistics": "Statistics"
   },
   "tooltips": {
     "newTab": "New tab",

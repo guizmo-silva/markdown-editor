@@ -1,6 +1,7 @@
 'use client';
 
 import { RefObject, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { CodeMirrorHandle } from '@/components/Editor';
 import { useThemedIcon } from '@/utils/useThemedIcon';
@@ -41,6 +42,17 @@ export default function Toolbar({
   const [tableHover, setTableHover] = useState({ rows: 0, cols: 0 });
   const [imageUrl, setImageUrl] = useState('');
   const [imageAlt, setImageAlt] = useState('');
+
+  // Portal mounting state (SSR safety)
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Dropdown position states
+  const [headingMenuPos, setHeadingMenuPos] = useState({ top: 0, left: 0 });
+  const [quoteMenuPos, setQuoteMenuPos] = useState({ top: 0, left: 0 });
+  const [linkMenuPos, setLinkMenuPos] = useState({ top: 0, left: 0 });
+  const [imageMenuPos, setImageMenuPos] = useState({ top: 0, left: 0 });
+  const [tableMenuPos, setTableMenuPos] = useState({ top: 0, left: 0 });
+  const [alertMenuPos, setAlertMenuPos] = useState({ top: 0, left: 0 });
   const headingButtonRef = useRef<HTMLDivElement>(null);
   const alertButtonRef = useRef<HTMLDivElement>(null);
   const quoteButtonRef = useRef<HTMLDivElement>(null);

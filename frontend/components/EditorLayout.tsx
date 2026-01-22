@@ -16,6 +16,7 @@ const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
 const SPLIT_MIN_PERCENT = 20; // Minimum 20% for each panel
 const SPLIT_MAX_PERCENT = 80; // Maximum 80% for each panel
+const CODE_VIEW_MIN_WIDTH = 350; // Minimum width in pixels for code view
 
 // Interface for tab data
 interface TabData {
@@ -123,6 +124,16 @@ export default function EditorLayout() {
       return newTabs;
     });
   }, [activeTabId]);
+
+  // Reorder tabs (drag and drop)
+  const reorderTabs = useCallback((fromIndex: number, toIndex: number) => {
+    setTabs(prevTabs => {
+      const newTabs = [...prevTabs];
+      const [movedTab] = newTabs.splice(fromIndex, 1);
+      newTabs.splice(toIndex, 0, movedTab);
+      return newTabs;
+    });
+  }, []);
 
   // Extract first heading from markdown
   const extractFirstHeading = useCallback((content: string): string | null => {
@@ -509,13 +520,18 @@ export default function EditorLayout() {
 
     const container = splitContainerRef.current;
     const containerRect = container.getBoundingClientRect();
+    const containerWidth = containerRect.width;
     const relativeX = e.clientX - containerRect.left;
-    const percentage = (relativeX / containerRect.width) * 100;
+    const percentage = (relativeX / containerWidth) * 100;
 
-    if (percentage >= SPLIT_MIN_PERCENT && percentage <= SPLIT_MAX_PERCENT) {
+    // Calculate minimum percentage based on pixel constraint
+    const minPercentFromPixels = (CODE_VIEW_MIN_WIDTH / containerWidth) * 100;
+    const effectiveMinPercent = Math.max(SPLIT_MIN_PERCENT, minPercentFromPixels);
+
+    if (percentage >= effectiveMinPercent && percentage <= SPLIT_MAX_PERCENT) {
       setSplitPosition(percentage);
-    } else if (percentage < SPLIT_MIN_PERCENT) {
-      setSplitPosition(SPLIT_MIN_PERCENT);
+    } else if (percentage < effectiveMinPercent) {
+      setSplitPosition(effectiveMinPercent);
     } else if (percentage > SPLIT_MAX_PERCENT) {
       setSplitPosition(SPLIT_MAX_PERCENT);
     }
@@ -632,6 +648,7 @@ export default function EditorLayout() {
           onTabClose={(tabId) => closeTab(tabId)}
           onNewTab={() => setShowWelcomeModal(true)}
           onTabRename={handleTabRename}
+          onTabReorder={reorderTabs}
         />
 
         {/* Content Area - Based on view mode */}
@@ -640,7 +657,10 @@ export default function EditorLayout() {
           {(viewMode === 'code' || viewMode === 'split') && (
             <div
               className="flex flex-col overflow-hidden"
-              style={{ width: viewMode === 'split' ? `${splitPosition}%` : '100%' }}
+              style={{
+                width: viewMode === 'split' ? `${splitPosition}%` : '100%',
+                minWidth: viewMode === 'split' ? `${CODE_VIEW_MIN_WIDTH}px` : undefined
+              }}
             >
               <Toolbar
                 textareaRef={editorRef}
