@@ -83,8 +83,41 @@ export function parseHeadings(markdown: string): HeadingElement[] {
         text: atxMatch[2].trim(),
         raw: line,
       });
+      return;
+    }
+
+    // Match Setext-style headings:
+    // H1: Text followed by a line of === (at least 1)
+    // H2: Text followed by a line of --- (at least 3)
+    if (index > 0) {
+      const prevLine = lines[index - 1];
+      const prevLineTrimmed = prevLine.trim();
+
+      // Check if current line is a setext underline
+      // H1: line of only = characters (at least 1)
+      const isH1Underline = /^=+\s*$/.test(line);
+      // H2: line of only - characters (at least 3)
+      const isH2Underline = /^-{3,}\s*$/.test(line);
+
+      if ((isH1Underline || isH2Underline) && prevLineTrimmed.length > 0) {
+        // Make sure the previous line is not empty and not a special markdown element
+        // (not starting with #, >, -, *, |, etc.)
+        const isValidTextLine = !prevLineTrimmed.match(/^(#{1,6}\s|>\s*|[-*+]\s|\d+\.\s|\|)/);
+
+        if (isValidTextLine) {
+          headings.push({
+            line: index, // Line number of the text (1-indexed, so index is correct since prev line is index-1+1=index)
+            level: isH1Underline ? 1 : 2,
+            text: prevLineTrimmed,
+            raw: prevLine + '\n' + line,
+          });
+        }
+      }
     }
   });
+
+  // Sort by line number since setext headings might be detected out of order
+  headings.sort((a, b) => a.line - b.line);
 
   return headings;
 }

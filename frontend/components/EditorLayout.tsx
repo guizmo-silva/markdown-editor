@@ -676,6 +676,7 @@ export default function EditorLayout() {
                   viewTheme={editorTheme}
                   onToggleTheme={toggleEditorTheme}
                   saveStatus={saveStatus}
+                  documentId={activeTabId}
                 />
               </div>
             </div>

@@ -12,6 +12,9 @@ interface EditorHandle {
   selectionEnd: number;
   focus: () => void;
   setSelectionRange: (start: number, end: number) => void;
+  // Optional: Direct CodeMirror operations (supports undo/redo)
+  replaceRange?: (from: number, to: number, text: string) => void;
+  getValue?: () => string;
 }
 
 interface ToolbarProps {
@@ -46,6 +49,11 @@ export default function Toolbar({
   // Portal mounting state (SSR safety)
   const [isMounted, setIsMounted] = useState(false);
 
+  // Set isMounted after component mounts (for portal SSR safety)
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Dropdown position states
   const [headingMenuPos, setHeadingMenuPos] = useState({ top: 0, left: 0 });
   const [quoteMenuPos, setQuoteMenuPos] = useState({ top: 0, left: 0 });
@@ -63,27 +71,61 @@ export default function Toolbar({
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressRef = useRef(false);
 
+  // Refs for dropdown menus (needed for click outside detection with portals)
+  const headingMenuRef = useRef<HTMLDivElement>(null);
+  const alertMenuRef = useRef<HTMLDivElement>(null);
+  const quoteMenuRef = useRef<HTMLDivElement>(null);
+  const linkMenuRef = useRef<HTMLDivElement>(null);
+  const imageMenuRef = useRef<HTMLDivElement>(null);
+  const tableMenuRef = useRef<HTMLDivElement>(null);
+
   // Close dropdown menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (headingButtonRef.current && !headingButtonRef.current.contains(event.target as Node)) {
-        setShowHeadingMenu(false);
+      const target = event.target as Node;
+
+      if (showHeadingMenu) {
+        const isInsideButton = headingButtonRef.current?.contains(target);
+        const isInsideMenu = headingMenuRef.current?.contains(target);
+        if (!isInsideButton && !isInsideMenu) {
+          setShowHeadingMenu(false);
+        }
       }
-      if (alertButtonRef.current && !alertButtonRef.current.contains(event.target as Node)) {
-        setShowAlertMenu(false);
+      if (showAlertMenu) {
+        const isInsideButton = alertButtonRef.current?.contains(target);
+        const isInsideMenu = alertMenuRef.current?.contains(target);
+        if (!isInsideButton && !isInsideMenu) {
+          setShowAlertMenu(false);
+        }
       }
-      if (quoteButtonRef.current && !quoteButtonRef.current.contains(event.target as Node)) {
-        setShowQuoteMenu(false);
+      if (showQuoteMenu) {
+        const isInsideButton = quoteButtonRef.current?.contains(target);
+        const isInsideMenu = quoteMenuRef.current?.contains(target);
+        if (!isInsideButton && !isInsideMenu) {
+          setShowQuoteMenu(false);
+        }
       }
-      if (linkButtonRef.current && !linkButtonRef.current.contains(event.target as Node)) {
-        setShowLinkMenu(false);
+      if (showLinkMenu) {
+        const isInsideButton = linkButtonRef.current?.contains(target);
+        const isInsideMenu = linkMenuRef.current?.contains(target);
+        if (!isInsideButton && !isInsideMenu) {
+          setShowLinkMenu(false);
+        }
       }
-      if (imageButtonRef.current && !imageButtonRef.current.contains(event.target as Node)) {
-        setShowImageMenu(false);
+      if (showImageMenu) {
+        const isInsideButton = imageButtonRef.current?.contains(target);
+        const isInsideMenu = imageMenuRef.current?.contains(target);
+        if (!isInsideButton && !isInsideMenu) {
+          setShowImageMenu(false);
+        }
       }
-      if (tableButtonRef.current && !tableButtonRef.current.contains(event.target as Node)) {
-        setShowTableMenu(false);
-        setTableHover({ rows: 0, cols: 0 });
+      if (showTableMenu) {
+        const isInsideButton = tableButtonRef.current?.contains(target);
+        const isInsideMenu = tableMenuRef.current?.contains(target);
+        if (!isInsideButton && !isInsideMenu) {
+          setShowTableMenu(false);
+          setTableHover({ rows: 0, cols: 0 });
+        }
       }
     };
 
@@ -101,24 +143,38 @@ export default function Toolbar({
     const editor = getEditor();
     if (!editor) return;
 
+    const currentValue = editor.getValue ? editor.getValue() : value;
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const selectedText = value.substring(start, end);
+    const selectedText = currentValue.substring(start, end);
     const textToInsert = selectedText || placeholder;
-    const newText = value.substring(0, start) + prefix + textToInsert + suffix + value.substring(end);
+    const replacement = prefix + textToInsert + suffix;
 
-    onChange(newText);
-
-    // Set cursor position
-    setTimeout(() => {
-      if (selectedText) {
-        editor.setSelectionRange(start, end + prefix.length + suffix.length);
-      } else {
-        const newPos = start + prefix.length + textToInsert.length;
-        editor.setSelectionRange(newPos, newPos);
-      }
-      editor.focus();
-    }, 0);
+    // Use replaceRange if available (CodeMirror) for proper undo support
+    if (editor.replaceRange) {
+      editor.replaceRange(start, end, replacement);
+      setTimeout(() => {
+        if (selectedText) {
+          editor.setSelectionRange(start, start + replacement.length);
+        } else {
+          const newPos = start + prefix.length + textToInsert.length;
+          editor.setSelectionRange(newPos, newPos);
+        }
+        editor.focus();
+      }, 0);
+    } else {
+      const newText = currentValue.substring(0, start) + replacement + currentValue.substring(end);
+      onChange(newText);
+      setTimeout(() => {
+        if (selectedText) {
+          editor.setSelectionRange(start, start + replacement.length);
+        } else {
+          const newPos = start + prefix.length + textToInsert.length;
+          editor.setSelectionRange(newPos, newPos);
+        }
+        editor.focus();
+      }, 0);
+    }
   };
 
   // Helper function to toggle formatting (add or remove)
@@ -126,59 +182,78 @@ export default function Toolbar({
     const editor = getEditor();
     if (!editor) return;
 
+    const currentValue = editor.getValue ? editor.getValue() : value;
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const selectedText = value.substring(start, end);
+    const selectedText = currentValue.substring(start, end);
 
     // Check if the selected text is already wrapped with the format
-    const beforeSelection = value.substring(Math.max(0, start - prefix.length), start);
-    const afterSelection = value.substring(end, end + suffix.length);
+    const beforeSelection = currentValue.substring(Math.max(0, start - prefix.length), start);
+    const afterSelection = currentValue.substring(end, end + suffix.length);
 
     const isAlreadyFormatted = beforeSelection === prefix && afterSelection === suffix;
 
     if (isAlreadyFormatted) {
       // Remove formatting
-      const newText =
-        value.substring(0, start - prefix.length) +
-        selectedText +
-        value.substring(end + suffix.length);
-
-      onChange(newText);
-
-      // Adjust cursor position
-      setTimeout(() => {
-        editor.setSelectionRange(start - prefix.length, end - prefix.length);
-        editor.focus();
-      }, 0);
+      if (editor.replaceRange) {
+        editor.replaceRange(start - prefix.length, end + suffix.length, selectedText);
+        setTimeout(() => {
+          editor.setSelectionRange(start - prefix.length, end - prefix.length);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, start - prefix.length) + selectedText + currentValue.substring(end + suffix.length);
+        onChange(newText);
+        setTimeout(() => {
+          editor.setSelectionRange(start - prefix.length, end - prefix.length);
+          editor.focus();
+        }, 0);
+      }
     } else {
       // Check if selection includes the formatting markers
       if (selectedText.startsWith(prefix) && selectedText.endsWith(suffix) && selectedText.length > prefix.length + suffix.length) {
         // Remove formatting from the selected text
         const unwrappedText = selectedText.substring(prefix.length, selectedText.length - suffix.length);
-        const newText = value.substring(0, start) + unwrappedText + value.substring(end);
-
-        onChange(newText);
-
-        setTimeout(() => {
-          editor.setSelectionRange(start, start + unwrappedText.length);
-          editor.focus();
-        }, 0);
+        if (editor.replaceRange) {
+          editor.replaceRange(start, end, unwrappedText);
+          setTimeout(() => {
+            editor.setSelectionRange(start, start + unwrappedText.length);
+            editor.focus();
+          }, 0);
+        } else {
+          const newText = currentValue.substring(0, start) + unwrappedText + currentValue.substring(end);
+          onChange(newText);
+          setTimeout(() => {
+            editor.setSelectionRange(start, start + unwrappedText.length);
+            editor.focus();
+          }, 0);
+        }
       } else {
         // Add formatting
         const textToInsert = selectedText || placeholder;
-        const newText = value.substring(0, start) + prefix + textToInsert + suffix + value.substring(end);
-
-        onChange(newText);
-
-        setTimeout(() => {
-          if (selectedText) {
-            editor.setSelectionRange(start + prefix.length, end + prefix.length);
-          } else {
-            // Selecionar o placeholder para que o usuário possa substituí-lo digitando
-            editor.setSelectionRange(start + prefix.length, start + prefix.length + textToInsert.length);
-          }
-          editor.focus();
-        }, 0);
+        const replacement = prefix + textToInsert + suffix;
+        if (editor.replaceRange) {
+          editor.replaceRange(start, end, replacement);
+          setTimeout(() => {
+            if (selectedText) {
+              editor.setSelectionRange(start + prefix.length, end + prefix.length);
+            } else {
+              editor.setSelectionRange(start + prefix.length, start + prefix.length + textToInsert.length);
+            }
+            editor.focus();
+          }, 0);
+        } else {
+          const newText = currentValue.substring(0, start) + replacement + currentValue.substring(end);
+          onChange(newText);
+          setTimeout(() => {
+            if (selectedText) {
+              editor.setSelectionRange(start + prefix.length, end + prefix.length);
+            } else {
+              editor.setSelectionRange(start + prefix.length, start + prefix.length + textToInsert.length);
+            }
+            editor.focus();
+          }, 0);
+        }
       }
     }
   };
@@ -188,17 +263,27 @@ export default function Toolbar({
     const editor = getEditor();
     if (!editor) return;
 
+    const currentValue = editor.getValue ? editor.getValue() : value;
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const newText = value.substring(0, start) + text + value.substring(end);
 
-    onChange(newText);
-
-    setTimeout(() => {
-      const newPos = start + text.length;
-      editor.setSelectionRange(newPos, newPos);
-      editor.focus();
-    }, 0);
+    // Use replaceRange if available (CodeMirror) for proper undo support
+    if (editor.replaceRange) {
+      editor.replaceRange(start, end, text);
+      setTimeout(() => {
+        const newPos = start + text.length;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    } else {
+      const newText = currentValue.substring(0, start) + text + currentValue.substring(end);
+      onChange(newText);
+      setTimeout(() => {
+        const newPos = start + text.length;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    }
   };
 
   // Helper function to add prefix to current line
@@ -206,17 +291,27 @@ export default function Toolbar({
     const editor = getEditor();
     if (!editor) return;
 
+    const currentValue = editor.getValue ? editor.getValue() : value;
     const start = editor.selectionStart;
-    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-    const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart);
+    const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
 
-    onChange(newText);
-
-    setTimeout(() => {
-      const newPos = start + prefix.length;
-      editor.setSelectionRange(newPos, newPos);
-      editor.focus();
-    }, 0);
+    // Use replaceRange if available (CodeMirror) for proper undo support
+    if (editor.replaceRange) {
+      editor.replaceRange(lineStart, lineStart, prefix);
+      setTimeout(() => {
+        const newPos = start + prefix.length;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    } else {
+      const newText = currentValue.substring(0, lineStart) + prefix + currentValue.substring(lineStart);
+      onChange(newText);
+      setTimeout(() => {
+        const newPos = start + prefix.length;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    }
   };
 
   // Helper function to toggle line prefix (add or remove)
@@ -224,10 +319,12 @@ export default function Toolbar({
     const editor = getEditor();
     if (!editor) return;
 
+    const currentValue = editor.getValue ? editor.getValue() : value;
     const start = editor.selectionStart;
-    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-    const lineEnd = value.indexOf('\n', start);
-    const lineContent = value.substring(lineStart, lineEnd === -1 ? value.length : lineEnd);
+    const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = currentValue.indexOf('\n', start);
+    const actualLineEnd = lineEnd === -1 ? currentValue.length : lineEnd;
+    const lineContent = currentValue.substring(lineStart, actualLineEnd);
 
     // Check if line starts with the prefix or any alternative prefix
     const allPrefixes = [prefix, ...alternativePrefixes];
@@ -235,24 +332,41 @@ export default function Toolbar({
 
     if (matchedPrefix) {
       // Remove the prefix
-      const newText = value.substring(0, lineStart) + lineContent.substring(matchedPrefix.length) + value.substring(lineEnd === -1 ? value.length : lineEnd);
-      onChange(newText);
-
-      setTimeout(() => {
-        const newPos = Math.max(lineStart, start - matchedPrefix.length);
-        editor.setSelectionRange(newPos, newPos);
-        editor.focus();
-      }, 0);
+      const newLineContent = lineContent.substring(matchedPrefix.length);
+      if (editor.replaceRange) {
+        editor.replaceRange(lineStart, actualLineEnd, newLineContent);
+        setTimeout(() => {
+          const newPos = Math.max(lineStart, start - matchedPrefix.length);
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, lineStart) + newLineContent + currentValue.substring(actualLineEnd);
+        onChange(newText);
+        setTimeout(() => {
+          const newPos = Math.max(lineStart, start - matchedPrefix.length);
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      }
     } else {
       // Add the prefix
-      const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart);
-      onChange(newText);
-
-      setTimeout(() => {
-        const newPos = start + prefix.length;
-        editor.setSelectionRange(newPos, newPos);
-        editor.focus();
-      }, 0);
+      if (editor.replaceRange) {
+        editor.replaceRange(lineStart, lineStart, prefix);
+        setTimeout(() => {
+          const newPos = start + prefix.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, lineStart) + prefix + currentValue.substring(lineStart);
+        onChange(newText);
+        setTimeout(() => {
+          const newPos = start + prefix.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      }
     }
   };
 
@@ -265,10 +379,13 @@ export default function Toolbar({
     const editor = getEditor();
     if (!editor) return;
 
+    // Get current content - use editor.getValue() if available for accuracy
+    const currentValue = editor.getValue ? editor.getValue() : value;
+
     const start = editor.selectionStart;
-    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-    const lineEnd = value.indexOf('\n', start);
-    const lineContent = value.substring(lineStart, lineEnd === -1 ? value.length : lineEnd);
+    const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = currentValue.indexOf('\n', start);
+    const lineContent = currentValue.substring(lineStart, lineEnd === -1 ? currentValue.length : lineEnd);
 
     // Check if line already has a heading (with or without space/text after)
     const headingMatch = lineContent.match(/^(#{1,6})(\s|$)/);
@@ -312,14 +429,26 @@ export default function Toolbar({
       }
     }
 
-    const newText = value.substring(0, lineStart) + newLineContent + value.substring(lineEnd === -1 ? value.length : lineEnd);
-    onChange(newText);
+    const actualLineEnd = lineEnd === -1 ? currentValue.length : lineEnd;
 
-    setTimeout(() => {
-      const newPos = start + cursorOffset;
-      editor.setSelectionRange(newPos, newPos);
-      editor.focus();
-    }, 0);
+    // Use replaceRange if available (CodeMirror) for proper undo support
+    if (editor.replaceRange) {
+      editor.replaceRange(lineStart, actualLineEnd, newLineContent);
+      setTimeout(() => {
+        const newPos = start + cursorOffset;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    } else {
+      // Fallback for textarea
+      const newText = currentValue.substring(0, lineStart) + newLineContent + currentValue.substring(actualLineEnd);
+      onChange(newText);
+      setTimeout(() => {
+        const newPos = start + cursorOffset;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    }
 
     setShowHeadingMenu(false);
   };
@@ -328,6 +457,10 @@ export default function Toolbar({
     isLongPressRef.current = false;
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
+      if (headingButtonRef.current) {
+        const rect = headingButtonRef.current.getBoundingClientRect();
+        setHeadingMenuPos({ top: rect.bottom + 4, left: rect.left });
+      }
       setShowHeadingMenu(true);
     }, 300);
   };
@@ -366,6 +499,11 @@ export default function Toolbar({
   };
 
   const handleAlertClick = () => {
+    if (alertButtonRef.current) {
+      const rect = alertButtonRef.current.getBoundingClientRect();
+      // Align to right edge since this is the last button
+      setAlertMenuPos({ top: rect.bottom + 4, left: rect.right - 180 }); // 180px is min-width
+    }
     setShowAlertMenu(true);
   };
 
@@ -379,18 +517,95 @@ export default function Toolbar({
 
   const handleSubscript = () => toggleFormat('<sub>', '</sub>', 'subscript');
   const handleSuperscript = () => toggleFormat('<sup>', '</sup>', 'superscript');
-  const handleBulletList = () => addLinePrefix('- ');
-  const handleNumberedList = () => addLinePrefix('1. ');
+  const handleBulletList = () => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const currentValue = editor.getValue ? editor.getValue() : value;
+    const start = editor.selectionStart;
+    const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = currentValue.indexOf('\n', start);
+    const actualLineEnd = lineEnd === -1 ? currentValue.length : lineEnd;
+    const lineContent = currentValue.substring(lineStart, actualLineEnd);
+
+    // Check if line already has bullet list prefix
+    if (lineContent.match(/^\s*-\s/)) {
+      // Line already has bullet, add new line with bullet
+      const newItem = '\n- ';
+      if (editor.replaceRange) {
+        editor.replaceRange(actualLineEnd, actualLineEnd, newItem);
+        setTimeout(() => {
+          const newPos = actualLineEnd + newItem.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, actualLineEnd) + newItem + currentValue.substring(actualLineEnd);
+        onChange(newText);
+        setTimeout(() => {
+          const newPos = actualLineEnd + newItem.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      }
+    } else {
+      // Add bullet prefix to current line
+      addLinePrefix('- ');
+    }
+  };
+
+  const handleNumberedList = () => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const currentValue = editor.getValue ? editor.getValue() : value;
+    const start = editor.selectionStart;
+    const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = currentValue.indexOf('\n', start);
+    const actualLineEnd = lineEnd === -1 ? currentValue.length : lineEnd;
+    const lineContent = currentValue.substring(lineStart, actualLineEnd);
+
+    // Check if line already has numbered list prefix
+    const numberMatch = lineContent.match(/^\s*(\d+)\.\s/);
+    if (numberMatch) {
+      // Line already has number, add new line with next number
+      const currentNumber = parseInt(numberMatch[1], 10);
+      const nextNumber = currentNumber + 1;
+      const newItem = `\n${nextNumber}. `;
+      if (editor.replaceRange) {
+        editor.replaceRange(actualLineEnd, actualLineEnd, newItem);
+        setTimeout(() => {
+          const newPos = actualLineEnd + newItem.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, actualLineEnd) + newItem + currentValue.substring(actualLineEnd);
+        onChange(newText);
+        setTimeout(() => {
+          const newPos = actualLineEnd + newItem.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      }
+    } else {
+      // Add number prefix to current line
+      addLinePrefix('1. ');
+    }
+  };
 
   // Quote handlers with long press support
   const handleQuote = (level?: number) => {
     const editor = getEditor();
     if (!editor) return;
 
+    // Get current content - use editor.getValue() if available for accuracy
+    const currentValue = editor.getValue ? editor.getValue() : value;
+
     const start = editor.selectionStart;
-    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-    const lineEnd = value.indexOf('\n', start);
-    const lineContent = value.substring(lineStart, lineEnd === -1 ? value.length : lineEnd);
+    const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = currentValue.indexOf('\n', start);
+    const lineContent = currentValue.substring(lineStart, lineEnd === -1 ? currentValue.length : lineEnd);
 
     // Check if line already has a quote (with or without space/text after)
     const quoteMatch = lineContent.match(/^(>{1,4})(\s|$)/);
@@ -434,14 +649,26 @@ export default function Toolbar({
       }
     }
 
-    const newText = value.substring(0, lineStart) + newLineContent + value.substring(lineEnd === -1 ? value.length : lineEnd);
-    onChange(newText);
+    const actualLineEnd = lineEnd === -1 ? currentValue.length : lineEnd;
 
-    setTimeout(() => {
-      const newPos = start + cursorOffset;
-      editor.setSelectionRange(newPos, newPos);
-      editor.focus();
-    }, 0);
+    // Use replaceRange if available (CodeMirror) for proper undo support
+    if (editor.replaceRange) {
+      editor.replaceRange(lineStart, actualLineEnd, newLineContent);
+      setTimeout(() => {
+        const newPos = start + cursorOffset;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    } else {
+      // Fallback for textarea
+      const newText = currentValue.substring(0, lineStart) + newLineContent + currentValue.substring(actualLineEnd);
+      onChange(newText);
+      setTimeout(() => {
+        const newPos = start + cursorOffset;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    }
 
     setShowQuoteMenu(false);
   };
@@ -450,6 +677,10 @@ export default function Toolbar({
     isLongPressRef.current = false;
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
+      if (quoteButtonRef.current) {
+        const rect = quoteButtonRef.current.getBoundingClientRect();
+        setQuoteMenuPos({ top: rect.bottom + 4, left: rect.left });
+      }
       setShowQuoteMenu(true);
     }, 300);
   };
@@ -477,28 +708,150 @@ export default function Toolbar({
     { level: 3, label: '>>>', description: 'Citação nível 3' },
     { level: 4, label: '>>>>', description: 'Citação nível 4' },
   ];
-  const handleTask = () => toggleLinePrefix('- [ ] ', ['- [x] ', '- [X] ']);
+  const handleTask = () => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const currentValue = editor.getValue ? editor.getValue() : value;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = currentValue.indexOf('\n', start);
+    const actualLineEnd = lineEnd === -1 ? currentValue.length : lineEnd;
+    const lineContent = currentValue.substring(lineStart, actualLineEnd);
+
+    // Check if line already has a task checkbox
+    const taskMatch = lineContent.match(/^(\s*-\s*\[[xX ]\]\s*)/);
+
+    if (taskMatch) {
+      // Line already has checkbox, add new line with empty checkbox
+      const newItem = '\n- [ ] ';
+      if (editor.replaceRange) {
+        editor.replaceRange(actualLineEnd, actualLineEnd, newItem);
+        setTimeout(() => {
+          const newPos = actualLineEnd + newItem.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, actualLineEnd) + newItem + currentValue.substring(actualLineEnd);
+        onChange(newText);
+        setTimeout(() => {
+          const newPos = actualLineEnd + newItem.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      }
+    } else {
+      // Add checkbox prefix to current line, preserving any selected text
+      const prefix = '- [ ] ';
+      const newLineContent = prefix + lineContent;
+
+      if (editor.replaceRange) {
+        editor.replaceRange(lineStart, actualLineEnd, newLineContent);
+        setTimeout(() => {
+          // Position cursor at end of line (after the text)
+          const newPos = lineStart + newLineContent.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, lineStart) + newLineContent + currentValue.substring(actualLineEnd);
+        onChange(newText);
+        setTimeout(() => {
+          const newPos = lineStart + newLineContent.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      }
+    }
+  };
 
   // Link handlers with long press support
   const handleLink = () => {
     const editor = getEditor();
     if (!editor) return;
 
+    const currentValue = editor.getValue ? editor.getValue() : value;
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const selectedText = value.substring(start, end);
-    const linkText = selectedText || 'link text';
+    const selectedText = currentValue.substring(start, end);
 
-    const newText = value.substring(0, start) + '[' + linkText + '](url)' + value.substring(end);
-    onChange(newText);
+    // Check if cursor/selection is inside a link pattern [text](url)
+    // Look backwards for '[' and forwards for '](url)'
+    const searchStart = Math.max(0, start - 200); // Look back up to 200 chars
+    const searchEnd = Math.min(currentValue.length, end + 200); // Look forward up to 200 chars
+    const searchArea = currentValue.substring(searchStart, searchEnd);
+    const relativeStart = start - searchStart;
+    const relativeEnd = end - searchStart;
 
-    setTimeout(() => {
-      // Select "link text" so user can type to replace it
-      const linkTextStart = start + 1; // After "["
-      const linkTextEnd = linkTextStart + linkText.length;
-      editor.setSelectionRange(linkTextStart, linkTextEnd);
-      editor.focus();
-    }, 0);
+    // Find all link patterns in the search area
+    const linkRegex = /\[([^\]]*)\]\(([^)]*)\)/g;
+    let match;
+    let foundLink = null;
+
+    while ((match = linkRegex.exec(searchArea)) !== null) {
+      const linkStart = match.index;
+      const linkEnd = match.index + match[0].length;
+
+      // Check if cursor/selection is within this link
+      if (relativeStart >= linkStart && relativeEnd <= linkEnd) {
+        foundLink = {
+          fullMatch: match[0],
+          text: match[1],
+          url: match[2],
+          absoluteStart: searchStart + linkStart,
+          absoluteEnd: searchStart + linkEnd
+        };
+        break;
+      }
+    }
+
+    if (foundLink) {
+      // Remove the link - if text is placeholder "link text", remove entirely
+      const isPlaceholder = foundLink.text === 'link text' && foundLink.url === 'url';
+      const replacement = isPlaceholder ? '' : foundLink.text;
+
+      if (editor.replaceRange) {
+        editor.replaceRange(foundLink.absoluteStart, foundLink.absoluteEnd, replacement);
+        setTimeout(() => {
+          const newPos = foundLink.absoluteStart + replacement.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, foundLink.absoluteStart) + replacement + currentValue.substring(foundLink.absoluteEnd);
+        onChange(newText);
+        setTimeout(() => {
+          const newPos = foundLink.absoluteStart + replacement.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      }
+    } else {
+      // Add link
+      const linkText = selectedText || 'link text';
+      const replacement = '[' + linkText + '](url)';
+
+      if (editor.replaceRange) {
+        editor.replaceRange(start, end, replacement);
+        setTimeout(() => {
+          const linkTextStart = start + 1;
+          const linkTextEnd = linkTextStart + linkText.length;
+          editor.setSelectionRange(linkTextStart, linkTextEnd);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, start) + replacement + currentValue.substring(end);
+        onChange(newText);
+        setTimeout(() => {
+          const linkTextStart = start + 1;
+          const linkTextEnd = linkTextStart + linkText.length;
+          editor.setSelectionRange(linkTextStart, linkTextEnd);
+          editor.focus();
+        }, 0);
+      }
+    }
 
     setShowLinkMenu(false);
   };
@@ -507,29 +860,41 @@ export default function Toolbar({
     const editor = getEditor();
     if (!editor) return;
 
+    const currentValue = editor.getValue ? editor.getValue() : value;
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const selectedText = value.substring(start, end);
+    const selectedText = currentValue.substring(start, end);
     const linkText = selectedText || 'link text';
     const refId = 'ref';
 
     // Insert the link reference at cursor position
     const linkMarkdown = `[${linkText}][${refId}]`;
-    const newText = value.substring(0, start) + linkMarkdown + value.substring(end);
-
     // Add the reference definition at the end of the document
     const refDefinition = `\n\n[${refId}]: url "title"`;
-    const finalText = newText + refDefinition;
 
-    onChange(finalText);
+    // Build the complete new text
+    const beforeSelection = currentValue.substring(0, start);
+    const afterSelection = currentValue.substring(end);
+    const finalText = beforeSelection + linkMarkdown + afterSelection + refDefinition;
 
-    setTimeout(() => {
-      // Select "link text" so user can type to replace it
-      const linkTextStart = start + 1; // After "["
-      const linkTextEnd = linkTextStart + linkText.length;
-      editor.setSelectionRange(linkTextStart, linkTextEnd);
-      editor.focus();
-    }, 0);
+    if (editor.replaceRange) {
+      // Replace entire document to include both changes in one undo operation
+      editor.replaceRange(0, currentValue.length, finalText);
+      setTimeout(() => {
+        const linkTextStart = start + 1;
+        const linkTextEnd = linkTextStart + linkText.length;
+        editor.setSelectionRange(linkTextStart, linkTextEnd);
+        editor.focus();
+      }, 0);
+    } else {
+      onChange(finalText);
+      setTimeout(() => {
+        const linkTextStart = start + 1;
+        const linkTextEnd = linkTextStart + linkText.length;
+        editor.setSelectionRange(linkTextStart, linkTextEnd);
+        editor.focus();
+      }, 0);
+    }
 
     setShowLinkMenu(false);
   };
@@ -538,6 +903,10 @@ export default function Toolbar({
     isLongPressRef.current = false;
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
+      if (linkButtonRef.current) {
+        const rect = linkButtonRef.current.getBoundingClientRect();
+        setLinkMenuPos({ top: rect.bottom + 4, left: rect.left });
+      }
       setShowLinkMenu(true);
     }, 300);
   };
@@ -564,11 +933,13 @@ export default function Toolbar({
     const editor = getEditor();
     if (!editor) return;
 
+    const currentValue = editor.getValue ? editor.getValue() : value;
+
     // Find all existing footnotes to determine the next number
     const footnotePattern = /\[\^(\d+)\]/g;
     const existingNumbers: number[] = [];
     let match;
-    while ((match = footnotePattern.exec(value)) !== null) {
+    while ((match = footnotePattern.exec(currentValue)) !== null) {
       existingNumbers.push(parseInt(match[1], 10));
     }
 
@@ -577,7 +948,7 @@ export default function Toolbar({
 
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const selectedText = value.substring(start, end);
+    const selectedText = currentValue.substring(start, end);
     const hasSelection = selectedText.length > 0;
 
     // Insert the footnote reference
@@ -587,30 +958,42 @@ export default function Toolbar({
 
     if (hasSelection) {
       // With selection: add reference after selected text, definition with placeholder at end
-      const newText = value.substring(0, end) + footnoteRef + value.substring(end);
-      const finalText = newText + footnoteDefinition;
+      const finalText = currentValue.substring(0, end) + footnoteRef + currentValue.substring(end) + footnoteDefinition;
 
-      onChange(finalText);
-
-      setTimeout(() => {
-        // Select the placeholder text in the definition for user to edit
-        const placeholderStart = finalText.length - placeholder.length;
-        const placeholderEnd = finalText.length;
-        editor.setSelectionRange(placeholderStart, placeholderEnd);
-        editor.focus();
-      }, 0);
+      if (editor.replaceRange) {
+        editor.replaceRange(0, currentValue.length, finalText);
+        setTimeout(() => {
+          const placeholderStart = finalText.length - placeholder.length;
+          const placeholderEnd = finalText.length;
+          editor.setSelectionRange(placeholderStart, placeholderEnd);
+          editor.focus();
+        }, 0);
+      } else {
+        onChange(finalText);
+        setTimeout(() => {
+          const placeholderStart = finalText.length - placeholder.length;
+          const placeholderEnd = finalText.length;
+          editor.setSelectionRange(placeholderStart, placeholderEnd);
+          editor.focus();
+        }, 0);
+      }
     } else {
       // Without selection: insert reference at cursor, definition with placeholder at end
-      const newText = value.substring(0, start) + footnoteRef + value.substring(end);
-      const finalText = newText + footnoteDefinition;
+      const finalText = currentValue.substring(0, start) + footnoteRef + currentValue.substring(end) + footnoteDefinition;
 
-      onChange(finalText);
-
-      setTimeout(() => {
-        // Position cursor BEFORE the footnote reference so user can type text
-        editor.setSelectionRange(start, start);
-        editor.focus();
-      }, 0);
+      if (editor.replaceRange) {
+        editor.replaceRange(0, currentValue.length, finalText);
+        setTimeout(() => {
+          editor.setSelectionRange(start, start);
+          editor.focus();
+        }, 0);
+      } else {
+        onChange(finalText);
+        setTimeout(() => {
+          editor.setSelectionRange(start, start);
+          editor.focus();
+        }, 0);
+      }
     }
   };
 
@@ -619,7 +1002,90 @@ export default function Toolbar({
 
   // Image handlers with long press support
   const handleImage = () => {
-    insertText('![alt text](image-url)');
+    const editor = getEditor();
+    if (!editor) return;
+
+    const currentValue = editor.getValue ? editor.getValue() : value;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const selectedText = currentValue.substring(start, end);
+
+    // Check if cursor/selection is inside an image pattern ![alt](url)
+    const searchStart = Math.max(0, start - 200);
+    const searchEnd = Math.min(currentValue.length, end + 200);
+    const searchArea = currentValue.substring(searchStart, searchEnd);
+    const relativeStart = start - searchStart;
+    const relativeEnd = end - searchStart;
+
+    // Find all image patterns in the search area
+    const imageRegex = /!\[([^\]]*)\]\(([^)]*)\)/g;
+    let match;
+    let foundImage = null;
+
+    while ((match = imageRegex.exec(searchArea)) !== null) {
+      const imageStart = match.index;
+      const imageEnd = match.index + match[0].length;
+
+      // Check if cursor/selection is within this image
+      if (relativeStart >= imageStart && relativeEnd <= imageEnd) {
+        foundImage = {
+          fullMatch: match[0],
+          alt: match[1],
+          url: match[2],
+          absoluteStart: searchStart + imageStart,
+          absoluteEnd: searchStart + imageEnd
+        };
+        break;
+      }
+    }
+
+    if (foundImage) {
+      // Remove the image - if it's the placeholder, remove entirely
+      const isPlaceholder = foundImage.alt === 'alt text' && foundImage.url === 'image-url';
+      const replacement = isPlaceholder ? '' : foundImage.alt;
+
+      if (editor.replaceRange) {
+        editor.replaceRange(foundImage.absoluteStart, foundImage.absoluteEnd, replacement);
+        setTimeout(() => {
+          const newPos = foundImage.absoluteStart + replacement.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, foundImage.absoluteStart) + replacement + currentValue.substring(foundImage.absoluteEnd);
+        onChange(newText);
+        setTimeout(() => {
+          const newPos = foundImage.absoluteStart + replacement.length;
+          editor.setSelectionRange(newPos, newPos);
+          editor.focus();
+        }, 0);
+      }
+    } else {
+      // Add image
+      const altText = selectedText || 'alt text';
+      const replacement = '![' + altText + '](image-url)';
+
+      if (editor.replaceRange) {
+        editor.replaceRange(start, end, replacement);
+        setTimeout(() => {
+          // Select the alt text
+          const altStart = start + 2;
+          const altEnd = altStart + altText.length;
+          editor.setSelectionRange(altStart, altEnd);
+          editor.focus();
+        }, 0);
+      } else {
+        const newText = currentValue.substring(0, start) + replacement + currentValue.substring(end);
+        onChange(newText);
+        setTimeout(() => {
+          const altStart = start + 2;
+          const altEnd = altStart + altText.length;
+          editor.setSelectionRange(altStart, altEnd);
+          editor.focus();
+        }, 0);
+      }
+    }
+
     setShowImageMenu(false);
   };
 
@@ -627,6 +1093,10 @@ export default function Toolbar({
     isLongPressRef.current = false;
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
+      if (imageButtonRef.current) {
+        const rect = imageButtonRef.current.getBoundingClientRect();
+        setImageMenuPos({ top: rect.bottom + 4, left: rect.left });
+      }
       setShowImageMenu(true);
     }, 300);
   };
@@ -709,6 +1179,10 @@ export default function Toolbar({
     isLongPressRef.current = false;
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
+      if (tableButtonRef.current) {
+        const rect = tableButtonRef.current.getBoundingClientRect();
+        setTableMenuPos({ top: rect.bottom + 4, left: rect.left });
+      }
       setShowTableMenu(true);
     }, 300);
   };
@@ -734,7 +1208,35 @@ export default function Toolbar({
     handleTable(rows, cols);
   };
 
-  const handleHorizontalLine = () => insertText('\n---\n');
+  const handleHorizontalLine = () => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const end = editor.selectionEnd;
+
+    // Use '\n\n---\n' to ensure a blank line before the hr
+    // This prevents the previous text from becoming a setext heading
+    const insertText = '\n\n---\n';
+
+    // Use replaceRange if available (CodeMirror) for proper undo support
+    if (editor.replaceRange) {
+      editor.replaceRange(end, end, insertText);
+      setTimeout(() => {
+        const newPos = end + insertText.length;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    } else {
+      // Fallback for textarea
+      const newText = value.substring(0, end) + insertText + value.substring(end);
+      onChange(newText);
+      setTimeout(() => {
+        const newPos = end + insertText.length;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    }
+  };
 
   // Simple formatting buttons (don't create sidebar elements)
   const simpleFormattingButtons = [
@@ -784,7 +1286,7 @@ export default function Toolbar({
         {simpleFormattingButtons.map(renderButton)}
 
         {/* Vertical separator */}
-        <div className="w-px h-5 bg-[var(--border-primary)] mx-1 flex-shrink-0" />
+        <div className="w-px h-5 bg-[var(--split-line)] mx-1 flex-shrink-0" />
 
         {/* Heading button with dropdown */}
         <div className="relative flex-shrink-0" ref={headingButtonRef}>
@@ -799,8 +1301,12 @@ export default function Toolbar({
             <img src={getIconPath('Heading_icon.svg')} alt={t('toolbar.heading')} className="w-6 h-6" />
           </button>
 
-          {showHeadingMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[120px] overflow-hidden">
+          {showHeadingMenu && isMounted && createPortal(
+            <div
+              ref={headingMenuRef}
+              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] min-w-[120px] overflow-hidden"
+              style={{ top: headingMenuPos.top, left: headingMenuPos.left }}
+            >
               {headingOptions.map((option) => (
                 <button
                   key={option.level}
@@ -811,7 +1317,8 @@ export default function Toolbar({
                   <span className="text-[var(--text-muted)] text-xs">{option.description}</span>
                 </button>
               ))}
-            </div>
+            </div>,
+            document.body
           )}
         </div>
 
@@ -828,8 +1335,12 @@ export default function Toolbar({
             <img src={getIconPath('Quote_icon.svg')} alt={t('toolbar.blockquote')} className="w-6 h-6" />
           </button>
 
-          {showQuoteMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
+          {showQuoteMenu && isMounted && createPortal(
+            <div
+              ref={quoteMenuRef}
+              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] min-w-[180px] overflow-hidden"
+              style={{ top: quoteMenuPos.top, left: quoteMenuPos.left }}
+            >
               {quoteOptions.map((option) => (
                 <button
                   key={option.level}
@@ -840,7 +1351,8 @@ export default function Toolbar({
                   <span className="text-[var(--text-muted)] text-xs">{option.description}</span>
                 </button>
               ))}
-            </div>
+            </div>,
+            document.body
           )}
         </div>
 
@@ -860,8 +1372,12 @@ export default function Toolbar({
             <img src={getIconPath('URL_icon.svg')} alt={t('toolbar.link')} className="w-6 h-6" />
           </button>
 
-          {showLinkMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
+          {showLinkMenu && isMounted && createPortal(
+            <div
+              ref={linkMenuRef}
+              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] min-w-[180px] overflow-hidden"
+              style={{ top: linkMenuPos.top, left: linkMenuPos.left }}
+            >
               <button
                 onClick={handleLink}
                 className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
@@ -874,7 +1390,8 @@ export default function Toolbar({
               >
                 <span className="text-[var(--text-secondary)]">{t('toolbar.linkReference')}</span>
               </button>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
 
@@ -891,8 +1408,12 @@ export default function Toolbar({
             <img src={getIconPath('Image_icon.svg')} alt={t('toolbar.image')} className="w-6 h-6" />
           </button>
 
-          {showImageMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
+          {showImageMenu && isMounted && createPortal(
+            <div
+              ref={imageMenuRef}
+              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] min-w-[180px] overflow-hidden"
+              style={{ top: imageMenuPos.top, left: imageMenuPos.left }}
+            >
               <button
                 onClick={handleLocalImage}
                 className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
@@ -905,7 +1426,8 @@ export default function Toolbar({
               >
                 <span className="text-[var(--text-secondary)]">{t('toolbar.linkedImage')}</span>
               </button>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
 
@@ -931,8 +1453,12 @@ export default function Toolbar({
             <img src={getIconPath('Table_icon.svg')} alt={t('toolbar.table')} className="w-6 h-6" />
           </button>
 
-          {showTableMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 p-2">
+          {showTableMenu && isMounted && createPortal(
+            <div
+              ref={tableMenuRef}
+              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] p-2"
+              style={{ top: tableMenuPos.top, left: tableMenuPos.left }}
+            >
               <div className="text-xs text-[var(--text-secondary)] mb-2 text-center">
                 {tableHover.rows > 0 && tableHover.cols > 0
                   ? `${tableHover.rows} × ${tableHover.cols}`
@@ -961,7 +1487,8 @@ export default function Toolbar({
                   })
                 )}
               </div>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
 
@@ -979,8 +1506,12 @@ export default function Toolbar({
             <img src={getIconPath('Alerts_icon.svg')} alt={t('toolbar.alert')} className="w-6 h-6" />
           </button>
 
-          {showAlertMenu && (
-            <div className="absolute top-full right-0 mt-1 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
+          {showAlertMenu && isMounted && createPortal(
+            <div
+              ref={alertMenuRef}
+              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] min-w-[180px] overflow-hidden"
+              style={{ top: alertMenuPos.top, left: alertMenuPos.left }}
+            >
               {alertOptions.map((option) => (
                 <button
                   key={option.type}
@@ -995,7 +1526,8 @@ export default function Toolbar({
                   <span className="text-[var(--text-muted)] text-xs">{option.description}</span>
                 </button>
               ))}
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       </div>

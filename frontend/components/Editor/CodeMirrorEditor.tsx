@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState, useImperativeHandle, forwardRef } from 'react';
-import { EditorState, Compartment, StateEffect, StateField } from '@codemirror/state';
+import { EditorState, Compartment, StateEffect, StateField, Transaction } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine, Decoration, DecorationSet } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -18,6 +18,9 @@ export interface CodeMirrorHandle {
   selectionEnd: number;
   focus: () => void;
   setSelectionRange: (start: number, end: number) => void;
+  // Direct CodeMirror operations (supports undo/redo)
+  replaceRange: (from: number, to: number, text: string) => void;
+  getValue: () => string;
 }
 
 interface CodeMirrorEditorProps {
@@ -29,6 +32,7 @@ interface CodeMirrorEditorProps {
   viewTheme?: 'light' | 'dark';
   onToggleTheme?: () => void;
   saveStatus?: 'saved' | 'saving' | 'unsaved' | 'error';
+  documentId?: string | null; // Used to reset undo history when switching documents
 }
 
 // Markdown syntax highlighting for light mode (bg: #D8D8D8)
@@ -272,6 +276,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   viewTheme,
   onToggleTheme,
   saveStatus,
+  documentId,
 }, ref) => {
   const { i18n } = useTranslation();
   const { theme: globalTheme } = useTheme();
@@ -283,6 +288,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   const [characterCount, setCharacterCount] = useState(0);
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
   const [spellcheckLanguage, setSpellcheckLanguage] = useState(i18n.language);
+  const previousDocumentIdRef = useRef<string | null | undefined>(documentId);
 
   // Use ref to always have access to the latest onChange callback
   const onChangeRef = useRef(onChange);
@@ -314,6 +320,17 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           selection: { anchor: start, head: end },
         });
       }
+    },
+    // Direct CodeMirror operations with undo support
+    replaceRange(from: number, to: number, text: string) {
+      if (viewRef.current) {
+        viewRef.current.dispatch({
+          changes: { from, to, insert: text },
+        });
+      }
+    },
+    getValue() {
+      return viewRef.current?.state.doc.toString() ?? '';
     },
   }));
 
@@ -422,7 +439,8 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     });
   }, [theme, getThemeExtensions]);
 
-  // Sync external value changes
+  // Sync external value changes (e.g., when switching tabs or loading a file)
+  // Use Transaction.addToHistory.of(false) to prevent this from being undoable
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
@@ -435,9 +453,61 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           to: currentContent.length,
           insert: value,
         },
+        annotations: Transaction.addToHistory.of(false),
       });
     }
   }, [value]);
+
+  // Clear undo history when switching documents
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    // Only clear history when documentId actually changes (not on initial mount)
+    if (previousDocumentIdRef.current !== documentId && previousDocumentIdRef.current !== undefined) {
+      // Create a new state with the current content but fresh history
+      const currentContent = view.state.doc.toString();
+      const isDark = theme === 'dark';
+
+      const newState = EditorState.create({
+        doc: currentContent,
+        extensions: [
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightActiveLine(),
+          history(),
+          formatKeymap,
+          keymap.of([
+            ...defaultKeymap,
+            ...historyKeymap,
+            indentWithTab,
+          ]),
+          markdown({
+            base: markdownLanguage,
+            codeLanguages: languages,
+          }),
+          themeCompartment.of(getThemeExtensions(isDark)),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              const newContent = update.state.doc.toString();
+              onChangeRef.current(newContent);
+              setCharacterCount(newContent.length);
+            }
+            if (update.selectionSet) {
+              updateCursorPosition(update.view);
+            }
+          }),
+          EditorView.lineWrapping,
+          spellcheckCompartment.of(getSpellcheckAttrs()),
+          flashHighlightField,
+        ],
+      });
+
+      view.setState(newState);
+    }
+
+    previousDocumentIdRef.current = documentId;
+  }, [documentId, theme, getThemeExtensions, getSpellcheckAttrs, updateCursorPosition]);
 
   // Scroll to line with flash highlight effect
   useEffect(() => {
