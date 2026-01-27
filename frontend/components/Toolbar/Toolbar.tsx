@@ -493,8 +493,68 @@ export default function Toolbar({
 
   // Alert handlers
   const handleAlert = (type: string) => {
-    const alertText = `> [!${type.toUpperCase()}]\n> `;
-    insertText(alertText);
+    const editor = getEditor();
+    if (!editor) return;
+
+    const text = editor.getValue ? editor.getValue() : value;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+
+    // Check current nesting level by counting > prefixes on the line at cursor
+    const firstLineStart = text.lastIndexOf('\n', start - 1) + 1;
+    const firstLineEnd = text.indexOf('\n', start);
+    const lineText = text.substring(firstLineStart, firstLineEnd === -1 ? text.length : firstLineEnd);
+    const nestingMatch = lineText.match(/^(>\s*)+/);
+    const nestingLevel = nestingMatch ? (nestingMatch[0].match(/>/g) || []).length : 0;
+
+    // Prevent more than 2 levels of nesting
+    if (nestingLevel >= 2) {
+      setShowAlertMenu(false);
+      return;
+    }
+
+    const selectedText = text.substring(start, end);
+    const outerPrefix = nestingLevel > 0 ? '> '.repeat(nestingLevel) : '';
+    const alertPrefix = outerPrefix + '> ';
+
+    if (selectedText.length > 0) {
+      // Expand range to cover full lines so we replace existing > prefixes
+      const rangeStart = firstLineStart;
+      const lastLineEnd = text.indexOf('\n', end);
+      const rangeEnd = lastLineEnd === -1 ? text.length : lastLineEnd;
+
+      // Get all full lines covered by the selection
+      const fullLinesText = text.substring(rangeStart, rangeEnd);
+      // Strip existing > prefixes from each line to get clean content
+      const strippedLines = fullLinesText.split('\n').map(line => line.replace(/^(>\s*)+/, ''));
+      const wrappedLines = strippedLines.map(line => `${alertPrefix}${line}`).join('\n');
+      const alertText = `${alertPrefix}[!${type.toUpperCase()}]\n${wrappedLines}`;
+
+      if (editor.replaceRange) {
+        editor.replaceRange(rangeStart, rangeEnd, alertText);
+      } else {
+        onChange(text.substring(0, rangeStart) + alertText + text.substring(rangeEnd));
+      }
+      setTimeout(() => {
+        const contentStart = rangeStart + `${alertPrefix}[!${type.toUpperCase()}]\n`.length;
+        editor.setSelectionRange(contentStart, contentStart + wrappedLines.length);
+        editor.focus();
+      }, 0);
+    } else {
+      const alertText = `${alertPrefix}[!${type.toUpperCase()}]\n${alertPrefix}`;
+
+      if (editor.replaceRange) {
+        editor.replaceRange(start, end, alertText);
+      } else {
+        onChange(text.substring(0, start) + alertText + text.substring(end));
+      }
+      setTimeout(() => {
+        const newPos = start + alertText.length;
+        editor.setSelectionRange(newPos, newPos);
+        editor.focus();
+      }, 0);
+    }
+
     setShowAlertMenu(false);
   };
 
@@ -935,6 +995,17 @@ export default function Toolbar({
 
     const currentValue = editor.getValue ? editor.getValue() : value;
 
+    // Check if there's an unedited footnote placeholder — if so, navigate to it instead of creating a new one
+    const placeholderMatch = currentValue.match(/\[\^(\d+)\]:\s*footnote text\s*$/m);
+    if (placeholderMatch) {
+      const placeholderIdx = currentValue.indexOf(placeholderMatch[0]);
+      const textStart = placeholderIdx + placeholderMatch[0].indexOf('footnote text');
+      const textEnd = textStart + 'footnote text'.length;
+      editor.setSelectionRange(textStart, textEnd);
+      editor.focus();
+      return;
+    }
+
     // Find all existing footnotes to determine the next number
     const footnotePattern = /\[\^(\d+)\]/g;
     const existingNumbers: number[] = [];
@@ -984,13 +1055,17 @@ export default function Toolbar({
       if (editor.replaceRange) {
         editor.replaceRange(0, currentValue.length, finalText);
         setTimeout(() => {
-          editor.setSelectionRange(start, start);
+          const placeholderStart = finalText.length - placeholder.length;
+          const placeholderEnd = finalText.length;
+          editor.setSelectionRange(placeholderStart, placeholderEnd);
           editor.focus();
         }, 0);
       } else {
         onChange(finalText);
         setTimeout(() => {
-          editor.setSelectionRange(start, start);
+          const placeholderStart = finalText.length - placeholder.length;
+          const placeholderEnd = finalText.length;
+          editor.setSelectionRange(placeholderStart, placeholderEnd);
           editor.focus();
         }, 0);
       }
@@ -998,7 +1073,103 @@ export default function Toolbar({
   };
 
   const handleInlineCode = () => toggleFormat('`', '`', 'code');
-  const handleCodeBlock = () => insertText('\n```\ncode\n```\n');
+  const handleCodeBlock = () => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const text = editor.getValue ? editor.getValue() : value;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const selectedText = text.substring(start, end);
+
+    // Check if cursor/selection is inside an existing code block
+    // Find the nearest ``` before and after cursor
+    const beforeCursor = text.substring(0, start);
+    const afterCursor = text.substring(end);
+    const openMatch = beforeCursor.lastIndexOf('```');
+    const closeMatch = afterCursor.indexOf('```');
+
+    if (openMatch !== -1 && closeMatch !== -1) {
+      // Verify this is a proper open/close pair (open is at line start-ish)
+      const openLineStart = text.lastIndexOf('\n', openMatch) + 1;
+      const openLine = text.substring(openLineStart, text.indexOf('\n', openMatch));
+      const closeAbsPos = end + closeMatch;
+      const closeLineStart = text.lastIndexOf('\n', closeAbsPos) + 1;
+      const closeLine = text.substring(closeLineStart, closeAbsPos + 3);
+
+      if (openLine.trimStart().startsWith('```') && closeLine.trimStart() === '```') {
+        // We're inside a code block — toggle it off (remove the fences)
+        const blockStart = openLineStart;
+        const blockEndPos = closeAbsPos + 3;
+        // Include trailing newline if present
+        const blockEnd = text[blockEndPos] === '\n' ? blockEndPos + 1 : blockEndPos;
+        // Include leading newline if present
+        const actualStart = blockStart > 0 && text[blockStart - 1] === '\n' ? blockStart - 1 : blockStart;
+
+        const blockContent = text.substring(openMatch + 3, closeAbsPos);
+        // Strip the opening ``` line (may have language suffix) and get inner content
+        const innerStart = blockContent.indexOf('\n');
+        const inner = innerStart !== -1 ? blockContent.substring(innerStart + 1) : '';
+        // If inner is just the placeholder or empty, remove entirely
+        const trimmedInner = inner.trim();
+        if (trimmedInner === '' || trimmedInner === 'code') {
+          if (editor.replaceRange) {
+            editor.replaceRange(actualStart, blockEnd, '');
+          } else {
+            onChange(text.substring(0, actualStart) + text.substring(blockEnd));
+          }
+          setTimeout(() => {
+            editor.setSelectionRange(actualStart, actualStart);
+            editor.focus();
+          }, 0);
+        } else {
+          // Has real content — unwrap: replace block with just the inner content
+          if (editor.replaceRange) {
+            editor.replaceRange(actualStart, blockEnd, (actualStart > 0 ? '\n' : '') + inner + '\n');
+          } else {
+            const replacement = (actualStart > 0 ? '\n' : '') + inner + '\n';
+            onChange(text.substring(0, actualStart) + replacement + text.substring(blockEnd));
+          }
+          setTimeout(() => {
+            const newStart = actualStart > 0 ? actualStart + 1 : 0;
+            editor.setSelectionRange(newStart, newStart + inner.length);
+            editor.focus();
+          }, 0);
+        }
+        return;
+      }
+    }
+
+    // Not inside a code block — insert one
+    if (selectedText.length > 0) {
+      // Wrap selected text
+      const replacement = '\n```\n' + selectedText + '\n```\n';
+      if (editor.replaceRange) {
+        editor.replaceRange(start, end, replacement);
+      } else {
+        onChange(text.substring(0, start) + replacement + text.substring(end));
+      }
+      setTimeout(() => {
+        const contentStart = start + 5; // after \n```\n (5 chars)
+        editor.setSelectionRange(contentStart, contentStart + selectedText.length);
+        editor.focus();
+      }, 0);
+    } else {
+      // Insert empty code block with placeholder selected
+      const block = '\n```\ncode\n```\n';
+      if (editor.replaceRange) {
+        editor.replaceRange(start, end, block);
+      } else {
+        onChange(text.substring(0, start) + block + text.substring(end));
+      }
+      setTimeout(() => {
+        const placeholderStart = start + 5; // after \n```\n (5 chars)
+        const placeholderEnd = placeholderStart + 4; // "code" length
+        editor.setSelectionRange(placeholderStart, placeholderEnd);
+        editor.focus();
+      }, 0);
+    }
+  };
 
   // Image handlers with long press support
   const handleImage = () => {
@@ -1155,12 +1326,34 @@ export default function Toolbar({
     setImageAlt('');
   };
 
-  // Table handlers with long press support
-  const generateTableMarkdown = (rows: number, cols: number) => {
+  // Table handlers
+  type TableAlignment = 'left' | 'center' | 'right';
+  const [tableAlignment, setTableAlignment] = useState<TableAlignment>('center');
+
+  // Snapshot of cursor context captured when dropdown opens, so alignment
+  // clicks always reference the original cursor position even after edits.
+  const tableSnapshotRef = useRef<{
+    selStartLine: number;
+    selEndLine: number;
+    cursorStart: number;
+    cursorEnd: number;
+    lines: string[];
+    separatorLineIndex: number;
+    tableStartLine: number;
+    tableEndLine: number;
+  } | null>(null);
+
+  const separatorForAlignment = (alignment: TableAlignment): string => {
+    if (alignment === 'right') return '----------:';
+    if (alignment === 'center') return ':----------:';
+    return ':----------';
+  };
+
+  const generateTableMarkdown = (rows: number, cols: number, alignment: TableAlignment) => {
     if (rows === 0 || cols === 0) return '';
 
     const headerRow = '| ' + Array(cols).fill('Column').map((c, i) => `${c} ${i + 1}`).join(' | ') + ' |';
-    const separatorRow = '|' + Array(cols).fill('----------').join('|') + '|';
+    const separatorRow = '|' + Array(cols).fill(separatorForAlignment(alignment)).join('|') + '|';
     const dataRows = Array(rows - 1).fill(null).map((_, rowIndex) =>
       '| ' + Array(cols).fill('Cell').map((c, colIndex) => `${c} ${rowIndex + 1}-${colIndex + 1}`).join(' | ') + ' |'
     ).join('\n');
@@ -1168,44 +1361,193 @@ export default function Toolbar({
     return `\n${headerRow}\n${separatorRow}\n${dataRows}\n`;
   };
 
-  const handleTable = (rows: number = 2, cols: number = 2) => {
-    const tableMarkdown = generateTableMarkdown(rows, cols);
+  // Regex that matches a table separator row: | :---: | ---: | :--- | --- | etc.
+  const tableSeparatorRegex = /^\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|$/;
+  const tableSeparatorCellRegex = /:?-{3,}:?/g;
+
+  // Helper: get column index from cursor offset within a table row line
+  const getColumnIndexAtOffset = (line: string, offsetInLine: number): number => {
+    let col = -1; // before first pipe = not in a column yet
+    for (let i = 0; i < offsetInLine && i < line.length; i++) {
+      if (line[i] === '|') col++;
+    }
+    return col;
+  };
+
+  // Helper: get start/end column indices covered by a selection across table rows
+  const getSelectedColumns = (snapshotLines: string[], selStartLine: number, selEndLine: number, cursorStart: number, cursorEnd: number, tableHeaderLine: number): { startCol: number; endCol: number } | null => {
+    const lineOffset = (lineIdx: number) => snapshotLines.slice(0, lineIdx).reduce((acc, l) => acc + l.length + 1, 0);
+
+    const startLineOffset = lineOffset(selStartLine);
+    const offsetInStartLine = cursorStart - startLineOffset;
+    const endLineOffset = lineOffset(selEndLine);
+    const offsetInEndLine = cursorEnd - endLineOffset;
+
+    const startIsTableRow = snapshotLines[selStartLine]?.trim().startsWith('|');
+    const endIsTableRow = snapshotLines[selEndLine]?.trim().startsWith('|');
+    if (!startIsTableRow && !endIsTableRow) return null;
+
+    const separatorLine = snapshotLines[tableHeaderLine + 1];
+    if (!separatorLine) return null;
+    const totalCols = (separatorLine.match(/:?-{3,}:?/g) || []).length;
+    if (totalCols === 0) return null;
+
+    const rawStartCol = startIsTableRow ? getColumnIndexAtOffset(snapshotLines[selStartLine], offsetInStartLine) : 0;
+    const rawEndCol = endIsTableRow ? getColumnIndexAtOffset(snapshotLines[selEndLine], offsetInEndLine) : rawStartCol;
+
+    // Clamp to valid column range instead of rejecting out-of-bounds values.
+    // Cursor before the first pipe gives -1 → clamp to 0.
+    // Cursor after the last pipe gives totalCols → clamp to totalCols-1.
+    const clamp = (v: number) => Math.max(0, Math.min(v, totalCols - 1));
+
+    return {
+      startCol: Math.min(clamp(rawStartCol), clamp(rawEndCol)),
+      endCol: Math.max(clamp(rawStartCol), clamp(rawEndCol))
+    };
+  };
+
+  // Build a snapshot of the cursor context relative to a table (if any).
+  // Called once when the dropdown opens so all alignment clicks use stable data.
+  const captureTableSnapshot = () => {
+    const editor = getEditor();
+    if (!editor) { tableSnapshotRef.current = null; return; }
+
+    const text = editor.getValue ? editor.getValue() : value;
+    const cursorStart = editor.selectionStart;
+    const cursorEnd = editor.selectionEnd;
+    const lines = text.split('\n');
+
+    let charCount = 0;
+    let selStartLine = 0;
+    let selEndLine = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const lineEnd = charCount + lines[i].length;
+      if (charCount <= cursorStart && cursorStart <= lineEnd) selStartLine = i;
+      if (charCount <= cursorEnd && cursorEnd <= lineEnd) selEndLine = i;
+      charCount += lines[i].length + 1;
+    }
+
+    // Try to find separator line
+    const tryFind = (from: number, to: number): number | null => {
+      for (let i = from; i <= to; i++) {
+        if (tableSeparatorRegex.test(lines[i].trim())) {
+          if (i > 0 && lines[i - 1].trim().startsWith('|')) return i;
+        }
+      }
+      return null;
+    };
+
+    // Check selection lines first, then scan around
+    let sepIdx = tryFind(selStartLine, selEndLine);
+    if (sepIdx === null) {
+      sepIdx = tryFind(Math.max(0, selStartLine - 10), Math.min(lines.length - 1, selEndLine + 10));
+    }
+
+    if (sepIdx === null) { tableSnapshotRef.current = null; return; }
+
+    const tableStart = sepIdx - 1;
+    let tableEnd = sepIdx;
+    for (let j = sepIdx + 1; j < lines.length; j++) {
+      if (lines[j].trim().startsWith('|')) tableEnd = j; else break;
+    }
+
+    if (selStartLine > tableEnd || selEndLine < tableStart) {
+      tableSnapshotRef.current = null;
+      return;
+    }
+
+    tableSnapshotRef.current = {
+      selStartLine,
+      selEndLine,
+      cursorStart,
+      cursorEnd,
+      lines,
+      separatorLineIndex: sepIdx,
+      tableStartLine: tableStart,
+      tableEndLine: tableEnd
+    };
+  };
+
+  const applyAlignmentToExistingTable = (alignment: TableAlignment) => {
+    const editor = getEditor();
+    if (!editor) return;
+    const snap = tableSnapshotRef.current;
+    if (!snap) return;
+
+    // Re-read current text to get the up-to-date separator line position
+    // (it may have shifted from previous alignment changes).
+    const text = editor.getValue ? editor.getValue() : value;
+    const currentLines = text.split('\n');
+
+    // The separator is still at the same line index – only its content changed.
+    const sepIdx = snap.separatorLineIndex;
+    if (sepIdx >= currentLines.length) return;
+    if (!tableSeparatorRegex.test(currentLines[sepIdx].trim())) return;
+
+    const separatorLineStart = currentLines.slice(0, sepIdx).reduce((acc, l) => acc + l.length + 1, 0);
+    const separatorLineEnd = separatorLineStart + currentLines[sepIdx].length;
+    const oldSeparator = currentLines[sepIdx];
+
+    // Use snapshot's cursor info for column detection (stable across edits)
+    const selectedCols = getSelectedColumns(
+      snap.lines, snap.selStartLine, snap.selEndLine,
+      snap.cursorStart, snap.cursorEnd, snap.tableStartLine
+    );
+
+    const newSep = separatorForAlignment(alignment);
+    const totalCols = (oldSeparator.match(tableSeparatorCellRegex) || []).length;
+
+    let newSeparator: string;
+    if (selectedCols && (selectedCols.startCol !== 0 || selectedCols.endCol !== totalCols - 1)) {
+      let colIdx = 0;
+      newSeparator = oldSeparator.replace(tableSeparatorCellRegex, (match) => {
+        const shouldReplace = colIdx >= selectedCols.startCol && colIdx <= selectedCols.endCol;
+        colIdx++;
+        return shouldReplace ? newSep : match;
+      });
+    } else {
+      newSeparator = oldSeparator.replace(tableSeparatorCellRegex, () => newSep);
+    }
+
+    if (editor.replaceRange) {
+      editor.replaceRange(separatorLineStart, separatorLineEnd, newSeparator);
+    } else {
+      const newText = text.substring(0, separatorLineStart) + newSeparator + text.substring(separatorLineEnd);
+      onChange(newText);
+    }
+  };
+
+  const handleTable = (rows: number, cols: number, alignment: TableAlignment) => {
+    const tableMarkdown = generateTableMarkdown(rows, cols, alignment);
     insertText(tableMarkdown);
     setShowTableMenu(false);
     setTableHover({ rows: 0, cols: 0 });
   };
 
-  const handleTableMouseDown = () => {
-    isLongPressRef.current = false;
-    longPressTimerRef.current = setTimeout(() => {
-      isLongPressRef.current = true;
-      if (tableButtonRef.current) {
-        const rect = tableButtonRef.current.getBoundingClientRect();
-        setTableMenuPos({ top: rect.bottom + 4, left: rect.left });
-      }
-      setShowTableMenu(true);
-    }, 300);
+  const handleTableClick = () => {
+    if (showTableMenu) {
+      setShowTableMenu(false);
+      setTableHover({ rows: 0, cols: 0 });
+      return;
+    }
+    // Capture cursor context BEFORE focus moves to the dropdown
+    captureTableSnapshot();
+    if (tableButtonRef.current) {
+      const rect = tableButtonRef.current.getBoundingClientRect();
+      setTableMenuPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setShowTableMenu(true);
   };
 
-  const handleTableMouseUp = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    if (!isLongPressRef.current) {
-      handleTable(2, 2);
-    }
-  };
-
-  const handleTableMouseLeave = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
+  const handleAlignmentClick = (alignment: TableAlignment) => {
+    setTableAlignment(alignment);
+    if (tableSnapshotRef.current) {
+      applyAlignmentToExistingTable(alignment);
     }
   };
 
   const handleTableGridClick = (rows: number, cols: number) => {
-    handleTable(rows, cols);
+    handleTable(rows, cols, tableAlignment);
   };
 
   const handleHorizontalLine = () => {
@@ -1262,7 +1604,8 @@ export default function Toolbar({
     { icon: getIconPath('Footnote_icon.svg'), translationKey: 'toolbar.footnote', onClick: handleFootnote },
   ];
 
-  const GRID_SIZE = 8;
+  const GRID_COLS = 10;
+  const GRID_ROWS = 8;
 
   const renderButton = (button: { icon: string; translationKey: string; onClick: () => void }, index: number) => {
     const label = t(button.translationKey);
@@ -1443,9 +1786,7 @@ export default function Toolbar({
         {/* Table button with grid dropdown */}
         <div className="relative flex-shrink-0" ref={tableButtonRef}>
           <button
-            onMouseDown={handleTableMouseDown}
-            onMouseUp={handleTableMouseUp}
-            onMouseLeave={handleTableMouseLeave}
+            onClick={handleTableClick}
             className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.table')}
             title={t('toolbar.table')}
@@ -1466,11 +1807,11 @@ export default function Toolbar({
               </div>
               <div
                 className="grid gap-[2px]"
-                style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
+                style={{ gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)` }}
                 onMouseLeave={() => setTableHover({ rows: 0, cols: 0 })}
               >
-                {Array(GRID_SIZE).fill(null).map((_, rowIndex) =>
-                  Array(GRID_SIZE).fill(null).map((_, colIndex) => {
+                {Array(GRID_ROWS).fill(null).map((_, rowIndex) =>
+                  Array(GRID_COLS).fill(null).map((_, colIndex) => {
                     const isHighlighted = rowIndex < tableHover.rows && colIndex < tableHover.cols;
                     return (
                       <div
@@ -1486,6 +1827,21 @@ export default function Toolbar({
                     );
                   })
                 )}
+              </div>
+              <div className="border-t border-[var(--border-primary)] mt-2 pt-2 flex gap-1">
+                {(['left', 'center', 'right'] as TableAlignment[]).map((align) => (
+                  <button
+                    key={align}
+                    onClick={() => handleAlignmentClick(align)}
+                    className={`flex-1 text-xs py-1 px-2 rounded transition-colors ${
+                      tableAlignment === align
+                        ? 'bg-[var(--text-secondary)] text-[var(--bg-primary)]'
+                        : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]'
+                    }`}
+                  >
+                    {t(`toolbar.align${align.charAt(0).toUpperCase() + align.slice(1)}`)}
+                  </button>
+                ))}
               </div>
             </div>,
             document.body

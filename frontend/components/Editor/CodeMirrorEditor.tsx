@@ -8,6 +8,7 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
+import { autocompletion, CompletionContext } from '@codemirror/autocomplete';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
 import InfoBar from './InfoBar';
@@ -137,6 +138,30 @@ const lightTheme = EditorView.theme({
   '.cm-flash-highlight': {
     animation: 'flash-fade 800ms ease-out forwards',
   },
+  '.cm-tooltip-autocomplete': {
+    backgroundColor: '#E9E9E9',
+    border: '1px solid #CCCCCC',
+    borderRadius: '6px',
+    fontFamily: 'Roboto Mono, monospace',
+    fontSize: '12px',
+    overflow: 'hidden',
+  },
+  '.cm-tooltip-autocomplete ul li': {
+    padding: '4px 8px',
+    color: '#404040',
+  },
+  '.cm-tooltip-autocomplete ul li[aria-selected]': {
+    backgroundColor: '#CCCCCC',
+    color: '#1a1a1a',
+  },
+  '.cm-tooltip-autocomplete .cm-completionDetail': {
+    color: '#888888',
+    fontStyle: 'italic',
+    marginLeft: '8px',
+  },
+  '.cm-completionIcon': {
+    display: 'none',
+  },
 });
 
 // Dark theme for CodeMirror
@@ -197,6 +222,105 @@ const darkTheme = EditorView.theme({
   '.cm-flash-highlight': {
     animation: 'flash-fade-dark 800ms ease-out forwards',
   },
+  '.cm-tooltip-autocomplete': {
+    backgroundColor: '#3a3a3a',
+    border: '1px solid #555555',
+    borderRadius: '6px',
+    fontFamily: 'Roboto Mono, monospace',
+    fontSize: '12px',
+    overflow: 'hidden',
+  },
+  '.cm-tooltip-autocomplete ul li': {
+    padding: '4px 8px',
+    color: '#BEBEBE',
+  },
+  '.cm-tooltip-autocomplete ul li[aria-selected]': {
+    backgroundColor: '#555555',
+    color: '#FFFFFF',
+  },
+  '.cm-tooltip-autocomplete .cm-completionDetail': {
+    color: '#888888',
+    fontStyle: 'italic',
+    marginLeft: '8px',
+  },
+  '.cm-completionIcon': {
+    display: 'none',
+  },
+});
+
+// Build language completions from @codemirror/language-data
+// Each entry has a label (lowercase name used in markdown fences) and a display name.
+const codeLanguageCompletions: { label: string; displayName: string }[] = [];
+const seenLabels = new Set<string>();
+for (const lang of languages) {
+  // Use aliases (lowercase) as the primary labels — these are what go in ```xyz
+  for (const alias of lang.alias) {
+    const lower = alias.toLowerCase();
+    if (!seenLabels.has(lower)) {
+      seenLabels.add(lower);
+      codeLanguageCompletions.push({ label: lower, displayName: lang.name });
+    }
+  }
+  // Also add the language name itself in lowercase
+  const nameLower = lang.name.toLowerCase();
+  if (!seenLabels.has(nameLower)) {
+    seenLabels.add(nameLower);
+    codeLanguageCompletions.push({ label: nameLower, displayName: lang.name });
+  }
+}
+
+// Autocomplete source: activates only on the opening ``` fence line of a code block
+function codeBlockLanguageCompletion(context: CompletionContext) {
+  const line = context.state.doc.lineAt(context.pos);
+  const lineText = line.text;
+
+  // Must be a line starting with ``` (optionally with leading whitespace)
+  const fenceMatch = lineText.match(/^(\s*`{3,})/);
+  if (!fenceMatch) return null;
+
+  const fenceEnd = line.from + fenceMatch[0].length; // position right after the backticks
+  const typed = lineText.slice(fenceMatch[0].length); // text after backticks
+
+  // Only activate if cursor is after the backticks on this line
+  if (context.pos < fenceEnd) return null;
+
+  // Don't activate if there's a closing fence (``` on a line that has content above in a block)
+  // Check if there's an opening ``` before this line — if so this might be a closing fence
+  const docText = context.state.doc.toString();
+  const textBefore = docText.substring(0, line.from);
+  const openFences = (textBefore.match(/^[ \t]*`{3,}/gm) || []).length;
+  // If odd number of prior fences, this is a closing fence — don't suggest
+  if (openFences % 2 === 1) return null;
+
+  // Filter completions based on what's typed after ```
+  const filter = typed.trim().toLowerCase();
+
+  // Only show suggestions once the user has started typing a language name
+  if (filter.length === 0) return null;
+
+  const filtered = codeLanguageCompletions
+    .filter(c => c.label.includes(filter) || c.displayName.toLowerCase().includes(filter))
+    .map(c => ({
+      label: c.label,
+      detail: c.displayName !== c.label ? c.displayName : undefined,
+      boost: c.label.startsWith(filter) ? 1 : 0,
+    }));
+
+  if (filtered.length === 0) return null;
+
+  return {
+    from: fenceEnd,
+    to: line.from + lineText.length,
+    options: filtered,
+    filter: false, // we already filter above
+  };
+}
+
+// Autocomplete extension configured for code block language suggestions
+const codeBlockAutocomplete = autocompletion({
+  override: [codeBlockLanguageCompletion],
+  activateOnTyping: true,
+  defaultKeymap: true,
 });
 
 // Compartment for dynamic theme switching
@@ -396,6 +520,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         placeholder ? EditorView.contentAttributes.of({ 'data-placeholder': placeholder }) : [],
         spellcheckCompartment.of(getSpellcheckAttrs()),
         flashHighlightField,
+        codeBlockAutocomplete,
       ],
     });
 
@@ -500,6 +625,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           EditorView.lineWrapping,
           spellcheckCompartment.of(getSpellcheckAttrs()),
           flashHighlightField,
+          codeBlockAutocomplete,
         ],
       });
 
