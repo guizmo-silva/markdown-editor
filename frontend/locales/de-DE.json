@@ -100,7 +100,8 @@
     "newTab": "Neuer Tab",
     "export": "Dokument exportieren",
     "menu": "Menü",
-    "doubleClickRename": "Doppelklick zum Umbenennen"
+    "doubleClickRename": "Doppelklick zum Umbenennen",
+    "hideSidebar": "Seitenleiste ausblenden"
   },
   "welcomeModal": {
     "newDocument": "Neues Dokument",

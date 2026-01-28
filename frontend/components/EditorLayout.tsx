@@ -240,9 +240,6 @@ export default function EditorLayout() {
   };
 
   const handleDeleteFile = async (filePath: string) => {
-    if (!confirm(`Are you sure you want to delete ${filePath}?`)) {
-      return;
-    }
     try {
       await deleteFile(filePath);
       setFileRefreshTrigger(prev => prev + 1);
@@ -586,6 +583,7 @@ export default function EditorLayout() {
             onViewModeChange={setViewMode}
             onNavigateToLine={handleNavigateToLine}
             onFileSelect={handleFileSelect}
+            onDeleteFile={handleDeleteFile}
             onExport={handleExport}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={handleToggleSidebar}

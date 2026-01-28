@@ -20,6 +20,7 @@ interface AssetsSidebarProps {
   onViewModeChange: (mode: ViewMode) => void;
   onNavigateToLine?: (line: number) => void;
   onFileSelect?: (filePath: string) => void;
+  onDeleteFile?: (filePath: string) => void;
   onExport?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -33,6 +34,7 @@ export default function AssetsSidebar({
   onViewModeChange,
   onNavigateToLine,
   onFileSelect,
+  onDeleteFile,
   onExport,
   isCollapsed = false,
   onToggleCollapse,
@@ -540,7 +542,7 @@ export default function AssetsSidebar({
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <FileBrowser onFileSelect={onFileSelect} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
+            <FileBrowser onFileSelect={onFileSelect} onDeleteFile={onDeleteFile} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
           </div>
         </div>
       </div>
@@ -561,12 +563,13 @@ export default function AssetsSidebar({
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="p-2 hover:bg-[var(--bg-secondary)] rounded transition-colors"
-            aria-label="Toggle sidebar"
+            className="p-2 hover:ring-1 hover:ring-[var(--border-primary)] rounded transition-all"
+            aria-label={t('tooltips.hideSidebar')}
+            title={t('tooltips.hideSidebar')}
           >
             <img
               src={getIconPath('hide_side_bar_icon.svg')}
-              alt="Toggle sidebar"
+              alt={t('tooltips.hideSidebar')}
               className="h-4 w-4"
             />
           </button>

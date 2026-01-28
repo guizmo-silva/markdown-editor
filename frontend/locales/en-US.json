@@ -100,7 +100,8 @@
     "newTab": "New tab",
     "export": "Export document",
     "menu": "Menu",
-    "doubleClickRename": "Double-click to rename"
+    "doubleClickRename": "Double-click to rename",
+    "hideSidebar": "Hide sidebar"
   },
   "welcomeModal": {
     "newDocument": "New Document",

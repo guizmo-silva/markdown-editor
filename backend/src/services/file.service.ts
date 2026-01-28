@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import trash from 'trash';
 import { validatePath } from '../utils/security.js';
 
 // Use getter to ensure env is loaded when accessed
@@ -12,9 +13,10 @@ export interface FileInfo {
   extension?: string;
   size?: number;
   modifiedAt?: string;
+  children?: FileInfo[];
 }
 
-export const listDirectory = async (relativePath: string): Promise<FileInfo[]> => {
+export const listDirectory = async (relativePath: string, maxDepth: number = 3): Promise<FileInfo[]> => {
   const safePath = await validatePath(relativePath, getWorkspaceRoot());
 
   const entries = await fs.readdir(safePath, { withFileTypes: true });
@@ -23,15 +25,23 @@ export const listDirectory = async (relativePath: string): Promise<FileInfo[]> =
     entries.map(async (entry) => {
       const fullPath = path.join(safePath, entry.name);
       const stats = await fs.stat(fullPath);
+      const entryRelativePath = path.relative(getWorkspaceRoot(), fullPath);
 
-      return {
+      const info: FileInfo = {
         name: entry.name,
-        path: path.relative(getWorkspaceRoot(), fullPath),
+        path: entryRelativePath,
         type: entry.isDirectory() ? 'folder' : 'file',
         extension: entry.isFile() ? path.extname(entry.name) : undefined,
         size: stats.size,
         modifiedAt: stats.mtime.toISOString(),
-      } as FileInfo;
+      };
+
+      // Recursively load children for folders if within depth limit
+      if (entry.isDirectory() && maxDepth > 1) {
+        info.children = await listDirectory(entryRelativePath, maxDepth - 1);
+      }
+
+      return info;
     })
   );
 
@@ -77,15 +87,26 @@ export const createNewFile = async (
   await fs.writeFile(safePath, content, 'utf-8');
 };
 
+export const createFolder = async (relativePath: string): Promise<void> => {
+  const safePath = await validatePath(relativePath, getWorkspaceRoot());
+
+  // Check if folder already exists
+  try {
+    await fs.access(safePath);
+    throw new Error('Folder already exists');
+  } catch (error: any) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  await fs.mkdir(safePath, { recursive: true });
+};
+
 export const deleteFileOrDirectory = async (relativePath: string): Promise<void> => {
   const safePath = await validatePath(relativePath, getWorkspaceRoot());
 
-  const stats = await fs.stat(safePath);
-  if (stats.isDirectory()) {
-    await fs.rm(safePath, { recursive: true });
-  } else {
-    await fs.unlink(safePath);
-  }
+  await trash(safePath);
 };
 
 export const renameFileOrDirectory = async (

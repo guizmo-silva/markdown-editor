@@ -100,7 +100,8 @@
     "newTab": "Nueva pestaña",
     "export": "Exportar documento",
     "menu": "Menú",
-    "doubleClickRename": "Doble clic para renombrar"
+    "doubleClickRename": "Doble clic para renombrar",
+    "hideSidebar": "Ocultar barra lateral"
   },
   "welcomeModal": {
     "newDocument": "Nuevo Documento",

@@ -318,34 +318,46 @@ export function parseQuotes(markdown: string): QuoteElement[] {
     if (line.match(/^>\s*/)) {
       // Check if this is a GitHub alert (skip it)
       const isAlert = alertTypes.some(type => line.includes(`[!${type}]`));
-      if (!isAlert) {
-        const startLine = i + 1;
-        let content = '';
-        let raw = '';
-
-        // Collect all consecutive blockquote lines
+      if (isAlert) {
+        // Skip the alert marker line and all its content lines
+        i++;
         while (i < lines.length && lines[i].match(/^>\s*/)) {
           const lineContent = lines[i].replace(/^>\s*/, '').trim();
-          // Stop if we hit an alert marker
-          if (alertTypes.some(type => lineContent.includes(`[!${type}]`))) {
+          // Stop if we hit a new alert marker at the top level (will be handled by outer loop)
+          if (alertTypes.some(type => lineContent.startsWith(`[!${type}]`))) {
             break;
           }
-          if (lineContent) {
-            content += (content ? ' ' : '') + lineContent;
-          }
-          raw += (raw ? '\n' : '') + lines[i];
           i++;
-        }
-
-        if (content) {
-          quotes.push({
-            line: startLine,
-            content,
-            raw,
-          });
         }
         continue;
       }
+
+      const startLine = i + 1;
+      let content = '';
+      let raw = '';
+
+      // Collect all consecutive blockquote lines
+      while (i < lines.length && lines[i].match(/^>\s*/)) {
+        const lineContent = lines[i].replace(/^>\s*/, '').trim();
+        // Stop if we hit an alert marker
+        if (alertTypes.some(type => lineContent.includes(`[!${type}]`))) {
+          break;
+        }
+        if (lineContent) {
+          content += (content ? ' ' : '') + lineContent;
+        }
+        raw += (raw ? '\n' : '') + lines[i];
+        i++;
+      }
+
+      if (content) {
+        quotes.push({
+          line: startLine,
+          content,
+          raw,
+        });
+      }
+      continue;
     }
     i++;
   }

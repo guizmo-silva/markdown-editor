@@ -4,6 +4,7 @@ import {
   readFile,
   saveFile,
   createFile,
+  createFolder,
   deleteFile,
   renameFile
 } from '../controllers/file.controller.js';
@@ -21,6 +22,9 @@ router.post('/save', saveFile);
 
 // Create new file
 router.post('/create', createFile);
+
+// Create folder
+router.post('/create-folder', createFolder);
 
 // Delete file
 router.delete('/delete', deleteFile);

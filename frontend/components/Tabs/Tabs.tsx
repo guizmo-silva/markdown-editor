@@ -46,6 +46,7 @@ export default function Tabs({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Custom drag and drop state
+  const [isPendingDrag, setIsPendingDrag] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
@@ -56,6 +57,10 @@ export default function Tabs({
 
   // Overflow detection state
   const [hasOverflow, setHasOverflow] = useState(false);
+
+  // Per-tab text overflow detection
+  const textRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
+  const [overflowingTabs, setOverflowingTabs] = useState<Set<string>>(new Set());
 
   // Focus input when editing starts
   useEffect(() => {
@@ -88,6 +93,23 @@ export default function Tabs({
     };
   }, [tabs.length]);
 
+  // Detect per-tab text overflow
+  useEffect(() => {
+    const newOverflowing = new Set<string>();
+    textRefs.current.forEach((el, tabId) => {
+      if (el.scrollWidth > el.clientWidth) {
+        newOverflowing.add(tabId);
+      }
+    });
+    setOverflowingTabs(prev => {
+      if (prev.size !== newOverflowing.size) return newOverflowing;
+      for (const id of newOverflowing) {
+        if (!prev.has(id)) return newOverflowing;
+      }
+      return prev;
+    });
+  }, [tabs]);
+
   // Update active tab when prop changes
   useEffect(() => {
     setActiveTab(activeTabId);
@@ -99,6 +121,14 @@ export default function Tabs({
 
     const { initialMouseX, tabRect, containerRect } = dragStateRef.current;
     const deltaX = e.clientX - initialMouseX;
+
+    // Only activate drag after a minimum distance threshold
+    if (!isDragging && Math.abs(deltaX) < 5) return;
+    if (!isDragging) {
+      setIsDragging(true);
+      setDraggedTabId(dragStateRef.current.tabId);
+      setGhostPosition(0);
+    }
 
     // Calculate new ghost position, constrained to container bounds
     const minX = containerRect.left - tabRect.left;
@@ -123,7 +153,7 @@ export default function Tabs({
     });
 
     setDragOverTabId(newDragOverId);
-  }, [hasOverflow]);
+  }, [hasOverflow, isDragging]);
 
   // Handle mouse up to end drag
   const handleMouseUp = useCallback(() => {
@@ -131,7 +161,7 @@ export default function Tabs({
 
     const { tabId: draggedId, tabIndex: fromIndex } = dragStateRef.current;
 
-    if (dragOverTabId && dragOverTabId !== draggedId) {
+    if (isDragging && dragOverTabId && dragOverTabId !== draggedId) {
       const toIndex = tabs.findIndex(tab => tab.id === dragOverTabId);
       if (toIndex !== -1 && fromIndex !== toIndex) {
         onTabReorder?.(fromIndex, toIndex);
@@ -139,6 +169,7 @@ export default function Tabs({
     }
 
     // Cleanup
+    setIsPendingDrag(false);
     setIsDragging(false);
     setDraggedTabId(null);
     setDragOverTabId(null);
@@ -146,22 +177,24 @@ export default function Tabs({
     dragStateRef.current = null;
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
-  }, [dragOverTabId, tabs, onTabReorder]);
+  }, [isDragging, dragOverTabId, tabs, onTabReorder]);
 
-  // Add/remove global mouse event listeners
+  // Add/remove global mouse event listeners when mousedown is pending or dragging
   useEffect(() => {
-    if (isDragging) {
+    if (isPendingDrag || isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'grabbing';
-      document.body.style.userSelect = 'none';
+      if (isDragging) {
+        document.body.style.cursor = 'grabbing';
+        document.body.style.userSelect = 'none';
+      }
     }
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isPendingDrag, isDragging, handleMouseMove, handleMouseUp]);
 
   const handleTabClick = (tabId: string) => {
     if (isDragging) return;
@@ -238,9 +271,7 @@ export default function Tabs({
       containerRect
     };
 
-    setIsDragging(true);
-    setDraggedTabId(tabId);
-    setGhostPosition(0);
+    setIsPendingDrag(true);
   };
 
   // Handle horizontal scroll with mouse wheel
@@ -277,14 +308,13 @@ export default function Tabs({
             onClick={() => handleTabClick(tab.id)}
             onDoubleClick={(e) => handleDoubleClick(e, tab)}
             className={`
-              px-3 flex items-center gap-2 cursor-pointer flex-shrink-0
+              px-3 flex items-center gap-2 cursor-pointer flex-shrink-0 min-w-[100px] max-w-[200px]
               ${activeTab === tab.id
                 ? 'bg-[var(--tab-bg)]'
                 : 'bg-[var(--bg-primary)] border-2 border-[var(--tab-bg)] border-b-0 hover:bg-[var(--hover-bg-subtle)]'
               }
               ${dragOverTabId === tab.id ? 'border-l-2 border-l-[var(--accent-color)]' : ''}
               ${draggedTabId === tab.id ? 'opacity-30' : ''}
-              transition-colors
             `}
             style={{
               borderTopLeftRadius: '15px',
@@ -309,8 +339,18 @@ export default function Tabs({
               />
             ) : (
               <span
-                className="text-[10px] font-medium select-none text-[var(--tab-text)] whitespace-nowrap"
-                style={{ fontFamily: 'Roboto Mono, monospace' }}
+                ref={(el) => {
+                  if (el) textRefs.current.set(tab.id, el);
+                  else textRefs.current.delete(tab.id);
+                }}
+                className="text-[10px] font-medium select-none text-[var(--tab-text)] whitespace-nowrap overflow-hidden flex-1 min-w-0"
+                style={{
+                  fontFamily: 'Roboto Mono, monospace',
+                  ...(overflowingTabs.has(tab.id) ? {
+                    maskImage: 'linear-gradient(to right, black calc(100% - 16px), transparent)',
+                    WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 16px), transparent)',
+                  } : {}),
+                }}
                 title={t('tooltips.doubleClickRename', 'Duplo clique para renomear')}
               >
                 {tab.isUnsaved && <span className="text-[var(--text-muted)] mr-1">●</span>}

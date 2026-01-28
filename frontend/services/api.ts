@@ -78,6 +78,24 @@ export async function createFile(path: string, content: string = ''): Promise<vo
 }
 
 /**
+ * Create a folder
+ */
+export async function createFolder(path: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/files/create-folder`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ path }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to create folder' }));
+    throw new Error(error.error || 'Failed to create folder');
+  }
+}
+
+/**
  * Delete a file
  */
 export async function deleteFile(path: string): Promise<void> {

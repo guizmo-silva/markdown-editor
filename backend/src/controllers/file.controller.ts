@@ -76,6 +76,22 @@ export const deleteFile = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+export const createFolder = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { path } = req.body;
+    if (!path) {
+      res.status(400).json({ error: 'Path is required' });
+      return;
+    }
+
+    await fileService.createFolder(path);
+    res.json({ success: true, path });
+  } catch (error) {
+    console.error('Error creating folder:', error);
+    res.status(500).json({ error: 'Failed to create folder' });
+  }
+};
+
 export const renameFile = async (req: Request, res: Response): Promise<void> => {
   try {
     const { oldPath, newPath } = req.body;

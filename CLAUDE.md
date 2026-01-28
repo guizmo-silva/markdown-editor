@@ -12,11 +12,11 @@ Não é necessário rodar o projeto com `npm run dev`.
 ### Frontend
 - **React** com **TypeScript**
 - **Next.js** (framework)
+- **Tailwind CSS** (estilização)
 
 ### Backend
 - **Node.js** com **TypeScript**
-- **Express** ou framework similar
-- API REST para comunicação com frontend
+- **Express** (API REST para comunicação com frontend)
 
 ### Containerização
 - **Docker** com **docker-compose**
@@ -39,6 +39,7 @@ Especificações de design e mockups em: `/design`
 
 - Editor Split (Código + Preview)
 - Sistema de Abas Internas para cada arquivo
+- Barra lateral com "navegador" de elementos em markdown
 
 
 ### Barra Lateral de Assets
