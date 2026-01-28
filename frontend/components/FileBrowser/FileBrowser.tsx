@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { listFiles, createFolder, type FileItem } from '@/services/api';
@@ -8,6 +8,7 @@ import { listFiles, createFolder, type FileItem } from '@/services/api';
 interface FileBrowserProps {
   onFileSelect?: (filePath: string) => void;
   onDeleteFile?: (filePath: string) => void;
+  onRenameFolder?: (oldPath: string, newPath: string) => void;
   collapseAllTrigger?: number; // Increment to trigger collapse all
   refreshTrigger?: number; // Increment to trigger refresh
 }
@@ -50,42 +51,96 @@ interface FileTreeItemProps {
   level: number;
   onSelect: (path: string) => void;
   onDelete?: (path: string) => void;
-  collapseAllTrigger?: number;
+  onRenameItem?: (oldPath: string, newPath: string) => void;
   isLast?: boolean;
   creatingFolderIn: string | null;
   onStartCreateFolder: (parentPath: string) => void;
   onConfirmCreateFolder: (parentPath: string, folderName: string) => void;
   onCancelCreateFolder: () => void;
+  editingItemPath: string | null;
+  onStartEditItem: (path: string, currentName: string) => void;
+  onConfirmEditItem: (oldPath: string, newName: string, isFolder: boolean) => void;
+  onCancelEditItem: () => void;
+  editItemValue: string;
+  onEditItemValueChange: (value: string) => void;
+  sidebarWidth?: number;
+  expandedFolders: Set<string>;
+  onToggleExpand: (path: string) => void;
 }
 
-function FileTreeItem({ item, level, onSelect, onDelete, collapseAllTrigger, isLast, creatingFolderIn, onStartCreateFolder, onConfirmCreateFolder, onCancelCreateFolder }: FileTreeItemProps) {
+function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, creatingFolderIn, onStartCreateFolder, onConfirmCreateFolder, onCancelCreateFolder, editingItemPath, onStartEditItem, onConfirmEditItem, onCancelEditItem, editItemValue, onEditItemValueChange, sidebarWidth, expandedFolders, onToggleExpand }: FileTreeItemProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
-  const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isTextOverflowing, setIsTextOverflowing] = useState(false);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
+  const isExpanded = expandedFolders.has(item.path);
   const canCreateSubfolder = item.type === 'folder' && level < 2;
   const isCreatingHere = creatingFolderIn === item.path;
+  const isEditingThis = editingItemPath === item.path;
 
   // Auto-expand when creating a subfolder inside this folder
   useEffect(() => {
-    if (isCreatingHere) {
-      setIsExpanded(true);
+    if (isCreatingHere && !isExpanded) {
+      onToggleExpand(item.path);
     }
-  }, [isCreatingHere]);
+  }, [isCreatingHere, isExpanded, item.path, onToggleExpand]);
 
-  // Collapse when trigger changes
+  // Focus input when editing starts
   useEffect(() => {
-    if (collapseAllTrigger !== undefined && collapseAllTrigger > 0) {
-      setIsExpanded(false);
+    if (isEditingThis && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
     }
-  }, [collapseAllTrigger]);
+  }, [isEditingThis]);
+
+  // Detect text overflow
+  useEffect(() => {
+    if (textRef.current) {
+      setIsTextOverflowing(textRef.current.scrollWidth > textRef.current.clientWidth);
+    }
+  }, [item.name, sidebarWidth]);
 
   const handleClick = () => {
+    if (isEditingThis) return;
     if (item.type === 'folder') {
-      setIsExpanded(!isExpanded);
+      onToggleExpand(item.path);
     } else {
       onSelect(item.path);
+    }
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // For files, remove .md extension for editing
+    const editName = item.type === 'file' ? item.name.replace(/\.md$/, '') : item.name;
+    onStartEditItem(item.path, editName);
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const newName = editItemValue.trim();
+      const currentEditName = item.type === 'file' ? item.name.replace(/\.md$/, '') : item.name;
+      if (newName && newName !== currentEditName) {
+        onConfirmEditItem(item.path, newName, item.type === 'folder');
+      } else {
+        onCancelEditItem();
+      }
+    } else if (e.key === 'Escape') {
+      onCancelEditItem();
+    }
+  };
+
+  const handleEditBlur = () => {
+    const newName = editItemValue.trim();
+    const currentEditName = item.type === 'file' ? item.name.replace(/\.md$/, '') : item.name;
+    if (newName && newName !== currentEditName) {
+      onConfirmEditItem(item.path, newName, item.type === 'folder');
+    } else {
+      onCancelEditItem();
     }
   };
 
@@ -129,6 +184,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, collapseAllTrigger, isL
       )}
       <div
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
         className="relative overflow-hidden group flex items-center gap-1 py-1 pr-2 hover:bg-[var(--hover-bg)] cursor-pointer transition-colors"
         style={{ paddingLeft: '8px' }}
       >
@@ -143,13 +199,39 @@ function FileTreeItem({ item, level, onSelect, onDelete, collapseAllTrigger, isL
           </svg>
         )}
 
-        {/* Name */}
-        <span className="text-[11px] text-[var(--text-primary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-          {item.name}
-        </span>
+        {/* Name - with editing support for files and folders */}
+        {isEditingThis ? (
+          <input
+            ref={editInputRef}
+            type="text"
+            value={editItemValue}
+            onChange={(e) => onEditItemValueChange(e.target.value)}
+            onKeyDown={handleEditKeyDown}
+            onBlur={handleEditBlur}
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            className="text-[11px] bg-transparent border-b border-[var(--text-primary)] outline-none text-[var(--text-primary)] flex-1 min-w-0"
+            style={{ fontFamily: 'Roboto Mono, monospace' }}
+          />
+        ) : (
+          <span
+            ref={textRef}
+            className="text-[11px] text-[var(--text-primary)] whitespace-nowrap overflow-hidden flex-1 min-w-0"
+            style={{
+              fontFamily: 'Roboto Mono, monospace',
+              ...(isTextOverflowing ? {
+                maskImage: 'linear-gradient(to right, black calc(100% - 16px), transparent)',
+                WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 16px), transparent)',
+              } : {}),
+            }}
+            title={t('tooltips.doubleClickRename', 'Duplo clique para renomear')}
+          >
+            {item.name}
+          </span>
+        )}
 
         {/* Folder expand/collapse icon (after name) */}
-        {item.type === 'folder' && (
+        {item.type === 'folder' && !isEditingThis && (
           <img
             src={getIconPath('element_fold_icon.svg')}
             alt={isExpanded ? 'Collapse' : 'Expand'}
@@ -205,22 +287,31 @@ function FileTreeItem({ item, level, onSelect, onDelete, collapseAllTrigger, isL
 
       {/* Children (if folder is expanded) */}
       {item.type === 'folder' && isExpanded && (
-        <div className="relative pl-[32px] overflow-hidden">
+        <div className="relative pl-[20px] overflow-hidden">
           {/* Vertical tree line */}
-          <div className="absolute left-[20px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
+          <div className="absolute left-[8px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
           {item.children && item.children.map((child, index) => (
             <FileTreeItem
-              key={index}
+              key={child.path}
               item={child}
               level={level + 1}
               onSelect={onSelect}
               onDelete={onDelete}
-              collapseAllTrigger={collapseAllTrigger}
+              onRenameItem={onRenameItem}
               isLast={index === item.children!.length - 1 && !isCreatingHere}
               creatingFolderIn={creatingFolderIn}
               onStartCreateFolder={onStartCreateFolder}
               onConfirmCreateFolder={onConfirmCreateFolder}
               onCancelCreateFolder={onCancelCreateFolder}
+              editingItemPath={editingItemPath}
+              onStartEditItem={onStartEditItem}
+              onConfirmEditItem={onConfirmEditItem}
+              onCancelEditItem={onCancelEditItem}
+              editItemValue={editItemValue}
+              onEditItemValueChange={onEditItemValueChange}
+              sidebarWidth={sidebarWidth}
+              expandedFolders={expandedFolders}
+              onToggleExpand={onToggleExpand}
             />
           ))}
 
@@ -250,7 +341,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, collapseAllTrigger, isL
   );
 }
 
-export default function FileBrowser({ onFileSelect, onDeleteFile, collapseAllTrigger, refreshTrigger }: FileBrowserProps) {
+export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder, collapseAllTrigger, refreshTrigger }: FileBrowserProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -259,6 +350,9 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, collapseAllTri
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(true);
   const [creatingFolderIn, setCreatingFolderIn] = useState<string | null>(null);
   const [internalRefresh, setInternalRefresh] = useState(0);
+  const [editingItemPath, setEditingItemPath] = useState<string | null>(null);
+  const [editItemValue, setEditItemValue] = useState('');
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   // Load files on mount and when refreshTrigger or internalRefresh changes
   useEffect(() => {
@@ -279,12 +373,26 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, collapseAllTri
     loadFiles();
   }, [refreshTrigger, internalRefresh]);
 
-  // Collapse workspace when collapseAllTrigger changes
+  // Collapse workspace and all folders when collapseAllTrigger changes
   useEffect(() => {
     if (collapseAllTrigger !== undefined && collapseAllTrigger > 0) {
       setIsWorkspaceExpanded(false);
+      setExpandedFolders(new Set());
     }
   }, [collapseAllTrigger]);
+
+  // Toggle folder expansion
+  const handleToggleExpand = (path: string) => {
+    setExpandedFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(path)) {
+        newSet.delete(path);
+      } else {
+        newSet.add(path);
+      }
+      return newSet;
+    });
+  };
 
   const handleFileSelect = (filePath: string) => {
     console.log('Selected file:', filePath);
@@ -301,6 +409,10 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, collapseAllTri
     const fullPath = parentPath ? `${parentPath}/${folderName}` : folderName;
     try {
       await createFolder(fullPath);
+      // Keep parent folder expanded after creation
+      if (parentPath) {
+        setExpandedFolders(prev => new Set(prev).add(parentPath));
+      }
       setCreatingFolderIn(null);
       setInternalRefresh((prev) => prev + 1);
     } catch (err) {
@@ -310,6 +422,67 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, collapseAllTri
 
   const handleCancelCreateFolder = () => {
     setCreatingFolderIn(null);
+  };
+
+  const handleStartEditItem = (path: string, currentName: string) => {
+    setEditingItemPath(path);
+    setEditItemValue(currentName);
+  };
+
+  const handleConfirmEditItem = async (oldPath: string, newName: string, isFolder: boolean) => {
+    // Calculate new path
+    const lastSlash = oldPath.lastIndexOf('/');
+    const parentPath = lastSlash > 0 ? oldPath.substring(0, lastSlash) : '';
+
+    // Clean the name
+    let cleanName = newName.replace(/[<>:"/\\|?*]/g, '');
+    if (!cleanName) {
+      setEditingItemPath(null);
+      setEditItemValue('');
+      return;
+    }
+
+    // For files, ensure .md extension
+    if (!isFolder && !cleanName.endsWith('.md')) {
+      cleanName += '.md';
+    }
+
+    const finalNewPath = parentPath ? `${parentPath}/${cleanName}` : cleanName;
+
+    try {
+      if (onRenameFolder) {
+        await onRenameFolder(oldPath, finalNewPath);
+      }
+      // Update expanded folders if it's a folder: replace old path with new path
+      if (isFolder) {
+        setExpandedFolders(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(oldPath)) {
+            newSet.delete(oldPath);
+            newSet.add(finalNewPath);
+          }
+          // Also update any child paths that were expanded
+          prev.forEach(path => {
+            if (path.startsWith(oldPath + '/')) {
+              newSet.delete(path);
+              newSet.add(path.replace(oldPath, finalNewPath));
+            }
+          });
+          return newSet;
+        });
+      }
+      setInternalRefresh((prev) => prev + 1);
+    } catch (err) {
+      console.error('Failed to rename item:', err);
+    } finally {
+      setEditingItemPath(null);
+      setEditItemValue('');
+    }
+  };
+
+  const handleCancelEditItem = () => {
+    setEditingItemPath(null);
+    setEditItemValue('');
   };
 
   const handleWorkspaceAddFolder = (e: React.MouseEvent) => {
@@ -401,17 +574,25 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, collapseAllTri
             <div className="absolute left-[20px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
             {files.map((item, index) => (
               <FileTreeItem
-                key={index}
+                key={item.path}
                 item={item}
                 level={1}
                 onSelect={handleFileSelect}
                 onDelete={onDeleteFile}
-                collapseAllTrigger={collapseAllTrigger}
+                onRenameItem={onRenameFolder}
                 isLast={index === files.length - 1 && creatingFolderIn !== ''}
                 creatingFolderIn={creatingFolderIn}
                 onStartCreateFolder={handleStartCreateFolder}
                 onConfirmCreateFolder={handleConfirmCreateFolder}
                 onCancelCreateFolder={handleCancelCreateFolder}
+                editingItemPath={editingItemPath}
+                onStartEditItem={handleStartEditItem}
+                onConfirmEditItem={handleConfirmEditItem}
+                onCancelEditItem={handleCancelEditItem}
+                editItemValue={editItemValue}
+                onEditItemValueChange={setEditItemValue}
+                expandedFolders={expandedFolders}
+                onToggleExpand={handleToggleExpand}
               />
             ))}
 

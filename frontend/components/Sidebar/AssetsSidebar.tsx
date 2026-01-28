@@ -21,6 +21,7 @@ interface AssetsSidebarProps {
   onNavigateToLine?: (line: number) => void;
   onFileSelect?: (filePath: string) => void;
   onDeleteFile?: (filePath: string) => void;
+  onRenameFolder?: (oldPath: string, newPath: string) => void;
   onExport?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -35,6 +36,7 @@ export default function AssetsSidebar({
   onNavigateToLine,
   onFileSelect,
   onDeleteFile,
+  onRenameFolder,
   onExport,
   isCollapsed = false,
   onToggleCollapse,
@@ -542,7 +544,7 @@ export default function AssetsSidebar({
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <FileBrowser onFileSelect={onFileSelect} onDeleteFile={onDeleteFile} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
+            <FileBrowser onFileSelect={onFileSelect} onDeleteFile={onDeleteFile} onRenameFolder={onRenameFolder} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
           </div>
         </div>
       </div>

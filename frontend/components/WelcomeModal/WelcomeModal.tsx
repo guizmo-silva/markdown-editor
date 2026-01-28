@@ -8,7 +8,7 @@ import { listFiles, type FileItem } from '@/services/api';
 interface WelcomeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onNewDocument: () => void;
+  onNewDocument: (folderPath?: string) => void;
   onFileSelect: (filePath: string) => void;
 }
 
@@ -24,6 +24,8 @@ export default function WelcomeModal({
   const [isLoading, setIsLoading] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [folderContents, setFolderContents] = useState<Map<string, FileItem[]>>(new Map());
+  const [selectedFolder, setSelectedFolder] = useState<string>('/');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const loadRecentFiles = useCallback(async () => {
     setIsLoading(true);
@@ -84,8 +86,37 @@ export default function WelcomeModal({
   };
 
   const handleNewDocument = () => {
-    onNewDocument();
+    onNewDocument(selectedFolder);
   };
+
+  // Extract all folders from files and folderContents
+  const getAllFolders = useCallback((): { path: string; name: string; level: number }[] => {
+    const folders: { path: string; name: string; level: number }[] = [];
+
+    const extractFolders = (items: FileItem[], level: number = 0) => {
+      for (const item of items) {
+        if (item.type === 'folder') {
+          folders.push({
+            path: item.path,
+            name: item.name,
+            level
+          });
+          // Check for loaded subfolder contents
+          const subContents = folderContents.get(item.path);
+          if (subContents) {
+            extractFolders(subContents, level + 1);
+          } else if (item.children) {
+            extractFolders(item.children, level + 1);
+          }
+        }
+      }
+    };
+
+    extractFolders(files);
+    return folders;
+  }, [files, folderContents]);
+
+  const allFolders = getAllFolders();
 
   if (!isOpen) return null;
 
@@ -95,11 +126,80 @@ export default function WelcomeModal({
         className="bg-[var(--dropdown-bg)] rounded-lg shadow-xl p-8 w-[700px] max-w-[90vw] flex gap-8"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Left Side: New Document Button */}
-        <div className="flex-shrink-0">
+        {/* Left Side: Folder Selector + New Document Button */}
+        <div className="flex-shrink-0 flex flex-col gap-3">
+          {/* Folder Dropdown */}
+          <div className="relative">
+            <label
+              className="text-[11px] text-[var(--text-secondary)] mb-1 block"
+              style={{ fontFamily: 'Roboto Mono, monospace' }}
+            >
+              {t('welcomeModal.folder', 'Pasta:')}
+            </label>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-[160px] h-[32px] px-3 border border-[var(--border-primary)]
+                         rounded bg-[var(--bg-secondary)] flex items-center justify-between
+                         hover:border-[var(--text-secondary)] transition-colors cursor-pointer"
+              style={{ fontFamily: 'Roboto Mono, monospace' }}
+            >
+              <span className="text-[12px] text-[var(--text-primary)] truncate">
+                {selectedFolder === '/' ? 'Workspace' : selectedFolder.split('/').pop()}
+              </span>
+              <img
+                src={getIconPath('element_fold_icon.svg')}
+                alt=""
+                className={`w-3 h-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+              <div
+                className="absolute top-full left-0 w-[160px] mt-1 border border-[var(--border-primary)]
+                           rounded bg-[var(--dropdown-bg)] shadow-lg z-10 max-h-[200px] overflow-y-auto"
+              >
+                {/* Workspace (root) option */}
+                <button
+                  onClick={() => {
+                    setSelectedFolder('/');
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-[12px] hover:bg-[var(--hover-bg)] transition-colors
+                             ${selectedFolder === '/' ? 'bg-[var(--hover-bg)]' : ''}`}
+                  style={{ fontFamily: 'Roboto Mono, monospace' }}
+                >
+                  <span className="text-[var(--text-primary)]">Workspace</span>
+                </button>
+
+                {/* Folder options */}
+                {allFolders.map((folder) => (
+                  <button
+                    key={folder.path}
+                    onClick={() => {
+                      setSelectedFolder(folder.path);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-[12px] hover:bg-[var(--hover-bg)] transition-colors
+                               ${selectedFolder === folder.path ? 'bg-[var(--hover-bg)]' : ''}`}
+                    style={{
+                      fontFamily: 'Roboto Mono, monospace',
+                      paddingLeft: `${12 + folder.level * 12}px`
+                    }}
+                  >
+                    <span className="text-[var(--text-primary)] truncate block">
+                      {folder.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* New Document Button */}
           <button
             onClick={handleNewDocument}
-            className="w-[160px] h-[160px] border-2 border-dashed border-[var(--border-primary)]
+            className="w-[160px] h-[130px] border-2 border-dashed border-[var(--border-primary)]
                        rounded-lg flex flex-col items-center justify-center gap-3
                        hover:border-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]
                        transition-all cursor-pointer"
@@ -127,7 +227,7 @@ export default function WelcomeModal({
             {t('welcomeModal.recentDocuments', 'Documentos recentes:')}
           </h2>
 
-          <div className="max-h-[280px] overflow-y-auto pr-2">
+          <div className="max-h-[350px] overflow-y-auto pr-2">
             {isLoading ? (
               <div className="text-[var(--text-secondary)] text-sm">
                 {t('welcomeModal.loading', 'Carregando...')}
@@ -161,6 +261,7 @@ interface FileTreeProps {
   onFileClick: (path: string) => void;
   getIconPath: (name: string) => string;
   level?: number;
+  isLast?: boolean;
 }
 
 function FileTree({
@@ -181,7 +282,7 @@ function FileTree({
 
   return (
     <div>
-      {sortedFiles.map((item) => (
+      {sortedFiles.map((item, index) => (
         <FileTreeItem
           key={item.path}
           item={item}
@@ -191,6 +292,7 @@ function FileTree({
           onFolderToggle={onFolderToggle}
           onFileClick={onFileClick}
           getIconPath={getIconPath}
+          isLast={index === sortedFiles.length - 1}
         />
       ))}
     </div>
@@ -205,6 +307,7 @@ interface FileTreeItemProps {
   onFolderToggle: (path: string) => void;
   onFileClick: (path: string) => void;
   getIconPath: (name: string) => string;
+  isLast?: boolean;
 }
 
 function FileTreeItem({
@@ -214,7 +317,8 @@ function FileTreeItem({
   folderContents,
   onFolderToggle,
   onFileClick,
-  getIconPath
+  getIconPath,
+  isLast = false
 }: FileTreeItemProps) {
   const isExpanded = expandedFolders.has(item.path);
   const isFolder = item.type === 'folder';
@@ -229,46 +333,68 @@ function FileTreeItem({
   };
 
   return (
-    <div>
+    <div className={`relative ${isLast ? 'tree-last-item' : ''}`}>
+      {/* Horizontal connector from vertical line to item */}
+      {level > 0 && (
+        <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+      )}
+
       <div
         onClick={handleClick}
-        className="flex items-center gap-2 py-1.5 px-2 hover:bg-[var(--hover-bg)]
+        className="flex items-center gap-2 py-1.5 pr-2 hover:bg-[var(--hover-bg)]
                    cursor-pointer rounded transition-colors"
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        style={{ paddingLeft: '8px' }}
       >
+        {/* Folder/File icon */}
         {isFolder ? (
-          <img
-            src={getIconPath('folder_icon.svg')}
-            alt="Folder"
-            className="w-5 h-4 flex-shrink-0"
-          />
+          <svg className="w-4 h-4 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+            {isExpanded ? (
+              // Open folder icon
+              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
+            ) : (
+              // Closed folder icon
+              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+            )}
+          </svg>
         ) : (
-          <span
-            className="text-[var(--text-muted)] text-[12px] flex-shrink-0 w-5"
-            style={{ fontFamily: 'Roboto Mono, monospace' }}
-          >
-            {level > 0 ? '└─' : ''}
-          </span>
+          <svg className="w-3.5 h-3.5 flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
         )}
 
+        {/* Name */}
         <span
-          className="text-[13px] text-[var(--text-primary)] truncate"
+          className="text-[13px] text-[var(--text-primary)] truncate flex-1"
           style={{ fontFamily: 'Roboto Mono, monospace' }}
         >
           {item.name}
         </span>
+
+        {/* Fold icon for folders */}
+        {isFolder && (
+          <img
+            src={getIconPath('element_fold_icon.svg')}
+            alt=""
+            className={`w-3 h-3 transition-transform flex-shrink-0 ${isExpanded ? '' : '-rotate-90'}`}
+          />
+        )}
       </div>
 
+      {/* Children with vertical tree line */}
       {isFolder && isExpanded && children.length > 0 && (
-        <FileTree
-          files={children}
-          expandedFolders={expandedFolders}
-          folderContents={folderContents}
-          onFolderToggle={onFolderToggle}
-          onFileClick={onFileClick}
-          getIconPath={getIconPath}
-          level={level + 1}
-        />
+        <div className="relative pl-[20px]">
+          {/* Vertical tree line */}
+          <div className="absolute left-[8px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
+          <FileTree
+            files={children}
+            expandedFolders={expandedFolders}
+            folderContents={folderContents}
+            onFolderToggle={onFolderToggle}
+            onFileClick={onFileClick}
+            getIconPath={getIconPath}
+            level={level + 1}
+          />
+        </div>
       )}
     </div>
   );

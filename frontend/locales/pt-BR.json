@@ -107,6 +107,7 @@
     "newDocument": "Novo Documento",
     "recentDocuments": "Documentos recentes:",
     "noFiles": "Nenhum arquivo encontrado",
-    "loading": "Carregando..."
+    "loading": "Carregando...",
+    "folder": "Pasta:"
   }
 }

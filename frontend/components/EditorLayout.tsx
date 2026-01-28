@@ -263,16 +263,17 @@ export default function EditorLayout() {
     }
   };
 
-  const handleNewDocumentFromModal = async () => {
+  const handleNewDocumentFromModal = async (folderPath: string = '/') => {
     const timestamp = new Date().toISOString().slice(0, 10);
-    let fileName = `novo-documento-${timestamp}.md`;
+    const basePath = folderPath === '/' ? '' : folderPath + '/';
+    let fileName = `${basePath}novo-documento-${timestamp}.md`;
     let counter = 1;
 
     // Try to create the file, if it fails (already exists), try with a counter
     // Mark as auto-named so it can be renamed based on first heading
     let success = await handleCreateFile(fileName, true);
     while (!success && counter < 100) {
-      fileName = `novo-documento-${timestamp}-${counter}.md`;
+      fileName = `${basePath}novo-documento-${timestamp}-${counter}.md`;
       success = await handleCreateFile(fileName, true);
       counter++;
     }
@@ -584,6 +585,7 @@ export default function EditorLayout() {
             onNavigateToLine={handleNavigateToLine}
             onFileSelect={handleFileSelect}
             onDeleteFile={handleDeleteFile}
+            onRenameFolder={handleRenameFile}
             onExport={handleExport}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={handleToggleSidebar}
