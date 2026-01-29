@@ -46,9 +46,16 @@ export const listDirectory = async (relativePath: string, maxDepth: number = 3):
   );
 
   // Filter to show only .md files and folders
-  return fileInfos.filter(
+  const filtered = fileInfos.filter(
     (info) => info.type === 'folder' || info.extension === '.md'
   );
+
+  // Sort: folders first (alphabetically), then files (alphabetically)
+  return filtered.sort((a, b) => {
+    if (a.type === 'folder' && b.type !== 'folder') return -1;
+    if (a.type !== 'folder' && b.type === 'folder') return 1;
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  });
 };
 
 export const readFileContent = async (relativePath: string): Promise<string> => {

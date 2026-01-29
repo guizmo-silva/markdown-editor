@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { listFiles, createFolder, type FileItem } from '@/services/api';
@@ -11,6 +11,12 @@ interface FileBrowserProps {
   onRenameFolder?: (oldPath: string, newPath: string) => void;
   collapseAllTrigger?: number; // Increment to trigger collapse all
   refreshTrigger?: number; // Increment to trigger refresh
+}
+
+interface DragState {
+  item: FileItem;
+  initialX: number;
+  initialY: number;
 }
 
 function DeleteConfirmModal({ fileName, onConfirm, onCancel }: { fileName: string; onConfirm: () => void; onCancel: () => void }) {
@@ -66,9 +72,14 @@ interface FileTreeItemProps {
   sidebarWidth?: number;
   expandedFolders: Set<string>;
   onToggleExpand: (path: string) => void;
+  draggedItem?: FileItem | null;
+  dragOverTarget?: string | null;
+  onDragStart?: (item: FileItem, e: React.MouseEvent) => void;
+  onDragOverFolder?: (folderPath: string | null) => void;
+  getParentFolder?: (path: string) => string;
 }
 
-function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, creatingFolderIn, onStartCreateFolder, onConfirmCreateFolder, onCancelCreateFolder, editingItemPath, onStartEditItem, onConfirmEditItem, onCancelEditItem, editItemValue, onEditItemValueChange, sidebarWidth, expandedFolders, onToggleExpand }: FileTreeItemProps) {
+function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, creatingFolderIn, onStartCreateFolder, onConfirmCreateFolder, onCancelCreateFolder, editingItemPath, onStartEditItem, onConfirmEditItem, onCancelEditItem, editItemValue, onEditItemValueChange, sidebarWidth, expandedFolders, onToggleExpand, draggedItem, dragOverTarget, onDragStart, onDragOverFolder, getParentFolder }: FileTreeItemProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -80,6 +91,14 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
   const canCreateSubfolder = item.type === 'folder' && level < 2;
   const isCreatingHere = creatingFolderIn === item.path;
   const isEditingThis = editingItemPath === item.path;
+  const isEmptyFolder = item.type === 'folder' && (!item.children || item.children.length === 0);
+
+  // Drag state calculations
+  const isDraggingActive = draggedItem !== null && draggedItem !== undefined;
+  const isDragSource = draggedItem?.path === item.path;
+  // A folder is a drag target if it's the current dragOverTarget and it's a valid drop
+  const isDragTarget = isDraggingActive && item.type === 'folder' && dragOverTarget === item.path &&
+    getParentFolder && getParentFolder(draggedItem!.path) !== item.path;
 
   // Auto-expand when creating a subfolder inside this folder
   useEffect(() => {
@@ -109,6 +128,25 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
       onToggleExpand(item.path);
     } else {
       onSelect(item.path);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (item.type === 'file' && onDragStart && !isEditingThis) {
+      onDragStart(item, e);
+    }
+  };
+
+  const handleMouseEnter = () => {
+    if (onDragOverFolder && isDraggingActive) {
+      // For folders, the target is the folder itself
+      // For files, the target is the parent folder (or root if at level 1)
+      if (item.type === 'folder') {
+        onDragOverFolder(item.path);
+      } else if (getParentFolder) {
+        const parentPath = getParentFolder(item.path);
+        onDragOverFolder(parentPath || '__workspace__');
+      }
     }
   };
 
@@ -185,13 +223,21 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
       <div
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
-        className="relative overflow-hidden group flex items-center gap-1 py-1 pr-2 hover:bg-[var(--hover-bg)] cursor-pointer transition-colors"
+        onMouseDown={handleMouseDown}
+        onMouseEnter={handleMouseEnter}
+        className={`relative overflow-hidden group flex items-center gap-1 py-1 pr-2 cursor-pointer transition-colors ${
+          isDragSource ? 'opacity-50' : 'hover:bg-[var(--hover-bg)]'
+        } ${isDragTarget ? 'bg-[var(--accent-color)]/20 ring-1 ring-[var(--accent-color)]' : ''}`}
         style={{ paddingLeft: '8px' }}
       >
         {/* File/Folder icon */}
         {item.type === 'folder' ? (
           <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+            {isExpanded ? (
+              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
+            ) : (
+              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+            )}
           </svg>
         ) : (
           <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,7 +294,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
             <button
               onClick={handleDeleteClick}
               className="p-0.5 hover:bg-[var(--bg-secondary)] rounded transition-colors"
-              title="Delete file"
+              title={t('buttons.delete', 'Delete')}
             >
               <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -257,21 +303,36 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
           </div>
         )}
 
-        {/* Create subfolder button with fade gradient (folders with level < 2) */}
-        {canCreateSubfolder && (
+        {/* Folder action buttons */}
+        {item.type === 'folder' && (
           <div
-            className="absolute right-0 top-0 bottom-0 flex items-center pr-2 pl-6 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute right-0 top-0 bottom-0 flex items-center gap-0.5 pr-2 pl-6 opacity-0 group-hover:opacity-100 transition-opacity"
             style={{ background: 'linear-gradient(to right, transparent, var(--bg-primary) 40%)' }}
           >
-            <button
-              onClick={handleAddFolderClick}
-              className="p-0.5 hover:bg-[var(--bg-secondary)] rounded transition-colors"
-              title={t('dialogs.newFolder', 'New folder')}
-            >
-              <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
+            {/* Create subfolder button (folders with level < 2) */}
+            {canCreateSubfolder && (
+              <button
+                onClick={handleAddFolderClick}
+                className="p-0.5 hover:bg-[var(--bg-secondary)] rounded transition-colors"
+                title={t('dialogs.newFolder', 'New folder')}
+              >
+                <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            )}
+            {/* Delete empty folder button */}
+            {isEmptyFolder && onDelete && (
+              <button
+                onClick={handleDeleteClick}
+                className="p-0.5 hover:bg-[var(--bg-secondary)] rounded transition-colors"
+                title={t('buttons.delete', 'Delete')}
+              >
+                <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -285,56 +346,68 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
         />
       )}
 
-      {/* Children (if folder is expanded) */}
-      {item.type === 'folder' && isExpanded && (
-        <div className="relative pl-[20px] overflow-hidden">
-          {/* Vertical tree line */}
-          <div className="absolute left-[8px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
-          {item.children && item.children.map((child, index) => (
-            <FileTreeItem
-              key={child.path}
-              item={child}
-              level={level + 1}
-              onSelect={onSelect}
-              onDelete={onDelete}
-              onRenameItem={onRenameItem}
-              isLast={index === item.children!.length - 1 && !isCreatingHere}
-              creatingFolderIn={creatingFolderIn}
-              onStartCreateFolder={onStartCreateFolder}
-              onConfirmCreateFolder={onConfirmCreateFolder}
-              onCancelCreateFolder={onCancelCreateFolder}
-              editingItemPath={editingItemPath}
-              onStartEditItem={onStartEditItem}
-              onConfirmEditItem={onConfirmEditItem}
-              onCancelEditItem={onCancelEditItem}
-              editItemValue={editItemValue}
-              onEditItemValueChange={onEditItemValueChange}
-              sidebarWidth={sidebarWidth}
-              expandedFolders={expandedFolders}
-              onToggleExpand={onToggleExpand}
-            />
-          ))}
-
-          {/* Inline input for creating a new folder */}
-          {isCreatingHere && (
-            <div className="relative tree-last-item">
-              <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
-              <div className="flex items-center gap-1 py-1 pr-2" style={{ paddingLeft: '8px' }}>
-                <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                </svg>
-                <input
-                  autoFocus
-                  defaultValue={t('dialogs.newFolder', 'New folder')}
-                  className="text-[11px] bg-transparent border-b border-[var(--text-primary)] outline-none text-[var(--text-primary)] w-full"
-                  style={{ fontFamily: 'Roboto Mono, monospace' }}
-                  onFocus={(e) => e.target.select()}
-                  onKeyDown={handleInlineInputKeyDown}
-                  onBlur={handleInlineInputBlur}
+      {/* Children (if folder) with animation */}
+      {item.type === 'folder' && (
+        <div
+          className="grid transition-[grid-template-rows] duration-200 ease-out"
+          style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
+        >
+          <div className="overflow-hidden">
+            <div className="relative pl-[20px]">
+              {/* Vertical tree line */}
+              <div className="absolute left-[8px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
+              {item.children && item.children.map((child, index) => (
+                <FileTreeItem
+                  key={child.path}
+                  item={child}
+                  level={level + 1}
+                  onSelect={onSelect}
+                  onDelete={onDelete}
+                  onRenameItem={onRenameItem}
+                  isLast={index === item.children!.length - 1 && !isCreatingHere}
+                  creatingFolderIn={creatingFolderIn}
+                  onStartCreateFolder={onStartCreateFolder}
+                  onConfirmCreateFolder={onConfirmCreateFolder}
+                  onCancelCreateFolder={onCancelCreateFolder}
+                  editingItemPath={editingItemPath}
+                  onStartEditItem={onStartEditItem}
+                  onConfirmEditItem={onConfirmEditItem}
+                  onCancelEditItem={onCancelEditItem}
+                  editItemValue={editItemValue}
+                  onEditItemValueChange={onEditItemValueChange}
+                  sidebarWidth={sidebarWidth}
+                  expandedFolders={expandedFolders}
+                  onToggleExpand={onToggleExpand}
+                  draggedItem={draggedItem}
+                  dragOverTarget={dragOverTarget}
+                  onDragStart={onDragStart}
+                  onDragOverFolder={onDragOverFolder}
+                  getParentFolder={getParentFolder}
                 />
+              ))}
+
+              {/* Inline input for creating a new folder */}
+              {isCreatingHere && (
+                <div className="relative tree-last-item">
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+                  <div className="flex items-center gap-1 py-1 pr-2" style={{ paddingLeft: '8px' }}>
+                    <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                    </svg>
+                    <input
+                      autoFocus
+                      defaultValue={t('dialogs.newFolder', 'New folder')}
+                      className="text-[11px] bg-transparent border-b border-[var(--text-primary)] outline-none text-[var(--text-primary)] w-full"
+                      style={{ fontFamily: 'Roboto Mono, monospace' }}
+                      onFocus={(e) => e.target.select()}
+                      onKeyDown={handleInlineInputKeyDown}
+                      onBlur={handleInlineInputBlur}
+                  />
+                </div>
               </div>
+            )}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
@@ -353,6 +426,109 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
   const [editingItemPath, setEditingItemPath] = useState<string | null>(null);
   const [editItemValue, setEditItemValue] = useState('');
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  // Drag and drop states
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedItem, setDraggedItem] = useState<FileItem | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
+  const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number } | null>(null);
+  const dragStateRef = useRef<DragState | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Get parent folder path from a file path
+  const getParentFolder = useCallback((filePath: string): string => {
+    const lastSlash = filePath.lastIndexOf('/');
+    return lastSlash > 0 ? filePath.substring(0, lastSlash) : '';
+  }, []);
+
+  // Check if dropping is valid (not same folder)
+  const isValidDrop = useCallback((draggedPath: string, targetFolder: string): boolean => {
+    const sourceFolder = getParentFolder(draggedPath);
+    return sourceFolder !== targetFolder;
+  }, [getParentFolder]);
+
+  // Handle drag start
+  const handleDragStart = useCallback((item: FileItem, e: React.MouseEvent) => {
+    e.preventDefault();
+    dragStateRef.current = {
+      item,
+      initialX: e.clientX,
+      initialY: e.clientY
+    };
+    setDraggedItem(item);
+    setGhostPosition({ x: e.clientX, y: e.clientY });
+    setIsDragging(true);
+  }, []);
+
+  // Handle drag move
+  const handleDragMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || !dragStateRef.current) return;
+    setGhostPosition({ x: e.clientX, y: e.clientY });
+  }, [isDragging]);
+
+  // Handle drag end
+  const handleDragEnd = useCallback(async () => {
+    if (!isDragging || !draggedItem) {
+      setIsDragging(false);
+      setDraggedItem(null);
+      setDragOverTarget(null);
+      setGhostPosition(null);
+      dragStateRef.current = null;
+      return;
+    }
+
+    // Determine target folder ('__workspace__' means root, which is '')
+    const targetFolder = dragOverTarget === '__workspace__' ? '' : dragOverTarget;
+
+    if (targetFolder !== null && isValidDrop(draggedItem.path, targetFolder)) {
+      const fileName = draggedItem.name;
+      const newPath = targetFolder ? `${targetFolder}/${fileName}` : fileName;
+
+      if (onRenameFolder && newPath !== draggedItem.path) {
+        try {
+          await onRenameFolder(draggedItem.path, newPath);
+          setInternalRefresh(prev => prev + 1);
+        } catch (err) {
+          console.error('Failed to move file:', err);
+        }
+      }
+    }
+
+    setIsDragging(false);
+    setDraggedItem(null);
+    setDragOverTarget(null);
+    setGhostPosition(null);
+    dragStateRef.current = null;
+  }, [isDragging, draggedItem, dragOverTarget, isValidDrop, onRenameFolder]);
+
+  // Handle drag over folder
+  const handleDragOverFolder = useCallback((folderPath: string | null) => {
+    if (isDragging) {
+      setDragOverTarget(folderPath);
+    }
+  }, [isDragging]);
+
+  // Global mouse event listeners for drag
+  useEffect(() => {
+    if (isDragging) {
+      const handleMouseMove = (e: MouseEvent) => handleDragMove(e);
+      const handleMouseUp = () => handleDragEnd();
+
+      // Apply grabbing cursor globally during drag
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+    }
+  }, [isDragging, handleDragMove, handleDragEnd]);
 
   // Load files on mount and when refreshTrigger or internalRefresh changes
   useEffect(() => {
@@ -528,17 +704,57 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
     );
   }
 
+  // Handler for workspace drop zone (root level)
+  const handleWorkspaceMouseEnter = () => {
+    if (isDragging) {
+      setDragOverTarget('__workspace__');
+    }
+  };
+
+  const handleWorkspaceMouseLeave = () => {
+    if (isDragging && dragOverTarget === '__workspace__') {
+      setDragOverTarget(null);
+    }
+  };
+
+  const isWorkspaceDragTarget = isDragging && draggedItem && dragOverTarget === '__workspace__' && isValidDrop(draggedItem.path, '');
+
   return (
-    <div>
+    <div ref={containerRef}>
+      {/* Ghost element for drag preview */}
+      {isDragging && ghostPosition && draggedItem && (
+        <div
+          className="fixed pointer-events-none z-50 px-2 py-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded shadow-lg flex items-center gap-1"
+          style={{
+            left: ghostPosition.x + 10,
+            top: ghostPosition.y + 10,
+            fontFamily: 'Roboto Mono, monospace',
+          }}
+        >
+          <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span className="text-[11px] text-[var(--text-primary)]">{draggedItem.name}</span>
+        </div>
+      )}
+
       {/* Workspace root node */}
       <div className="py-2">
         <div
           onClick={() => setIsWorkspaceExpanded(!isWorkspaceExpanded)}
-          className="relative overflow-hidden group flex items-center justify-between pl-[20px] pr-3 py-2 hover:bg-[var(--hover-bg)] cursor-pointer transition-colors"
+          onMouseEnter={handleWorkspaceMouseEnter}
+          onMouseLeave={handleWorkspaceMouseLeave}
+          className={`relative overflow-hidden group flex items-center justify-between pl-[20px] pr-3 py-2 cursor-pointer transition-colors ${
+            isWorkspaceDragTarget ? 'bg-[var(--accent-color)]/20 ring-1 ring-[var(--accent-color)]' : 'hover:bg-[var(--hover-bg)]'
+          }`}
         >
           <div className="flex items-center gap-2">
             <svg className="w-[15px] h-[15px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+              {isWorkspaceExpanded ? (
+                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
+              ) : (
+                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+              )}
             </svg>
             <span className="text-[12px] font-bold text-[var(--text-primary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
               Workspace
@@ -567,57 +783,67 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
           </div>
         </div>
 
-        {/* Workspace children with tree lines */}
-        {isWorkspaceExpanded && (
-          <div className="relative pl-[32px] overflow-hidden">
-            {/* Vertical tree line */}
-            <div className="absolute left-[20px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
-            {files.map((item, index) => (
-              <FileTreeItem
-                key={item.path}
-                item={item}
-                level={1}
-                onSelect={handleFileSelect}
-                onDelete={onDeleteFile}
-                onRenameItem={onRenameFolder}
-                isLast={index === files.length - 1 && creatingFolderIn !== ''}
-                creatingFolderIn={creatingFolderIn}
-                onStartCreateFolder={handleStartCreateFolder}
-                onConfirmCreateFolder={handleConfirmCreateFolder}
-                onCancelCreateFolder={handleCancelCreateFolder}
-                editingItemPath={editingItemPath}
-                onStartEditItem={handleStartEditItem}
-                onConfirmEditItem={handleConfirmEditItem}
-                onCancelEditItem={handleCancelEditItem}
-                editItemValue={editItemValue}
-                onEditItemValueChange={setEditItemValue}
-                expandedFolders={expandedFolders}
-                onToggleExpand={handleToggleExpand}
-              />
-            ))}
+        {/* Workspace children with tree lines and animation */}
+        <div
+          className="grid transition-[grid-template-rows] duration-200 ease-out"
+          style={{ gridTemplateRows: isWorkspaceExpanded ? '1fr' : '0fr' }}
+        >
+          <div className="overflow-hidden">
+            <div className="relative pl-[32px]">
+              {/* Vertical tree line */}
+              <div className="absolute left-[20px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
+              {files.map((item, index) => (
+                <FileTreeItem
+                  key={item.path}
+                  item={item}
+                  level={1}
+                  onSelect={handleFileSelect}
+                  onDelete={onDeleteFile}
+                  onRenameItem={onRenameFolder}
+                  isLast={index === files.length - 1 && creatingFolderIn !== ''}
+                  creatingFolderIn={creatingFolderIn}
+                  onStartCreateFolder={handleStartCreateFolder}
+                  onConfirmCreateFolder={handleConfirmCreateFolder}
+                  onCancelCreateFolder={handleCancelCreateFolder}
+                  editingItemPath={editingItemPath}
+                  onStartEditItem={handleStartEditItem}
+                  onConfirmEditItem={handleConfirmEditItem}
+                  onCancelEditItem={handleCancelEditItem}
+                  editItemValue={editItemValue}
+                  onEditItemValueChange={setEditItemValue}
+                  expandedFolders={expandedFolders}
+                  onToggleExpand={handleToggleExpand}
+                  draggedItem={draggedItem}
+                  dragOverTarget={dragOverTarget}
+                  onDragStart={handleDragStart}
+                  onDragOverFolder={handleDragOverFolder}
+                  getParentFolder={getParentFolder}
+                />
+              ))}
 
-            {/* Inline input for creating a folder at workspace root */}
-            {creatingFolderIn === '' && (
-              <div className="relative tree-last-item">
-                <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
-                <div className="flex items-center gap-1 py-1 pr-2" style={{ paddingLeft: '8px' }}>
-                  <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                  </svg>
-                  <input
-                    autoFocus
-                    defaultValue={t('dialogs.newFolder', 'New folder')}
-                    className="text-[11px] bg-transparent border-b border-[var(--text-primary)] outline-none text-[var(--text-primary)] w-full"
-                    style={{ fontFamily: 'Roboto Mono, monospace' }}
-                    onFocus={(e) => e.target.select()}
-                    onKeyDown={handleWorkspaceInlineKeyDown}
-                    onBlur={handleCancelCreateFolder}
-                  />
+              {/* Inline input for creating a folder at workspace root */}
+              {creatingFolderIn === '' && (
+                <div className="relative tree-last-item">
+                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+                  <div className="flex items-center gap-1 py-1 pr-2" style={{ paddingLeft: '8px' }}>
+                    <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                    </svg>
+                    <input
+                      autoFocus
+                      defaultValue={t('dialogs.newFolder', 'New folder')}
+                      className="text-[11px] bg-transparent border-b border-[var(--text-primary)] outline-none text-[var(--text-primary)] w-full"
+                      style={{ fontFamily: 'Roboto Mono, monospace' }}
+                      onFocus={(e) => e.target.select()}
+                      onKeyDown={handleWorkspaceInlineKeyDown}
+                      onBlur={handleCancelCreateFolder}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

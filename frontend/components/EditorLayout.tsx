@@ -716,6 +716,7 @@ export default function EditorLayout() {
         onClose={() => setShowWelcomeModal(false)}
         onNewDocument={handleNewDocumentFromModal}
         onFileSelect={handleFileSelectFromModal}
+        hasOpenFiles={tabs.length > 0}
       />
     </div>
   );

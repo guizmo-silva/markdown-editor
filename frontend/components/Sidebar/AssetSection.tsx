@@ -52,28 +52,33 @@ export default function AssetSection({ title, count, children, defaultOpen = fal
         </div>
       </button>
 
-      {/* Section Content */}
-      {isOpen && (
-        <div className="pr-3 relative">
-          {count > 0 ? (
-            <div className="relative pl-[32px] pb-2">
-              {/* Main vertical tree line - will be hidden after last element via CSS */}
-              <div className="absolute left-[20px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
+      {/* Section Content with animation */}
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="pr-3 relative">
+            {count > 0 ? (
+              <div className="relative pl-[32px] overflow-hidden">
+                {/* Main vertical tree line - will be hidden after last element via CSS */}
+                <div className="absolute left-[20px] top-0 bottom-[10px] w-[1px] bg-[var(--border-primary)] tree-line"></div>
 
-              {/* Container for children with tree connectors */}
-              <div className="relative">
-                {children}
+                {/* Container for children with tree connectors */}
+                <div className="relative">
+                  {children}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="pl-[32px]">
-              <p className="text-[11px] text-[var(--text-muted)] italic" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                No items
-              </p>
-            </div>
-          )}
+            ) : (
+              <div className="pl-[32px]">
+                <p className="text-[11px] text-[var(--text-muted)] italic" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                  No items
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

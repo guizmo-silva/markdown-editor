@@ -1613,7 +1613,7 @@ export default function Toolbar({
       <button
         key={index}
         onClick={button.onClick}
-        className="w-6 h-6 flex-shrink-0 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+        className="w-[27px] h-[27px] flex-shrink-0 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
         aria-label={label}
         title={label}
       >

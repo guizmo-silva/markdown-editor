@@ -98,12 +98,19 @@ body {
 .tree-last-item::after {
   content: '';
   position: absolute;
-  left: -12px;
+  left: -13px;
   top: 15px;
-  bottom: -16px;
-  width: 2px;
+  bottom: -4px;
+  width: 4px;
   background: var(--bg-primary);
-  z-index: 1;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Tree lines inside modal: use dropdown background color and adjusted position */
+.welcome-modal-tree .tree-last-item::after {
+  background: var(--dropdown-bg);
+  top: 13px;
 }
 
 /* Custom scrollbar for tabs */

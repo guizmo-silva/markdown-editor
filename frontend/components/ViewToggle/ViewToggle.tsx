@@ -12,15 +12,40 @@ interface ViewToggleProps {
 
 export default function ViewToggle({ currentMode, onModeChange, vertical = false }: ViewToggleProps) {
   const { t } = useTranslation();
+
+  // Calculate slider position based on current mode
+  const getSliderPosition = () => {
+    switch (currentMode) {
+      case 'code': return 0;
+      case 'split': return 1;
+      case 'preview': return 2;
+      default: return 0;
+    }
+  };
+
+  const sliderPosition = getSliderPosition();
+
   return (
     <div className="flex items-center justify-center gap-1">
-      <div className={`inline-flex bg-[var(--bg-secondary)] rounded-lg p-1 gap-1 ${vertical ? 'flex-col' : ''}`}>
+      <div className={`relative inline-flex bg-[var(--bg-secondary)] rounded-lg p-1 gap-1 ${vertical ? 'flex-col' : ''}`}>
+        {/* Sliding indicator */}
+        <div
+          className="absolute bg-[var(--bg-primary)] rounded shadow-sm transition-transform duration-200 ease-out"
+          style={{
+            width: 'calc((100% - 8px - 8px) / 3)',
+            height: 'calc(100% - 8px)',
+            top: '4px',
+            left: '4px',
+            transform: vertical
+              ? `translateY(calc(${sliderPosition} * (100% + 4px)))`
+              : `translateX(calc(${sliderPosition} * (100% + 4px)))`,
+          }}
+        />
+
         {/* Code Only View */}
         <button
           onClick={() => onModeChange('code')}
-          className={`p-2 rounded transition-colors text-[var(--text-primary)] ${
-            currentMode === 'code' ? 'bg-[var(--bg-primary)] shadow-sm' : 'hover:bg-[var(--bg-code)]'
-          }`}
+          className="relative z-10 p-2 rounded transition-colors text-[var(--text-primary)] hover:bg-[var(--bg-code)]/50"
           title={t('viewToggle.codeView')}
         >
         <svg width="18" height="15" viewBox="0 0 18 15" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -38,9 +63,7 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
         {/* Split View */}
         <button
           onClick={() => onModeChange('split')}
-          className={`p-2 rounded transition-colors text-[var(--text-primary)] ${
-            currentMode === 'split' ? 'bg-[var(--bg-primary)] shadow-sm' : 'hover:bg-[var(--bg-code)]'
-          }`}
+          className="relative z-10 p-2 rounded transition-colors text-[var(--text-primary)] hover:bg-[var(--bg-code)]/50"
           title={t('viewToggle.splitView')}
         >
         <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -64,9 +87,7 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
         {/* Preview Only View */}
         <button
           onClick={() => onModeChange('preview')}
-          className={`p-2 rounded transition-colors text-[var(--text-primary)] ${
-            currentMode === 'preview' ? 'bg-[var(--bg-primary)] shadow-sm' : 'hover:bg-[var(--bg-code)]'
-          }`}
+          className="relative z-10 p-2 rounded transition-colors text-[var(--text-primary)] hover:bg-[var(--bg-code)]/50"
           title={t('viewToggle.previewView')}
         >
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
