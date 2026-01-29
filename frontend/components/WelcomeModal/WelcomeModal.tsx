@@ -30,6 +30,37 @@ export default function WelcomeModal({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(true);
 
+  // Animation state - simple approach
+  const [shouldRender, setShouldRender] = useState(false);
+  const [animateIn, setAnimateIn] = useState(false);
+  const [exitDirection, setExitDirection] = useState(false);
+
+  // Handle open
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      setExitDirection(false);
+      // Small delay to ensure DOM is rendered before triggering CSS transition
+      const timeout = setTimeout(() => {
+        setAnimateIn(true);
+      }, 20);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen]);
+
+  // Handle close
+  useEffect(() => {
+    if (!isOpen && shouldRender) {
+      setAnimateIn(false);
+      setExitDirection(true);
+      const timeout = setTimeout(() => {
+        setShouldRender(false);
+        setExitDirection(false);
+      }, 150);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen, shouldRender]);
+
   const loadRecentFiles = useCallback(async () => {
     setIsLoading(true);
     // Clear cached folder contents to force fresh data
@@ -129,15 +160,18 @@ export default function WelcomeModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
+      className={`fixed inset-0 flex items-center justify-center z-[100] transition-all duration-150 ease-out
+        ${animateIn ? 'bg-black/50' : 'bg-black/0'}`}
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-[var(--dropdown-bg)] rounded-lg shadow-xl p-8 w-[700px] h-[400px] max-w-[90vw] flex gap-8"
+        className={`bg-[var(--dropdown-bg)] rounded-lg shadow-xl p-8 w-[700px] h-[400px] max-w-[90vw] flex gap-8
+          transition-all duration-150 ease-out
+          ${animateIn ? 'opacity-100 translate-x-0' : exitDirection ? 'opacity-0 translate-x-3' : 'opacity-0 -translate-x-3'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Left Side: Folder Selector + New Document Button */}

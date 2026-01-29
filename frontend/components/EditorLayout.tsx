@@ -8,6 +8,7 @@ import { ViewToggle, type ViewMode } from './ViewToggle';
 import { Tabs } from './Tabs';
 import { Toolbar } from './Toolbar';
 import { WelcomeModal } from './WelcomeModal';
+import { ExportModal } from './ExportModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
 import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml } from '@/services/api';
@@ -53,6 +54,7 @@ export default function EditorLayout() {
   const [isSaving, setIsSaving] = useState(false);
   const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
+  const [showExportModal, setShowExportModal] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const AUTOSAVE_DELAY = 1000; // 1 second debounce
 
@@ -310,17 +312,49 @@ export default function EditorLayout() {
     }
   };
 
-  const handleExport = async () => {
+  const handleExportClick = () => {
+    setShowExportModal(true);
+  };
+
+  const handleExport = async (format: 'html' | 'md' | 'txt') => {
+    const filename = currentFilePath?.replace(/\.md$/, '').split('/').pop() || 'documento';
+
     try {
-      const blob = await exportToHtml(markdown, currentFilePath || 'export');
-      const url = URL.createObjectURL(blob);
+      let content: string;
+      let mimeType: string;
+      let extension: string;
+
+      switch (format) {
+        case 'html':
+          const blob = await exportToHtml(markdown, filename);
+          content = await blob.text();
+          mimeType = 'text/html';
+          extension = 'html';
+          break;
+        case 'md':
+          content = markdown;
+          mimeType = 'text/markdown';
+          extension = 'md';
+          break;
+        case 'txt':
+          content = markdown;
+          mimeType = 'text/plain';
+          extension = 'txt';
+          break;
+      }
+
+      // Download using traditional method (works in all browsers)
+      const downloadBlob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(downloadBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${currentFilePath?.replace(/\.md$/, '') || 'export'}.html`;
+      a.download = `${filename}.${extension}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      setShowExportModal(false);
     } catch (err) {
       console.error('Failed to export:', err);
       alert(err instanceof Error ? err.message : 'Failed to export');
@@ -586,7 +620,7 @@ export default function EditorLayout() {
             onFileSelect={handleFileSelect}
             onDeleteFile={handleDeleteFile}
             onRenameFolder={handleRenameFile}
-            onExport={handleExport}
+            onExport={handleExportClick}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={handleToggleSidebar}
             width={sidebarWidth}
@@ -717,6 +751,14 @@ export default function EditorLayout() {
         onNewDocument={handleNewDocumentFromModal}
         onFileSelect={handleFileSelectFromModal}
         hasOpenFiles={tabs.length > 0}
+      />
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExport}
+        filename={currentFilePath?.split('/').pop()?.replace(/\.md$/, '') || 'documento'}
       />
     </div>
   );

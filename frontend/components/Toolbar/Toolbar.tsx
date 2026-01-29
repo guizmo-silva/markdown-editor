@@ -1613,7 +1613,7 @@ export default function Toolbar({
       <button
         key={index}
         onClick={button.onClick}
-        className="w-[27px] h-[27px] flex-shrink-0 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+        className="w-[30px] h-[30px] flex-shrink-0 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
         aria-label={label}
         title={label}
       >
@@ -1637,7 +1637,7 @@ export default function Toolbar({
             onMouseDown={handleHeadingMouseDown}
             onMouseUp={handleHeadingMouseUp}
             onMouseLeave={handleHeadingMouseLeave}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.heading')}
             title={t('toolbar.heading')}
           >
@@ -1671,7 +1671,7 @@ export default function Toolbar({
             onMouseDown={handleQuoteMouseDown}
             onMouseUp={handleQuoteMouseUp}
             onMouseLeave={handleQuoteMouseLeave}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.blockquote')}
             title={t('toolbar.blockquote')}
           >
@@ -1708,7 +1708,7 @@ export default function Toolbar({
             onMouseDown={handleLinkMouseDown}
             onMouseUp={handleLinkMouseUp}
             onMouseLeave={handleLinkMouseLeave}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.link')}
             title={t('toolbar.link')}
           >
@@ -1744,7 +1744,7 @@ export default function Toolbar({
             onMouseDown={handleImageMouseDown}
             onMouseUp={handleImageMouseUp}
             onMouseLeave={handleImageMouseLeave}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.image')}
             title={t('toolbar.image')}
           >
@@ -1787,7 +1787,7 @@ export default function Toolbar({
         <div className="relative flex-shrink-0" ref={tableButtonRef}>
           <button
             onClick={handleTableClick}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.table')}
             title={t('toolbar.table')}
           >
@@ -1855,7 +1855,7 @@ export default function Toolbar({
         <div className="relative flex-shrink-0" ref={alertButtonRef}>
           <button
             onClick={handleAlertClick}
-            className="w-6 h-6 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.alert')}
             title={t('toolbar.alert')}
           >
