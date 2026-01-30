@@ -232,7 +232,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
       >
         {/* File/Folder icon */}
         {item.type === 'folder' ? (
-          <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
             {isExpanded ? (
               <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
             ) : (
@@ -240,7 +240,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
             )}
           </svg>
         ) : (
-          <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         )}
@@ -391,7 +391,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
                 <div className="relative tree-last-item">
                   <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
                   <div className="flex items-center gap-1 py-1 pr-2" style={{ paddingLeft: '8px' }}>
-                    <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                     </svg>
                     <input
@@ -731,7 +731,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
             fontFamily: 'Roboto Mono, monospace',
           }}
         >
-          <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <span className="text-[11px] text-[var(--text-primary)]">{draggedItem.name}</span>
@@ -749,7 +749,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
           }`}
         >
           <div className="flex items-center gap-2">
-            <svg className="w-[15px] h-[15px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-[17px] h-[17px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
               {isWorkspaceExpanded ? (
                 <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
               ) : (
@@ -826,7 +826,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
                 <div className="relative tree-last-item">
                   <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
                   <div className="flex items-center gap-1 py-1 pr-2" style={{ paddingLeft: '8px' }}>
-                    <svg className="w-3 h-3 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                     </svg>
                     <input

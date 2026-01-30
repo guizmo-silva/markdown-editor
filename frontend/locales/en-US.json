@@ -42,7 +42,8 @@
     "alertTip": "Tip",
     "alertImportant": "Important",
     "alertWarning": "Warning",
-    "alertCaution": "Caution"
+    "alertCaution": "Caution",
+    "details": "Collapsible"
   },
   "sidebar": {
     "title": "Assets",

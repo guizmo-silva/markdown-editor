@@ -31,14 +31,18 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
         {/* Sliding indicator */}
         <div
           className="absolute bg-[var(--bg-primary)] rounded shadow-sm transition-transform duration-200 ease-out"
-          style={{
+          style={vertical ? {
+            width: 'calc(100% - 8px)',
+            height: 'calc((100% - 8px - 8px) / 3)',
+            top: '4px',
+            left: '4px',
+            transform: `translateY(calc(${sliderPosition} * (100% + 4px)))`,
+          } : {
             width: 'calc((100% - 8px - 8px) / 3)',
             height: 'calc(100% - 8px)',
             top: '4px',
             left: '4px',
-            transform: vertical
-              ? `translateY(calc(${sliderPosition} * (100% + 4px)))`
-              : `translateX(calc(${sliderPosition} * (100% + 4px)))`,
+            transform: `translateX(calc(${sliderPosition} * (100% + 4px)))`,
           }}
         />
 
@@ -48,15 +52,8 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
           className="relative z-10 p-2 rounded transition-colors text-[var(--text-primary)] hover:bg-[var(--bg-code)]/50"
           title={t('viewToggle.codeView')}
         >
-        <svg width="18" height="15" viewBox="0 0 18 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g clipPath="url(#clip0_10_145)">
-            <path d="M0 2.98753V0L10.6894 4.65003V7.06251L0 11.7125V8.72501L7.48514 5.90002L7.7076 5.87506L7.71996 5.80013L7.48514 5.75015L0 2.98753ZM18 15H6.65481V12.6125H18V15Z" fill="currentColor"/>
-          </g>
-          <defs>
-            <clipPath id="clip0_10_145">
-              <rect width="18" height="15" fill="white"/>
-            </clipPath>
-          </defs>
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 4.5V1.5L10 6V8.5L0 13V10L7 7.25L7.2 7.22L7.21 7.15L7 7.1L0 4.5ZM17 16H6.25V13.5H17V16Z" fill="currentColor"/>
         </svg>
         </button>
 
@@ -67,20 +64,8 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
           title={t('viewToggle.splitView')}
         >
         <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g clipPath="url(#clip0_12_149)">
-            <path d="M15.7564 1.83083H1.3374V4.85189H15.7564V1.83083Z" fill="currentColor"/>
-            <path d="M15.1313 4.10089C15.1313 2.86807 14.132 1.86858 12.8989 1.86847H4.10107C2.8681 1.86869 1.86874 2.86813 1.86865 4.10089V12.8987C1.86865 14.1316 2.86805 15.1309 4.10107 15.1312H12.8989C14.132 15.131 15.1313 14.1316 15.1313 12.8987V4.10089ZM16.6313 12.8987C16.6313 14.9602 14.9604 16.631 12.8989 16.6312H4.10107C2.03973 16.6309 0.368652 14.9601 0.368652 12.8987V4.10089C0.368741 2.03959 2.03979 0.368688 4.10107 0.368467H12.8989C14.9603 0.368584 16.6313 2.03953 16.6313 4.10089V12.8987Z" fill="currentColor"/>
-            <path d="M8.5 3.22989L8.5 15.8333Z" fill="currentColor"/>
-            <path d="M9.25 3.22989L9.25 15.8334H7.75L7.75 3.22989H9.25Z" fill="currentColor"/>
-          </g>
-          <defs>
-            <linearGradient id="paint0_linear_12_149" x1="0.298367" y1="8.5" x2="16.7018" y2="8.5" gradientUnits="userSpaceOnUse">
-              <stop/>
-            </linearGradient>
-            <clipPath id="clip0_12_149">
-              <rect width="17" height="17" fill="white"/>
-            </clipPath>
-          </defs>
+          <rect x="1.5" y="1.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+          <rect x="7.75" y="1.5" width="1.5" height="14" fill="currentColor"/>
         </svg>
         </button>
 
@@ -90,18 +75,11 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
           className="relative z-10 p-2 rounded transition-colors text-[var(--text-primary)] hover:bg-[var(--bg-code)]/50"
           title={t('viewToggle.previewView')}
         >
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <g clipPath="url(#clip0_39_200)">
-            <path d="M13.6726 3.56483C14.2249 3.56483 14.6726 4.01254 14.6726 4.56483C14.6726 5.11711 14.2249 5.56483 13.6726 5.56483L7.49976 5.56483C6.94747 5.56483 6.49976 5.11711 6.49976 4.56483C6.49976 4.01254 6.94747 3.56483 7.49976 3.56483L13.6726 3.56483Z" fill="currentColor"/>
-            <path d="M13.6733 8.28241C14.2254 8.28268 14.6733 8.73029 14.6733 9.28241C14.6733 9.83454 14.2254 10.2821 13.6733 10.2824H1.32666C0.774375 10.2824 0.32666 9.8347 0.32666 9.28241C0.32666 8.73013 0.774375 8.28241 1.32666 8.28241H13.6733Z" fill="currentColor"/>
-            <path d="M13.6733 13C14.2254 13.0003 14.6733 13.4479 14.6733 14C14.6733 14.5521 14.2254 14.9997 13.6733 15H1.32666C0.774375 15 0.32666 14.5523 0.32666 14C0.32666 13.4477 0.774375 13 1.32666 13H13.6733Z" fill="currentColor"/>
-            <path d="M3.12187 1.57729L1.82241 6.54264H0.539551L2.42854 0.497866H3.22981L3.12187 1.57729ZM4.14732 6.54264L2.83956 1.57729L2.71916 0.497866H3.53288L5.43848 6.54264H4.14732ZM4.19299 4.28831V5.29715H1.46536V4.28831H4.19299Z" fill="currentColor"/>
-          </g>
-          <defs>
-            <clipPath id="clip0_39_200">
-              <rect width="15" height="15" fill="white"/>
-            </clipPath>
-          </defs>
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15.5 4.5C16 4.5 16.5 5 16.5 5.5C16.5 6 16 6.5 15.5 6.5H8.5C8 6.5 7.5 6 7.5 5.5C7.5 5 8 4.5 8.5 4.5H15.5Z" fill="currentColor"/>
+          <path d="M15.5 9.25C16 9.25 16.5 9.75 16.5 10.25C16.5 10.75 16 11.25 15.5 11.25H1.5C1 11.25 0.5 10.75 0.5 10.25C0.5 9.75 1 9.25 1.5 9.25H15.5Z" fill="currentColor"/>
+          <path d="M15.5 14C16 14 16.5 14.5 16.5 15C16.5 15.5 16 16 15.5 16H1.5C1 16 0.5 15.5 0.5 15C0.5 14.5 1 14 1.5 14H15.5Z" fill="currentColor"/>
+          <path d="M3.5 2.5L2.2 7H1L2.7 1.5H3.4L3.5 2.5ZM4.4 7L3.2 2.5L3.1 1.5H3.8L5.6 7H4.4ZM4.5 5V6H2V5H4.5Z" fill="currentColor"/>
         </svg>
         </button>
       </div>

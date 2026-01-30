@@ -609,9 +609,18 @@ export default function EditorLayout() {
 
   return (
     <div className="h-screen w-screen flex flex-row bg-[var(--bg-primary)]">
-      {/* Sidebar - Full height on the left */}
-      {!isSidebarCollapsed && (
-        <div className="relative flex" style={{ width: sidebarWidth }}>
+      {/* Sidebar Container - Animated width (only when not resizing) */}
+      <div
+        className={`relative flex-shrink-0 ${isResizing ? '' : 'transition-[width] duration-300 ease-in-out'}`}
+        style={{ width: isSidebarCollapsed ? 60 : sidebarWidth }}
+      >
+        {/* Expanded Sidebar */}
+        <div
+          className={`absolute inset-0 flex transition-opacity duration-300 ease-in-out ${
+            isSidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+          style={{ width: sidebarWidth }}
+        >
           <AssetsSidebar
             markdown={markdown}
             viewMode={viewMode}
@@ -632,13 +641,15 @@ export default function EditorLayout() {
             onMouseDown={handleResizeStart}
           />
         </div>
-      )}
 
-      {/* Collapsed Sidebar */}
-      {isSidebarCollapsed && (
-        <div className="w-[60px] bg-[var(--bg-primary)] border-r border-[var(--border-primary)] flex flex-col items-center">
+        {/* Collapsed Sidebar */}
+        <div
+          className={`absolute inset-0 w-[60px] bg-[var(--bg-primary)] border-r border-[var(--border-primary)] flex flex-col items-center transition-opacity duration-300 ease-in-out ${
+            isSidebarCollapsed ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
           {/* Logo at top */}
-          <div className="py-3 border-b border-[var(--border-primary)] w-full flex items-center justify-center">
+          <div className="py-3 w-full flex items-center justify-center">
             <img
               src={getIconPath('Logo.svg')}
               alt="MD Logo"
@@ -655,7 +666,7 @@ export default function EditorLayout() {
           <div className="py-4">
             <button
               onClick={handleToggleSidebar}
-              className="p-2 hover:bg-[var(--bg-secondary)] rounded transition-colors"
+              className="p-2 hover:ring-1 hover:ring-[var(--border-primary)] rounded transition-all"
               aria-label="Show sidebar"
             >
               <img
@@ -666,7 +677,7 @@ export default function EditorLayout() {
             </button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">

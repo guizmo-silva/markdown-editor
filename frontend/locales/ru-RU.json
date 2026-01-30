@@ -1,0 +1,114 @@
+{
+  "buttons": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "export": "Экспорт",
+    "open": "Открыть",
+    "new": "Новый",
+    "close": "Закрыть"
+  },
+  "toolbar": {
+    "bold": "Жирный",
+    "italic": "Курсив",
+    "strikethrough": "Зачёркнутый",
+    "code": "Код",
+    "heading": "Заголовок",
+    "unorderedList": "Маркированный список",
+    "orderedList": "Нумерованный список",
+    "taskList": "Список задач",
+    "blockquote": "Цитата",
+    "codeBlock": "Блок кода",
+    "link": "Ссылка",
+    "linkInline": "Прямая ссылка",
+    "linkReference": "Ссылка-сноска",
+    "image": "Изображение",
+    "table": "Таблица",
+    "horizontalRule": "Горизонтальная линия",
+    "subscript": "Подстрочный",
+    "footnote": "Сноска",
+    "superscript": "Надстрочный",
+    "localImage": "Локальное изображение",
+    "linkedImage": "Изображение по ссылке",
+    "selectTableSize": "Выберите размер",
+    "alignLeft": "По левому краю",
+    "alignCenter": "По центру",
+    "alignRight": "По правому краю",
+    "insertLinkedImage": "Вставить изображение по ссылке",
+    "imageUrl": "URL изображения",
+    "altText": "Альтернативный текст (Alt)",
+    "insert": "Вставить",
+    "alert": "Уведомление",
+    "alertNote": "Примечание",
+    "alertTip": "Совет",
+    "alertImportant": "Важно",
+    "alertWarning": "Предупреждение",
+    "alertCaution": "Осторожно",
+    "details": "Сворачиваемый"
+  },
+  "sidebar": {
+    "title": "Элементы",
+    "content": "Содержание",
+    "headings": "Заголовки",
+    "images": "Изображения",
+    "links": "Ссылки",
+    "alerts": "Уведомления",
+    "footnotes": "Сноски",
+    "tables": "Таблицы",
+    "quotes": "Цитаты",
+    "orderedLists": "Нумерованные списки",
+    "unorderedLists": "Маркированные списки",
+    "codeBlocks": "Блоки кода"
+  },
+  "fileBrowser": {
+    "title": "Файлы"
+  },
+  "viewToggle": {
+    "codeView": "Только код",
+    "splitView": "Разделённый вид",
+    "previewView": "Только предпросмотр"
+  },
+  "menu": {
+    "language": "Язык",
+    "appearance": "Оформление",
+    "darkMode": "Тёмный режим"
+  },
+  "status": {
+    "saved": "Сохранено",
+    "unsaved": "Изменено",
+    "saving": "Сохранение...",
+    "error": "Ошибка сохранения"
+  },
+  "dialogs": {
+    "unsavedChanges": "У вас есть несохранённые изменения. Сохранить перед закрытием?",
+    "deleteConfirm": "Вы уверены, что хотите удалить этот файл?",
+    "renameFile": "Переименовать файл",
+    "newFile": "Новый файл",
+    "newFolder": "Новая папка"
+  },
+  "infobar": {
+    "line": "Строка",
+    "column": "Столб",
+    "characters": "Символы",
+    "words": "Слова",
+    "spellcheck": "Проверка",
+    "spellcheckOff": "Проверка: Выкл",
+    "enableSpellcheck": "Включить проверку орфографии",
+    "selectLanguage": "Язык проверки",
+    "current": "текущий",
+    "statistics": "Статистика"
+  },
+  "tooltips": {
+    "newTab": "Новая вкладка",
+    "export": "Экспорт документа",
+    "menu": "Меню",
+    "doubleClickRename": "Двойной клик для переименования",
+    "hideSidebar": "Скрыть боковую панель"
+  },
+  "welcomeModal": {
+    "newDocument": "Новый документ",
+    "recentDocuments": "Недавние документы:",
+    "noFiles": "Файлы не найдены",
+    "loading": "Загрузка...",
+    "folder": "Папка:"
+  }
+}

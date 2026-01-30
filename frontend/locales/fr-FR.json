@@ -42,7 +42,8 @@
     "alertTip": "Astuce",
     "alertImportant": "Important",
     "alertWarning": "Avertissement",
-    "alertCaution": "Attention"
+    "alertCaution": "Attention",
+    "details": "Dépliable"
   },
   "sidebar": {
     "title": "Éléments",

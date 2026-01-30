@@ -342,3 +342,88 @@
   color: #ffa198;
   background-color: rgba(248, 81, 73, 0.15);
 }
+
+/* ===== Diff Language - Line-based highlighting ===== */
+
+/* Diff blocks use a different structure - highlight entire lines */
+.markdown-preview .code-block.language-diff {
+  padding: 0;
+}
+
+.markdown-preview .code-block.language-diff code {
+  display: block;
+  padding: 16px;
+}
+
+/* Diff line tokens - these wrap entire lines in Prism diff */
+.markdown-preview .code-block.language-diff .token.deleted {
+  display: block;
+  background-color: #ffebe9;
+  color: #b31d28;
+  margin: 0 -16px;
+  padding: 0 16px;
+}
+
+.markdown-preview .code-block.language-diff .token.inserted {
+  display: block;
+  background-color: #e6ffec;
+  color: #22863a;
+  margin: 0 -16px;
+  padding: 0 16px;
+}
+
+/* Diff coordinate lines (@@ ... @@) */
+.markdown-preview .code-block.language-diff .token.coord {
+  display: block;
+  background-color: #ddf4ff;
+  color: #0550ae;
+  margin: 0 -16px;
+  padding: 0 16px;
+}
+
+/* Prefix symbols (+/-) */
+.markdown-preview .code-block.language-diff .token.prefix {
+  user-select: none;
+  font-weight: bold;
+}
+
+.markdown-preview .code-block.language-diff .token.prefix.deleted {
+  color: #b31d28;
+  background: transparent;
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.markdown-preview .code-block.language-diff .token.prefix.inserted {
+  color: #22863a;
+  background: transparent;
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== Diff Language - Dark Mode ===== */
+
+.preview-container.dark .markdown-preview .code-block.language-diff .token.deleted {
+  background-color: rgba(248, 81, 73, 0.2);
+  color: #ffa198;
+}
+
+.preview-container.dark .markdown-preview .code-block.language-diff .token.inserted {
+  background-color: rgba(63, 185, 80, 0.2);
+  color: #7ee787;
+}
+
+.preview-container.dark .markdown-preview .code-block.language-diff .token.coord {
+  background-color: rgba(56, 139, 253, 0.2);
+  color: #79c0ff;
+}
+
+.preview-container.dark .markdown-preview .code-block.language-diff .token.prefix.deleted {
+  color: #ffa198;
+}
+
+.preview-container.dark .markdown-preview .code-block.language-diff .token.prefix.inserted {
+  color: #7ee787;
+}

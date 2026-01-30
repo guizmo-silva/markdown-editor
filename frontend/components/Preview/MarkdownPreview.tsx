@@ -2,6 +2,7 @@
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkGemoji from 'remark-gemoji';
 import remarkMath from 'remark-math';
 import { remarkAlert } from 'remark-github-blockquote-alert';
 import rehypeRaw from 'rehype-raw';
@@ -113,7 +114,7 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme }: M
           style={{ fontFamily: 'var(--font-roboto-flex), sans-serif', color: textColor }}
         >
           <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath, remarkAlert]}
+            remarkPlugins={[remarkGfm, remarkGemoji, remarkMath, remarkAlert]}
             rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeKatex]}
             components={{
               code({ node, className, children, ...props }) {

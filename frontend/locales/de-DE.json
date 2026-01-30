@@ -42,7 +42,8 @@
     "alertTip": "Tipp",
     "alertImportant": "Wichtig",
     "alertWarning": "Warnung",
-    "alertCaution": "Vorsicht"
+    "alertCaution": "Vorsicht",
+    "details": "Einklappbar"
   },
   "sidebar": {
     "title": "Elemente",

@@ -522,7 +522,7 @@ export default function AssetsSidebar({
 
         {/* Section Divider - Resizable (larger hit area, thin visual line) */}
         <div
-          className="h-[11px] cursor-row-resize flex-shrink-0 flex items-center group"
+          className="h-[11px] cursor-row-resize flex-shrink-0 flex items-center group px-3"
           onMouseDown={handleSectionResizeStart}
         >
           <div className="w-full h-[1px] bg-[var(--border-primary)] group-hover:bg-[var(--split-line)] group-active:bg-[var(--split-line)] transition-colors" />

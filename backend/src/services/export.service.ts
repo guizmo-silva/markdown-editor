@@ -1,10 +1,20 @@
 import { marked } from 'marked';
+import { markedEmoji } from 'marked-emoji';
+
+// Emoji map for common GitHub-style emoji shortcodes
+import { emojis } from './emojis.js';
 
 // Configure marked with GFM (GitHub Flavored Markdown)
 marked.setOptions({
   gfm: true,
   breaks: true,
 });
+
+// Add emoji support
+marked.use(markedEmoji({
+  emojis,
+  renderer: (token: { emoji: string }) => token.emoji,
+}));
 
 export const convertToHTML = async (markdown: string, title: string = 'Markdown Export'): Promise<string> => {
   // Convert markdown to HTML using marked

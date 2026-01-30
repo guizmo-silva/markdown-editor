@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         'roboto-mono': ['var(--font-roboto-mono)', 'monospace'],
         'roboto-flex': ['var(--font-roboto-flex)', 'sans-serif'],
+        'noto-sans-sc': ['var(--font-noto-sans-sc)', 'sans-serif'],
       },
     },
   },

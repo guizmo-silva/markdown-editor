@@ -1171,6 +1171,115 @@ export default function Toolbar({
     }
   };
 
+  // Details/Collapsible handler
+  const handleDetails = () => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const text = editor.getValue ? editor.getValue() : value;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const selectedText = text.substring(start, end);
+
+    // Check if cursor/selection is inside an existing details block
+    const beforeCursor = text.substring(0, start);
+    const afterCursor = text.substring(end);
+    const openMatch = beforeCursor.lastIndexOf('<details>');
+    const closeMatch = afterCursor.indexOf('</details>');
+
+    if (openMatch !== -1 && closeMatch !== -1) {
+      // Verify we're inside a proper details block (no nested details between open and cursor)
+      const textBetweenOpenAndCursor = text.substring(openMatch, start);
+      const closingBetween = textBetweenOpenAndCursor.indexOf('</details>');
+
+      if (closingBetween === -1) {
+        // We're inside a details block — toggle it off (remove the tags)
+        const blockStart = openMatch;
+        const blockEnd = end + closeMatch + 10; // '</details>' length = 10
+
+        // Extract content between tags
+        const blockContent = text.substring(openMatch + 9, end + closeMatch); // after '<details>'
+
+        // Try to extract summary and content
+        const summaryMatch = blockContent.match(/<summary>([\s\S]*?)<\/summary>/);
+        let innerContent = '';
+
+        if (summaryMatch) {
+          const summaryEnd = blockContent.indexOf('</summary>') + 10;
+          innerContent = blockContent.substring(summaryEnd).trim();
+          // If content is just placeholder, remove entirely
+          if (innerContent === '' || innerContent === 'Content here') {
+            if (editor.replaceRange) {
+              editor.replaceRange(blockStart, blockEnd, '');
+            } else {
+              onChange(text.substring(0, blockStart) + text.substring(blockEnd));
+            }
+            setTimeout(() => {
+              editor.setSelectionRange(blockStart, blockStart);
+              editor.focus();
+            }, 0);
+          } else {
+            // Has real content — unwrap: keep inner content
+            if (editor.replaceRange) {
+              editor.replaceRange(blockStart, blockEnd, innerContent);
+            } else {
+              onChange(text.substring(0, blockStart) + innerContent + text.substring(blockEnd));
+            }
+            setTimeout(() => {
+              editor.setSelectionRange(blockStart, blockStart + innerContent.length);
+              editor.focus();
+            }, 0);
+          }
+        } else {
+          // No summary found, just remove block
+          if (editor.replaceRange) {
+            editor.replaceRange(blockStart, blockEnd, '');
+          } else {
+            onChange(text.substring(0, blockStart) + text.substring(blockEnd));
+          }
+          setTimeout(() => {
+            editor.setSelectionRange(blockStart, blockStart);
+            editor.focus();
+          }, 0);
+        }
+        return;
+      }
+    }
+
+    // Not inside a details block — insert one
+    if (selectedText.length > 0) {
+      // Use selected text as summary
+      const detailsBlock = `<details>\n<summary>${selectedText}</summary>\n\nContent here\n\n</details>`;
+      if (editor.replaceRange) {
+        editor.replaceRange(start, end, detailsBlock);
+      } else {
+        onChange(text.substring(0, start) + detailsBlock + text.substring(end));
+      }
+      setTimeout(() => {
+        // Select "Content here" placeholder
+        const contentStart = start + `<details>\n<summary>${selectedText}</summary>\n\n`.length;
+        const contentEnd = contentStart + 12; // "Content here" length
+        editor.setSelectionRange(contentStart, contentEnd);
+        editor.focus();
+      }, 0);
+    } else {
+      // Insert with placeholders
+      const detailsBlock = '<details>\n<summary>Summary</summary>\n\nContent here\n\n</details>';
+      if (editor.replaceRange) {
+        editor.replaceRange(start, end, detailsBlock);
+      } else {
+        onChange(text.substring(0, start) + detailsBlock + text.substring(end));
+      }
+      setTimeout(() => {
+        // Select "Summary" placeholder
+        const summaryStart = start + '<details>\n<summary>'.length;
+        const summaryEnd = summaryStart + 7; // "Summary" length
+        editor.setSelectionRange(summaryStart, summaryEnd);
+        editor.focus();
+      }, 0);
+    }
+  };
+
   // Image handlers with long press support
   const handleImage = () => {
     const editor = getEditor();
@@ -1602,6 +1711,7 @@ export default function Toolbar({
   const otherSidebarButtons = [
     { icon: getIconPath('CodeBlock_icon.svg'), translationKey: 'toolbar.codeBlock', onClick: handleCodeBlock },
     { icon: getIconPath('Footnote_icon.svg'), translationKey: 'toolbar.footnote', onClick: handleFootnote },
+    { icon: getIconPath('Details_icon.svg'), translationKey: 'toolbar.details', onClick: handleDetails },
   ];
 
   const GRID_COLS = 10;
@@ -1624,12 +1734,12 @@ export default function Toolbar({
 
   return (
     <>
-      <div className="min-h-[40px] bg-[var(--bg-secondary)] flex items-center justify-center flex-wrap px-3 py-2 gap-2 border-b border-[var(--border-primary)]">
+      <div className="min-h-[40px] bg-[var(--bg-secondary)] flex items-center justify-center flex-wrap px-3 py-2 gap-[5px] border-b border-[var(--border-primary)]">
         {/* Simple formatting buttons */}
         {simpleFormattingButtons.map(renderButton)}
 
         {/* Vertical separator */}
-        <div className="w-px h-5 bg-[var(--split-line)] mx-1 flex-shrink-0" />
+        <div className="w-px h-5 bg-[var(--split-line)] mx-3 flex-shrink-0" />
 
         {/* Heading button with dropdown */}
         <div className="relative flex-shrink-0" ref={headingButtonRef}>

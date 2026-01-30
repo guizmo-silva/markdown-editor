@@ -91,7 +91,7 @@ body {
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter), var(--font-noto-sans-sc), system-ui, -apple-system, sans-serif;
 }
 
 /* Tree lines: hide vertical line after last item */

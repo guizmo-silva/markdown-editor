@@ -17,6 +17,8 @@ const languages: Language[] = [
   { code: 'es-ES', name: 'Español', flag: '🇪🇸' },
   { code: 'fr-FR', name: 'Français', flag: '🇫🇷' },
   { code: 'de-DE', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'ru-RU', name: 'Русский', flag: '🇷🇺' },
+  { code: 'zh-CN', name: '简体中文', flag: '🇨🇳' },
 ];
 
 export default function LogoMenu() {

@@ -11,6 +11,8 @@ const SPELLCHECK_LANGUAGES: Record<string, { code: string; name: string }> = {
   'es-ES': { code: 'es-ES', name: 'Español' },
   'fr-FR': { code: 'fr-FR', name: 'Français' },
   'de-DE': { code: 'de-DE', name: 'Deutsch' },
+  'ru-RU': { code: 'ru-RU', name: 'Русский' },
+  'zh-CN': { code: 'zh-CN', name: '简体中文' },
 };
 
 interface InfoBarProps {

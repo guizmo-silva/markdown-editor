@@ -1,0 +1,114 @@
+{
+  "buttons": {
+    "save": "保存",
+    "cancel": "取消",
+    "export": "导出",
+    "open": "打开",
+    "new": "新建",
+    "close": "关闭"
+  },
+  "toolbar": {
+    "bold": "粗体",
+    "italic": "斜体",
+    "strikethrough": "删除线",
+    "code": "代码",
+    "heading": "标题",
+    "unorderedList": "无序列表",
+    "orderedList": "有序列表",
+    "taskList": "任务列表",
+    "blockquote": "引用",
+    "codeBlock": "代码块",
+    "link": "链接",
+    "linkInline": "内联链接",
+    "linkReference": "引用链接",
+    "image": "图片",
+    "table": "表格",
+    "horizontalRule": "水平分割线",
+    "subscript": "下标",
+    "footnote": "脚注",
+    "superscript": "上标",
+    "localImage": "本地图片",
+    "linkedImage": "网络图片",
+    "selectTableSize": "选择大小",
+    "alignLeft": "左对齐",
+    "alignCenter": "居中",
+    "alignRight": "右对齐",
+    "insertLinkedImage": "插入网络图片",
+    "imageUrl": "图片地址",
+    "altText": "替代文本 (Alt)",
+    "insert": "插入",
+    "alert": "提示框",
+    "alertNote": "备注",
+    "alertTip": "提示",
+    "alertImportant": "重要",
+    "alertWarning": "警告",
+    "alertCaution": "注意",
+    "details": "可折叠"
+  },
+  "sidebar": {
+    "title": "元素",
+    "content": "目录",
+    "headings": "标题",
+    "images": "图片",
+    "links": "链接",
+    "alerts": "提示框",
+    "footnotes": "脚注",
+    "tables": "表格",
+    "quotes": "引用",
+    "orderedLists": "有序列表",
+    "unorderedLists": "无序列表",
+    "codeBlocks": "代码块"
+  },
+  "fileBrowser": {
+    "title": "文件"
+  },
+  "viewToggle": {
+    "codeView": "仅代码",
+    "splitView": "分屏视图",
+    "previewView": "仅预览"
+  },
+  "menu": {
+    "language": "语言",
+    "appearance": "外观",
+    "darkMode": "深色模式"
+  },
+  "status": {
+    "saved": "已保存",
+    "unsaved": "已修改",
+    "saving": "保存中...",
+    "error": "保存失败"
+  },
+  "dialogs": {
+    "unsavedChanges": "您有未保存的更改。关闭前是否保存？",
+    "deleteConfirm": "确定要删除此文件吗？",
+    "renameFile": "重命名文件",
+    "newFile": "新建文件",
+    "newFolder": "新建文件夹"
+  },
+  "infobar": {
+    "line": "行",
+    "column": "列",
+    "characters": "字符",
+    "words": "字数",
+    "spellcheck": "拼写检查",
+    "spellcheckOff": "拼写检查：关闭",
+    "enableSpellcheck": "启用拼写检查",
+    "selectLanguage": "检查语言",
+    "current": "当前",
+    "statistics": "统计"
+  },
+  "tooltips": {
+    "newTab": "新标签页",
+    "export": "导出文档",
+    "menu": "菜单",
+    "doubleClickRename": "双击重命名",
+    "hideSidebar": "隐藏侧边栏"
+  },
+  "welcomeModal": {
+    "newDocument": "新建文档",
+    "recentDocuments": "最近文档：",
+    "noFiles": "未找到文件",
+    "loading": "加载中...",
+    "folder": "文件夹："
+  }
+}

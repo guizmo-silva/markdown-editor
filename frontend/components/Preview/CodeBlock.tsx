@@ -70,6 +70,7 @@ export default function CodeBlock({ children, className }: CodeBlockProps) {
           'markup': () => import('prismjs/components/prism-markup' as string),
           'docker': () => import('prismjs/components/prism-docker' as string),
           'git': () => import('prismjs/components/prism-git' as string),
+          'diff': () => import('prismjs/components/prism-diff' as string),
         };
 
         // Load the specific language if available
