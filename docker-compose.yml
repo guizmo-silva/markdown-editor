@@ -10,10 +10,17 @@ services:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=http://localhost:3001/api
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - markdown-editor
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   backend:
     build:
@@ -30,10 +37,17 @@ services:
     volumes:
       # Configure your workspace directories here
       # Example: Map local directories to container workspace
-      - ./workspace:/workspace
+      # :z flag for SELinux systems to allow container access
+      - ./workspace:/workspace:z
     restart: unless-stopped
     networks:
       - markdown-editor
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   markdown-editor:
