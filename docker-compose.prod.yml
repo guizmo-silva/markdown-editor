@@ -1,4 +1,6 @@
-# Docker Compose for production use with pre-built images from GitHub Container Registry
+# Docker Compose for ZimaOS / Production deployment
+# The app will create its data folder at /DATA/AppData/mkd/workspace
+#
 # Usage: docker-compose -f docker-compose.prod.yml up -d
 
 services:
@@ -9,7 +11,6 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:3001/api
     depends_on:
       backend:
         condition: service_healthy
@@ -34,11 +35,9 @@ services:
       - FRONTEND_URL=http://frontend:3000
       - WORKSPACE_ROOT=/workspace
     volumes:
-      # Configure your workspace directories here
-      # Example: Map your documents folder to the container workspace
-      # - /path/to/your/documents:/workspace/docs:z
-      # - /path/to/your/notes:/workspace/notes:z
-      - markdown-workspace:/workspace
+      # ZimaOS standard path: /DATA/AppData/<app-name>
+      # This creates /DATA/AppData/mkd/workspace for storing markdown files
+      - /DATA/AppData/mkd/workspace:/workspace
     restart: unless-stopped
     networks:
       - markdown-editor
@@ -52,7 +51,3 @@ services:
 networks:
   markdown-editor:
     driver: bridge
-
-volumes:
-  markdown-workspace:
-    driver: local
