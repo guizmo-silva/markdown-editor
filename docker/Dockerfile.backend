@@ -30,6 +30,16 @@ RUN adduser --system --uid 1001 nodejs
 # Create workspace directory with proper permissions
 RUN mkdir -p /workspace && chown nodejs:nodejs /workspace
 
+# Create defaults directory for template files
+RUN mkdir -p /app/defaults
+
+# Copy Welcome.md tutorial file to defaults (will be copied to workspace on first run)
+COPY --chown=nodejs:nodejs workspace/Welcome.md /app/defaults/Welcome.md
+
+# Copy entrypoint script
+COPY --chown=nodejs:nodejs docker/entrypoint-backend.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Copy built application
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
@@ -41,4 +51,5 @@ EXPOSE 3001
 
 ENV PORT=3001
 
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["node", "dist/index.js"]

@@ -12,8 +12,10 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet());
+// Allow any origin since this is a self-hosted app
+// The user accesses it via their own network (localhost, LAN IP, etc.)
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://frontend:3000', process.env.FRONTEND_URL || ''].filter(Boolean),
+  origin: true,
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
