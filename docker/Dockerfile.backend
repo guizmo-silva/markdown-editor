@@ -34,7 +34,7 @@ RUN mkdir -p /workspace && chown nodejs:nodejs /workspace
 RUN mkdir -p /app/defaults
 
 # Copy Welcome.md tutorial file to defaults (will be copied to workspace on first run)
-COPY --chown=nodejs:nodejs workspace/Welcome.md /app/defaults/Welcome.md
+COPY --chown=nodejs:nodejs defaults/Welcome.md /app/defaults/Welcome.md
 
 # Copy entrypoint script
 COPY --chown=nodejs:nodejs docker/entrypoint-backend.sh /app/entrypoint.sh
