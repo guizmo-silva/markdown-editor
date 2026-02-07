@@ -20,15 +20,45 @@ if [ "$PUID" != "$CURRENT_UID" ]; then
   echo "UID changed: $CURRENT_UID -> $PUID"
 fi
 
-# Fix ownership of app and workspace directories
+# Fix ownership of app directory
 chown node:node /app
-chown node:node /workspace 2>/dev/null || true
+
+# Build list of all volume mount paths
+WORKSPACE_ROOT=${WORKSPACE_ROOT:-/workspace}
+VOLUME_PATHS="$WORKSPACE_ROOT"
+
+if [ -n "$WORKSPACE_PATHS" ]; then
+  # WORKSPACE_PATHS overrides: extract mount paths (format: name1:/path1,name2:/path2)
+  VOLUME_PATHS=""
+  for entry in $(echo "$WORKSPACE_PATHS" | tr ',' ' '); do
+    mount_path=$(echo "$entry" | cut -d':' -f2- | xargs)
+    if [ -n "$mount_path" ]; then
+      VOLUME_PATHS="$VOLUME_PATHS $mount_path"
+    fi
+  done
+elif [ -n "$EXTRA_VOLUMES" ]; then
+  # EXTRA_VOLUMES: add extra mount paths alongside WORKSPACE_ROOT
+  for entry in $(echo "$EXTRA_VOLUMES" | tr ',' ' '); do
+    mount_path=$(echo "$entry" | cut -d':' -f2- | xargs)
+    if [ -n "$mount_path" ]; then
+      VOLUME_PATHS="$VOLUME_PATHS $mount_path"
+    fi
+  done
+fi
+
+# Fix ownership of all volume directories
+for vol_path in $VOLUME_PATHS; do
+  if [ -d "$vol_path" ]; then
+    chown node:node "$vol_path" 2>/dev/null || echo "Warning: could not chown $vol_path"
+    echo "Volume $vol_path: permissions set for node ($PUID:$PGID)"
+  fi
+done
 
 # Copy Welcome.md to workspace if it doesn't exist and workspace is empty
-if [ -d /workspace ] && [ -z "$(ls -A /workspace 2>/dev/null)" ]; then
+if [ -d "$WORKSPACE_ROOT" ] && [ -z "$(ls -A "$WORKSPACE_ROOT" 2>/dev/null)" ]; then
   if [ -f /app/defaults/Welcome.md ]; then
-    cp /app/defaults/Welcome.md /workspace/Welcome.md
-    chown node:node /workspace/Welcome.md
+    cp /app/defaults/Welcome.md "$WORKSPACE_ROOT/Welcome.md"
+    chown node:node "$WORKSPACE_ROOT/Welcome.md"
     echo "Welcome.md copied to workspace"
   fi
 fi
