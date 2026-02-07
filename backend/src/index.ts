@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import fileRoutes from './routes/file.routes.js';
 import exportRoutes from './routes/export.routes.js';
+import { validateVolumes } from './services/volume.service.js';
 
 dotenv.config();
 
@@ -42,4 +43,6 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 app.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('Configured volumes:');
+  validateVolumes();
 });

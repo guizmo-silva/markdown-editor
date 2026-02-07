@@ -158,6 +158,29 @@ export async function renameFile(oldPath: string, newPath: string): Promise<void
 }
 
 /**
+ * Volume info
+ */
+export interface VolumeInfo {
+  name: string;
+  path: string;
+}
+
+/**
+ * Get configured volumes
+ */
+export async function getVolumes(): Promise<VolumeInfo[]> {
+  const response = await fetch(`${getApiBaseUrl()}/files/volumes`);
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to get volumes' }));
+    throw new Error(error.error || 'Failed to get volumes');
+  }
+
+  const data = await response.json();
+  return data.volumes;
+}
+
+/**
  * Export markdown to HTML
  */
 export async function exportToHtml(content: string, title?: string): Promise<Blob> {

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemedIcon } from '@/utils/useThemedIcon';
-import { listFiles, type FileItem } from '@/services/api';
+import { listFiles, getVolumes, type FileItem, type VolumeInfo } from '@/services/api';
 
 interface WelcomeModalProps {
   isOpen: boolean;
@@ -23,12 +23,16 @@ export default function WelcomeModal({
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [volumes, setVolumes] = useState<VolumeInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [folderContents, setFolderContents] = useState<Map<string, FileItem[]>>(new Map());
   const [selectedFolder, setSelectedFolder] = useState<string>('/');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(true);
+  const [expandedVolumes, setExpandedVolumes] = useState<Set<string>>(new Set());
+
+  const isMultiVolume = volumes.length > 1;
 
   // Animation state - simple approach
   const [shouldRender, setShouldRender] = useState(false);
@@ -66,11 +70,37 @@ export default function WelcomeModal({
     // Clear cached folder contents to force fresh data
     setFolderContents(new Map());
     try {
-      const fileList = await listFiles('/');
+      const [volumeList, fileList] = await Promise.all([
+        getVolumes(),
+        listFiles('/')
+      ]);
+      setVolumes(volumeList);
       setFiles(fileList);
       // Auto-expand all folders initially
       const folders = fileList.filter(f => f.type === 'folder').map(f => f.path);
       setExpandedFolders(new Set(folders));
+      // Auto-expand all volumes
+      if (volumeList.length > 1) {
+        setExpandedVolumes(new Set(volumeList.map(v => v.name)));
+        // Set default selected folder to first volume
+        setSelectedFolder(volumeList[0].name);
+      } else {
+        setSelectedFolder('/');
+      }
+      // Also expand children of volume items in multi-volume mode
+      if (volumeList.length > 1) {
+        const childFolders: string[] = [];
+        for (const item of fileList) {
+          if (item.type === 'folder' && item.children) {
+            for (const child of item.children) {
+              if (child.type === 'folder') {
+                childFolders.push(child.path);
+              }
+            }
+          }
+        }
+        setExpandedFolders(new Set([...folders, ...childFolders]));
+      }
     } catch (error) {
       console.error('Failed to load files:', error);
     } finally {
@@ -148,9 +178,22 @@ export default function WelcomeModal({
       }
     };
 
-    extractFolders(files);
+    if (isMultiVolume) {
+      // In multi-volume mode, volume items are root-level folders
+      for (const item of files) {
+        if (item.type === 'folder') {
+          folders.push({ path: item.name, name: item.name, level: 0 });
+          if (item.children) {
+            extractFolders(item.children, 1);
+          }
+        }
+      }
+    } else {
+      extractFolders(files);
+    }
+
     return folders;
-  }, [files, folderContents]);
+  }, [files, folderContents, isMultiVolume]);
 
   const allFolders = getAllFolders();
 
@@ -192,7 +235,11 @@ export default function WelcomeModal({
               style={{ fontFamily: 'Roboto Mono, monospace' }}
             >
               <span className="text-[12px] text-[var(--text-primary)] truncate">
-                {selectedFolder === '/' ? 'Workspace' : selectedFolder.split('/').pop()}
+                {selectedFolder === '/' ? 'Workspace' : (
+                  isMultiVolume && volumes.some(v => v.name === selectedFolder)
+                    ? selectedFolder
+                    : selectedFolder.split('/').pop()
+                )}
               </span>
               <img
                 src={getIconPath('element_fold_icon.svg')}
@@ -207,18 +254,20 @@ export default function WelcomeModal({
                 className="absolute top-full left-0 w-[160px] mt-1 border border-[var(--border-primary)]
                            rounded bg-[var(--dropdown-bg)] shadow-lg z-10 max-h-[200px] overflow-y-auto"
               >
-                {/* Workspace (root) option */}
-                <button
-                  onClick={() => {
-                    setSelectedFolder('/');
-                    setIsDropdownOpen(false);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-[12px] hover:bg-[var(--hover-bg)] transition-colors
-                             ${selectedFolder === '/' ? 'bg-[var(--hover-bg)]' : ''}`}
-                  style={{ fontFamily: 'Roboto Mono, monospace' }}
-                >
-                  <span className="text-[var(--text-primary)]">Workspace</span>
-                </button>
+                {/* Root option - only show "Workspace" in single volume mode */}
+                {!isMultiVolume && (
+                  <button
+                    onClick={() => {
+                      setSelectedFolder('/');
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-[12px] hover:bg-[var(--hover-bg)] transition-colors
+                               ${selectedFolder === '/' ? 'bg-[var(--hover-bg)]' : ''}`}
+                    style={{ fontFamily: 'Roboto Mono, monospace' }}
+                  >
+                    <span className="text-[var(--text-primary)]">Workspace</span>
+                  </button>
+                )}
 
                 {/* Folder options */}
                 {allFolders.map((folder) => (
@@ -280,9 +329,9 @@ export default function WelcomeModal({
               <div className="text-[var(--text-secondary)] text-sm">
                 {t('welcomeModal.loading', 'Carregando...')}
               </div>
-            ) : (
+            ) : !isMultiVolume ? (
               <div>
-                {/* Workspace root node */}
+                {/* Single volume: Workspace root node */}
                 <div
                   onClick={() => setIsWorkspaceExpanded(!isWorkspaceExpanded)}
                   className="flex items-center gap-2 py-1.5 pr-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors"
@@ -324,6 +373,65 @@ export default function WelcomeModal({
                     />
                   )
                 )}
+              </div>
+            ) : (
+              <div>
+                {/* Multi-volume: one root node per volume */}
+                {files.map((volumeItem) => {
+                  const isExpanded = expandedVolumes.has(volumeItem.name);
+                  return (
+                    <div key={volumeItem.name}>
+                      <div
+                        onClick={() => {
+                          const newSet = new Set(expandedVolumes);
+                          if (newSet.has(volumeItem.name)) {
+                            newSet.delete(volumeItem.name);
+                          } else {
+                            newSet.add(volumeItem.name);
+                          }
+                          setExpandedVolumes(newSet);
+                        }}
+                        className="flex items-center gap-2 py-1.5 pr-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors"
+                      >
+                        <svg className="w-4 h-4 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+                          {isExpanded ? (
+                            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
+                          ) : (
+                            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                          )}
+                        </svg>
+                        <span
+                          className="text-[13px] font-bold text-[var(--text-primary)]"
+                          style={{ fontFamily: 'Roboto Mono, monospace' }}
+                        >
+                          {volumeItem.name}
+                        </span>
+                        <img
+                          src={getIconPath('element_fold_icon.svg')}
+                          alt=""
+                          className={`w-3 h-3 transition-transform flex-shrink-0 ${isExpanded ? '' : '-rotate-90'}`}
+                        />
+                      </div>
+
+                      {isExpanded && (
+                        volumeItem.children && volumeItem.children.length > 0 ? (
+                          <FileTree
+                            files={volumeItem.children}
+                            expandedFolders={expandedFolders}
+                            folderContents={folderContents}
+                            onFolderToggle={handleFolderToggle}
+                            onFileClick={handleFileClick}
+                            getIconPath={getIconPath}
+                          />
+                        ) : (
+                          <div className="pl-6 text-[var(--text-secondary)] text-sm py-2">
+                            {t('welcomeModal.noFiles', 'Nenhum arquivo encontrado')}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

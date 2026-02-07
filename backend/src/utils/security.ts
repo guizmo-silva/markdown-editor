@@ -1,4 +1,5 @@
 import path from 'path';
+import { resolveVolumePath } from '../services/volume.service.js';
 
 /**
  * Validates and sanitizes file paths to prevent path traversal attacks
@@ -33,4 +34,13 @@ export const validatePath = async (
   }
 
   return absolutePath;
+};
+
+/**
+ * Validates a volume-prefixed path (e.g., "workspace/folder/file.md")
+ * Resolves the volume and validates the relative path within it
+ */
+export const validateVolumePath = async (volumePath: string): Promise<string> => {
+  const { volume, relativePath } = resolveVolumePath(volumePath);
+  return validatePath(relativePath, volume.mountPath);
 };

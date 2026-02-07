@@ -24,28 +24,29 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodejs
+# Install su-exec for dropping privileges at runtime
+RUN apk add --no-cache su-exec
 
 # Create workspace directory with proper permissions
-RUN mkdir -p /workspace && chown nodejs:nodejs /workspace
+RUN mkdir -p /workspace && chown node:node /workspace
 
 # Create defaults directory for template files
 RUN mkdir -p /app/defaults
 
 # Copy Welcome.md tutorial file to defaults (will be copied to workspace on first run)
-COPY --chown=nodejs:nodejs defaults/Welcome.md /app/defaults/Welcome.md
+COPY --chown=node:node defaults/Welcome.md /app/defaults/Welcome.md
 
-# Copy entrypoint script
-COPY --chown=nodejs:nodejs docker/entrypoint-backend.sh /app/entrypoint.sh
+# Copy entrypoint script (needs root to change UID/GID)
+COPY docker/entrypoint-backend.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Copy built application
-COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=node:node /app/dist ./dist
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/package.json ./package.json
 
-USER nodejs
+# Run as root so entrypoint can adjust UID/GID, then drop to node user
+# If PUID/PGID are not set, defaults to node (UID 1000, GID 1000)
 
 EXPOSE 3001
 

@@ -6,10 +6,14 @@ import {
   createFile,
   createFolder,
   deleteFile,
-  renameFile
+  renameFile,
+  listVolumes
 } from '../controllers/file.controller.js';
 
 const router = express.Router();
+
+// List configured volumes
+router.get('/volumes', listVolumes);
 
 // List files in a directory
 router.get('/list', listFiles);

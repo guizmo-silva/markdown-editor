@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as fileService from '../services/file.service.js';
+import { getVolumes } from '../services/volume.service.js';
 
 export const listFiles = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -102,8 +103,22 @@ export const renameFile = async (req: Request, res: Response): Promise<void> => 
 
     await fileService.renameFileOrDirectory(oldPath, newPath);
     res.json({ success: true, newPath });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error renaming file:', error);
-    res.status(500).json({ error: 'Failed to rename file' });
+    if (error.message === 'Cannot move files between different volumes') {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to rename file' });
+    }
+  }
+};
+
+export const listVolumes = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const volumes = getVolumes();
+    res.json({ volumes: volumes.map(v => ({ name: v.name, path: v.mountPath })) });
+  } catch (error) {
+    console.error('Error listing volumes:', error);
+    res.status(500).json({ error: 'Failed to list volumes' });
   }
 };

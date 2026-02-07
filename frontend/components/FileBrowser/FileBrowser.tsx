@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemedIcon } from '@/utils/useThemedIcon';
-import { listFiles, createFolder, type FileItem } from '@/services/api';
+import { listFiles, createFolder, getVolumes, type FileItem, type VolumeInfo } from '@/services/api';
 
 interface FileBrowserProps {
   onFileSelect?: (filePath: string) => void;
@@ -418,14 +418,18 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [volumes, setVolumes] = useState<VolumeInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(true);
+  const [expandedVolumes, setExpandedVolumes] = useState<Set<string>>(new Set());
   const [creatingFolderIn, setCreatingFolderIn] = useState<string | null>(null);
   const [internalRefresh, setInternalRefresh] = useState(0);
   const [editingItemPath, setEditingItemPath] = useState<string | null>(null);
   const [editItemValue, setEditItemValue] = useState('');
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  const isMultiVolume = volumes.length > 1;
 
   // Drag and drop states
   const [isDragging, setIsDragging] = useState(false);
@@ -441,11 +445,24 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
     return lastSlash > 0 ? filePath.substring(0, lastSlash) : '';
   }, []);
 
-  // Check if dropping is valid (not same folder)
+  // Get volume name from a path
+  const getVolumeName = useCallback((filePath: string): string => {
+    const slashIndex = filePath.indexOf('/');
+    return slashIndex === -1 ? filePath : filePath.substring(0, slashIndex);
+  }, []);
+
+  // Check if dropping is valid (not same folder, same volume)
   const isValidDrop = useCallback((draggedPath: string, targetFolder: string): boolean => {
     const sourceFolder = getParentFolder(draggedPath);
-    return sourceFolder !== targetFolder;
-  }, [getParentFolder]);
+    if (sourceFolder === targetFolder) return false;
+    // Block cross-volume drops in multi-volume mode
+    if (isMultiVolume) {
+      const sourceVolume = getVolumeName(draggedPath);
+      const targetVolume = getVolumeName(targetFolder);
+      if (sourceVolume !== targetVolume) return false;
+    }
+    return true;
+  }, [getParentFolder, getVolumeName, isMultiVolume]);
 
   // Handle drag start
   const handleDragStart = useCallback((item: FileItem, e: React.MouseEvent) => {
@@ -477,8 +494,18 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
       return;
     }
 
-    // Determine target folder ('__workspace__' means root, which is '')
-    const targetFolder = dragOverTarget === '__workspace__' ? '' : dragOverTarget;
+    // Determine target folder
+    // In single-volume mode, '__workspace__' maps to the volume name
+    // In multi-volume mode, '__volumeName__' maps to the volume name
+    let targetFolder: string | null = dragOverTarget;
+    if (dragOverTarget?.startsWith('__') && dragOverTarget?.endsWith('__')) {
+      const rootKey = dragOverTarget.slice(2, -2);
+      if (rootKey === 'workspace' && !isMultiVolume && volumes.length === 1) {
+        targetFolder = volumes[0].name;
+      } else {
+        targetFolder = rootKey;
+      }
+    }
 
     if (targetFolder !== null && isValidDrop(draggedItem.path, targetFolder)) {
       const fileName = draggedItem.name;
@@ -530,14 +557,22 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
     }
   }, [isDragging, handleDragMove, handleDragEnd]);
 
-  // Load files on mount and when refreshTrigger or internalRefresh changes
+  // Load volumes and files on mount and when refreshTrigger or internalRefresh changes
   useEffect(() => {
     const loadFiles = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const fileList = await listFiles();
+        const [volumeList, fileList] = await Promise.all([
+          getVolumes(),
+          listFiles()
+        ]);
+        setVolumes(volumeList);
         setFiles(fileList);
+        // Auto-expand all volumes initially
+        if (volumeList.length > 1) {
+          setExpandedVolumes(new Set(volumeList.map(v => v.name)));
+        }
       } catch (err) {
         console.error('Failed to load files:', err);
         setError(err instanceof Error ? err.message : 'Failed to load files');
@@ -553,6 +588,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
   useEffect(() => {
     if (collapseAllTrigger !== undefined && collapseAllTrigger > 0) {
       setIsWorkspaceExpanded(false);
+      setExpandedVolumes(new Set());
       setExpandedFolders(new Set());
     }
   }, [collapseAllTrigger]);
@@ -664,14 +700,27 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
   const handleWorkspaceAddFolder = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsWorkspaceExpanded(true);
-    setCreatingFolderIn('');
+    // In single volume mode, create at volume root; in multi, create at workspace root
+    if (!isMultiVolume && volumes.length === 1) {
+      setCreatingFolderIn(volumes[0].name);
+      setExpandedVolumes(prev => new Set(prev).add(volumes[0].name));
+    } else {
+      setCreatingFolderIn('');
+    }
   };
 
-  const handleWorkspaceInlineKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleVolumeAddFolder = (e: React.MouseEvent, volumeName: string) => {
+    e.stopPropagation();
+    setExpandedVolumes(prev => new Set(prev).add(volumeName));
+    setCreatingFolderIn(volumeName);
+  };
+
+  const handleWorkspaceInlineKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, volumePrefix?: string) => {
     if (e.key === 'Enter') {
       const name = e.currentTarget.value.trim();
       if (name) {
-        handleConfirmCreateFolder('', name);
+        const parentPath = volumePrefix ?? '';
+        handleConfirmCreateFolder(parentPath, name);
       } else {
         handleCancelCreateFolder();
       }
@@ -704,20 +753,152 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
     );
   }
 
-  // Handler for workspace drop zone (root level)
-  const handleWorkspaceMouseEnter = () => {
+  // Handler for workspace/volume drop zone (root level)
+  const handleRootMouseEnter = (rootKey: string) => {
     if (isDragging) {
-      setDragOverTarget('__workspace__');
+      setDragOverTarget(rootKey);
     }
   };
 
-  const handleWorkspaceMouseLeave = () => {
-    if (isDragging && dragOverTarget === '__workspace__') {
+  const handleRootMouseLeave = (rootKey: string) => {
+    if (isDragging && dragOverTarget === rootKey) {
       setDragOverTarget(null);
     }
   };
 
-  const isWorkspaceDragTarget = isDragging && draggedItem && dragOverTarget === '__workspace__' && isValidDrop(draggedItem.path, '');
+  // Toggle volume expansion (for multi-volume mode)
+  const toggleVolumeExpanded = (volumeName: string) => {
+    setExpandedVolumes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(volumeName)) {
+        newSet.delete(volumeName);
+      } else {
+        newSet.add(volumeName);
+      }
+      return newSet;
+    });
+  };
+
+  // Helper: render the file tree items for a given list of files
+  const renderFileItems = (fileList: FileItem[], rootKey: string) => (
+    <>
+      {fileList.map((item, index) => (
+        <FileTreeItem
+          key={item.path}
+          item={item}
+          level={1}
+          onSelect={handleFileSelect}
+          onDelete={onDeleteFile}
+          onRenameItem={onRenameFolder}
+          isLast={index === fileList.length - 1 && creatingFolderIn !== rootKey}
+          creatingFolderIn={creatingFolderIn}
+          onStartCreateFolder={handleStartCreateFolder}
+          onConfirmCreateFolder={handleConfirmCreateFolder}
+          onCancelCreateFolder={handleCancelCreateFolder}
+          editingItemPath={editingItemPath}
+          onStartEditItem={handleStartEditItem}
+          onConfirmEditItem={handleConfirmEditItem}
+          onCancelEditItem={handleCancelEditItem}
+          editItemValue={editItemValue}
+          onEditItemValueChange={setEditItemValue}
+          expandedFolders={expandedFolders}
+          onToggleExpand={handleToggleExpand}
+          draggedItem={draggedItem}
+          dragOverTarget={dragOverTarget}
+          onDragStart={handleDragStart}
+          onDragOverFolder={handleDragOverFolder}
+          getParentFolder={getParentFolder}
+        />
+      ))}
+
+      {/* Inline input for creating a folder at this root */}
+      {creatingFolderIn === rootKey && (
+        <div className="relative tree-last-item">
+          <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+          <div className="flex items-center gap-1 py-1 pr-2" style={{ paddingLeft: '8px' }}>
+            <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+            </svg>
+            <input
+              autoFocus
+              defaultValue={t('dialogs.newFolder', 'New folder')}
+              className="text-[11px] bg-transparent border-b border-[var(--text-primary)] outline-none text-[var(--text-primary)] w-full"
+              style={{ fontFamily: 'Roboto Mono, monospace' }}
+              onFocus={(e) => e.target.select()}
+              onKeyDown={(e) => handleWorkspaceInlineKeyDown(e, rootKey)}
+              onBlur={handleCancelCreateFolder}
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  // Helper: render a single root node (Workspace or Volume)
+  const renderRootNode = (label: string, rootKey: string, isExpanded: boolean, onToggle: () => void, fileList: FileItem[], onAddFolder: (e: React.MouseEvent) => void) => {
+    const isDragTarget = isDragging && draggedItem && dragOverTarget === `__${rootKey}__` && isValidDrop(draggedItem.path, rootKey === 'workspace' && !isMultiVolume ? '' : rootKey);
+
+    return (
+      <div key={rootKey}>
+        <div
+          onClick={onToggle}
+          onMouseEnter={() => handleRootMouseEnter(`__${rootKey}__`)}
+          onMouseLeave={() => handleRootMouseLeave(`__${rootKey}__`)}
+          className={`relative overflow-hidden group flex items-center justify-between pl-[20px] pr-3 py-2 cursor-pointer transition-colors ${
+            isDragTarget ? 'bg-[var(--accent-color)]/20 ring-1 ring-[var(--accent-color)]' : 'hover:bg-[var(--hover-bg)]'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <svg className="w-[17px] h-[17px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+              {isExpanded ? (
+                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
+              ) : (
+                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+              )}
+            </svg>
+            <span className="text-[12px] font-bold text-[var(--text-primary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+              {label}
+            </span>
+            <img
+              src={getIconPath('element_fold_icon.svg')}
+              alt={isExpanded ? 'Collapse' : 'Expand'}
+              className={`w-3 h-2 transition-transform flex-shrink-0 ${isExpanded ? '' : '-rotate-90'}`}
+            />
+          </div>
+
+          {/* Create folder button on header */}
+          <div
+            className="absolute right-0 top-0 bottom-0 flex items-center pr-3 pl-6 opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: 'linear-gradient(to right, transparent, var(--bg-primary) 40%)' }}
+          >
+            <button
+              onClick={onAddFolder}
+              className="p-0.5 hover:bg-[var(--bg-secondary)] rounded transition-colors"
+              title={t('dialogs.newFolder', 'New folder')}
+            >
+              <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Children with tree lines and animation */}
+        <div
+          className="grid transition-[grid-template-rows] duration-200 ease-out"
+          style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
+        >
+          <div className="overflow-hidden">
+            <div className="relative pl-[32px]">
+              {/* Vertical tree line */}
+              <div className="absolute left-[20px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
+              {renderFileItems(fileList, rootKey === 'workspace' && !isMultiVolume ? volumes[0]?.name ?? '' : rootKey)}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div ref={containerRef}>
@@ -738,112 +919,31 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
         </div>
       )}
 
-      {/* Workspace root node */}
       <div className="py-2">
-        <div
-          onClick={() => setIsWorkspaceExpanded(!isWorkspaceExpanded)}
-          onMouseEnter={handleWorkspaceMouseEnter}
-          onMouseLeave={handleWorkspaceMouseLeave}
-          className={`relative overflow-hidden group flex items-center justify-between pl-[20px] pr-3 py-2 cursor-pointer transition-colors ${
-            isWorkspaceDragTarget ? 'bg-[var(--accent-color)]/20 ring-1 ring-[var(--accent-color)]' : 'hover:bg-[var(--hover-bg)]'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <svg className="w-[17px] h-[17px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
-              {isWorkspaceExpanded ? (
-                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
-              ) : (
-                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-              )}
-            </svg>
-            <span className="text-[12px] font-bold text-[var(--text-primary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-              Workspace
-            </span>
-            <img
-              src={getIconPath('element_fold_icon.svg')}
-              alt={isWorkspaceExpanded ? 'Collapse' : 'Expand'}
-              className={`w-3 h-2 transition-transform flex-shrink-0 ${isWorkspaceExpanded ? '' : '-rotate-90'}`}
-            />
-          </div>
-
-          {/* Create folder button on Workspace header */}
-          <div
-            className="absolute right-0 top-0 bottom-0 flex items-center pr-3 pl-6 opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: 'linear-gradient(to right, transparent, var(--bg-primary) 40%)' }}
-          >
-            <button
-              onClick={handleWorkspaceAddFolder}
-              className="p-0.5 hover:bg-[var(--bg-secondary)] rounded transition-colors"
-              title={t('dialogs.newFolder', 'New folder')}
-            >
-              <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Workspace children with tree lines and animation */}
-        <div
-          className="grid transition-[grid-template-rows] duration-200 ease-out"
-          style={{ gridTemplateRows: isWorkspaceExpanded ? '1fr' : '0fr' }}
-        >
-          <div className="overflow-hidden">
-            <div className="relative pl-[32px]">
-              {/* Vertical tree line */}
-              <div className="absolute left-[20px] top-0 bottom-0 w-[1px] bg-[var(--border-primary)] tree-line"></div>
-              {files.map((item, index) => (
-                <FileTreeItem
-                  key={item.path}
-                  item={item}
-                  level={1}
-                  onSelect={handleFileSelect}
-                  onDelete={onDeleteFile}
-                  onRenameItem={onRenameFolder}
-                  isLast={index === files.length - 1 && creatingFolderIn !== ''}
-                  creatingFolderIn={creatingFolderIn}
-                  onStartCreateFolder={handleStartCreateFolder}
-                  onConfirmCreateFolder={handleConfirmCreateFolder}
-                  onCancelCreateFolder={handleCancelCreateFolder}
-                  editingItemPath={editingItemPath}
-                  onStartEditItem={handleStartEditItem}
-                  onConfirmEditItem={handleConfirmEditItem}
-                  onCancelEditItem={handleCancelEditItem}
-                  editItemValue={editItemValue}
-                  onEditItemValueChange={setEditItemValue}
-                  expandedFolders={expandedFolders}
-                  onToggleExpand={handleToggleExpand}
-                  draggedItem={draggedItem}
-                  dragOverTarget={dragOverTarget}
-                  onDragStart={handleDragStart}
-                  onDragOverFolder={handleDragOverFolder}
-                  getParentFolder={getParentFolder}
-                />
-              ))}
-
-              {/* Inline input for creating a folder at workspace root */}
-              {creatingFolderIn === '' && (
-                <div className="relative tree-last-item">
-                  <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
-                  <div className="flex items-center gap-1 py-1 pr-2" style={{ paddingLeft: '8px' }}>
-                    <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                    </svg>
-                    <input
-                      autoFocus
-                      defaultValue={t('dialogs.newFolder', 'New folder')}
-                      className="text-[11px] bg-transparent border-b border-[var(--text-primary)] outline-none text-[var(--text-primary)] w-full"
-                      style={{ fontFamily: 'Roboto Mono, monospace' }}
-                      onFocus={(e) => e.target.select()}
-                      onKeyDown={handleWorkspaceInlineKeyDown}
-                      onBlur={handleCancelCreateFolder}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        {!isMultiVolume ? (
+          /* Single volume mode: render as "Workspace" (identical to current behavior) */
+          renderRootNode(
+            'Workspace',
+            'workspace',
+            isWorkspaceExpanded,
+            () => setIsWorkspaceExpanded(!isWorkspaceExpanded),
+            files,
+            handleWorkspaceAddFolder
+          )
+        ) : (
+          /* Multi-volume mode: render one root node per volume */
+          files.map((volumeItem) => {
+            const isExpanded = expandedVolumes.has(volumeItem.name);
+            return renderRootNode(
+              volumeItem.name,
+              volumeItem.name,
+              isExpanded,
+              () => toggleVolumeExpanded(volumeItem.name),
+              volumeItem.children ?? [],
+              (e) => handleVolumeAddFolder(e, volumeItem.name)
+            );
+          })
+        )}
       </div>
     </div>
   );

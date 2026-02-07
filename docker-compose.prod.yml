@@ -32,12 +32,20 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - PUID=1000
+      - PGID=1000
       - FRONTEND_URL=http://frontend:3000
       - WORKSPACE_ROOT=/workspace
+      # Multi-volume support: uncomment and configure WORKSPACE_PATHS to expose multiple directories
+      # Format: name1:/path1,name2:/path2
+      # Example:
+      # - WORKSPACE_PATHS=workspace:/workspace,sda1:/md
     volumes:
       # ZimaOS standard path: /DATA/AppData/<app-name>
       # This creates /DATA/AppData/mkd/workspace for storing markdown files
       - /DATA/AppData/mkd/workspace:/workspace
+      # Additional volumes for multi-volume support:
+      # - /media/sda1/md:/md
     restart: unless-stopped
     networks:
       - markdown-editor

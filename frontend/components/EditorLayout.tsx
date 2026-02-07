@@ -11,7 +11,7 @@ import { WelcomeModal } from './WelcomeModal';
 import { ExportModal } from './ExportModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
-import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml } from '@/services/api';
+import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, getVolumes } from '@/services/api';
 
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
@@ -218,7 +218,7 @@ export default function EditorLayout() {
     }
   }, [activeTabId, tabs, updateTab]);
 
-  const handleCreateFile = async (fileName: string, markAsAutoNamed: boolean = false): Promise<boolean> => {
+  const handleCreateFile = async (fileName: string, markAsAutoNamed: boolean = false): Promise<'ok' | 'exists' | 'error'> => {
     const initialContent = '# ';
     try {
       await createFile(fileName, initialContent);
@@ -234,10 +234,14 @@ export default function EditorLayout() {
         saveStatus: 'saved'
       };
       addOrSwitchToTab(newTab);
-      return true;
+      return 'ok';
     } catch (err) {
       console.error('Failed to create file:', err);
-      return false;
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('already exists') || msg.includes('File already exists')) {
+        return 'exists';
+      }
+      return 'error';
     }
   };
 
@@ -267,21 +271,36 @@ export default function EditorLayout() {
 
   const handleNewDocumentFromModal = async (folderPath: string = '/') => {
     const timestamp = new Date().toISOString().slice(0, 10);
-    const basePath = folderPath === '/' ? '' : folderPath + '/';
+
+    let basePath: string;
+    if (folderPath === '/') {
+      // Default: use first volume name as prefix
+      try {
+        const volumes = await getVolumes();
+        basePath = volumes.length > 0 ? volumes[0].name + '/' : '';
+      } catch {
+        basePath = '';
+      }
+    } else {
+      basePath = folderPath + '/';
+    }
+
     let fileName = `${basePath}novo-documento-${timestamp}.md`;
     let counter = 1;
 
     // Try to create the file, if it fails (already exists), try with a counter
     // Mark as auto-named so it can be renamed based on first heading
-    let success = await handleCreateFile(fileName, true);
-    while (!success && counter < 100) {
+    let result = await handleCreateFile(fileName, true);
+    while (result === 'exists' && counter < 100) {
       fileName = `${basePath}novo-documento-${timestamp}-${counter}.md`;
-      success = await handleCreateFile(fileName, true);
+      result = await handleCreateFile(fileName, true);
       counter++;
     }
 
-    if (success) {
+    if (result === 'ok') {
       setShowWelcomeModal(false);
+    } else if (result === 'error') {
+      alert('Failed to create file. Check volume permissions.');
     }
   };
 

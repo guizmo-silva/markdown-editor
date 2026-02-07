@@ -32,13 +32,22 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - PUID=1000
+      - PGID=1000
       - FRONTEND_URL=http://frontend:3000
       - WORKSPACE_ROOT=/workspace
+      # Multi-volume support: configure WORKSPACE_PATHS to expose multiple directories
+      # Format: name1:/path1,name2:/path2
+      - WORKSPACE_PATHS=workspace:/workspace,teste:/teste
     volumes:
       # Configure your workspace directories here
       # Example: Map local directories to container workspace
       # :z flag for SELinux systems to allow container access
       - ./workspace:/workspace:z
+      # Additional volumes for multi-volume support:
+      # - /path/to/docs:/docs:z
+      # - /path/to/media:/media:z
+      - /home/guizmo/Teste/:/teste:z
     restart: unless-stopped
     networks:
       - markdown-editor
