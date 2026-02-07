@@ -5,10 +5,10 @@ services:
       dockerfile: docker/Dockerfile.frontend
     container_name: markdown-editor-frontend
     ports:
-      - "3000:3000"
+      - "3010:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:3001/api
+      - API_PORT=3011
     depends_on:
       backend:
         condition: service_healthy
@@ -28,17 +28,16 @@ services:
       dockerfile: docker/Dockerfile.backend
     container_name: markdown-editor-backend
     ports:
-      - "3001:3001"
+      - "3011:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
       - PUID=1000
       - PGID=1000
-      - FRONTEND_URL=http://frontend:3000
       - WORKSPACE_ROOT=/workspace
-      # Multi-volume support: configure WORKSPACE_PATHS to expose multiple directories
+      # Extra volumes: add additional directories beyond the main workspace
       # Format: name1:/path1,name2:/path2
-      - WORKSPACE_PATHS=workspace:/workspace,teste:/teste
+      - EXTRA_VOLUMES=teste:/teste
     volumes:
       # Configure your workspace directories here
       # Example: Map local directories to container workspace

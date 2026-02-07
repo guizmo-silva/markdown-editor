@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Roboto_Mono, Roboto_Flex, Noto_Sans_SC } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import I18nProvider from "@/components/I18nProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -38,6 +39,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${inter.variable} ${robotoMono.variable} ${robotoFlex.variable} ${notoSansSC.variable} antialiased`}>
+        <Script src="/runtime-config.js" strategy="beforeInteractive" />
         <ThemeProvider>
           <I18nProvider>{children}</I18nProvider>
         </ThemeProvider>

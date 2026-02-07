@@ -9,49 +9,68 @@ const VOLUME_NAME_REGEX = /^[a-zA-Z0-9_-]+$/;
 
 let cachedVolumes: VolumeInfo[] | null = null;
 
+function parseVolumeEntries(raw: string): VolumeInfo[] {
+  const volumes: VolumeInfo[] = [];
+  const entries = raw.split(',').map(e => e.trim()).filter(Boolean);
+
+  for (const entry of entries) {
+    const colonIndex = entry.indexOf(':');
+    if (colonIndex === -1) {
+      console.warn(`Invalid volume entry (missing ':'): "${entry}"`);
+      continue;
+    }
+
+    const name = entry.substring(0, colonIndex).trim();
+    const mountPath = entry.substring(colonIndex + 1).trim();
+
+    if (!VOLUME_NAME_REGEX.test(name)) {
+      console.warn(`Invalid volume name "${name}" — only [a-zA-Z0-9_-] allowed. Skipping.`);
+      continue;
+    }
+
+    if (!mountPath) {
+      console.warn(`Empty mount path for volume "${name}". Skipping.`);
+      continue;
+    }
+
+    volumes.push({ name, mountPath });
+  }
+
+  return volumes;
+}
+
 export function getVolumes(): VolumeInfo[] {
   if (cachedVolumes) return cachedVolumes;
 
+  // Option 1: WORKSPACE_PATHS overrides everything (advanced / legacy)
   const workspacePaths = process.env.WORKSPACE_PATHS;
-
   if (workspacePaths) {
-    const volumes: VolumeInfo[] = [];
-    const entries = workspacePaths.split(',').map(e => e.trim()).filter(Boolean);
-
-    for (const entry of entries) {
-      const colonIndex = entry.indexOf(':');
-      if (colonIndex === -1) {
-        console.warn(`Invalid WORKSPACE_PATHS entry (missing ':'): "${entry}"`);
-        continue;
-      }
-
-      const name = entry.substring(0, colonIndex).trim();
-      const mountPath = entry.substring(colonIndex + 1).trim();
-
-      if (!VOLUME_NAME_REGEX.test(name)) {
-        console.warn(`Invalid volume name "${name}" — only [a-zA-Z0-9_-] allowed. Skipping.`);
-        continue;
-      }
-
-      if (!mountPath) {
-        console.warn(`Empty mount path for volume "${name}". Skipping.`);
-        continue;
-      }
-
-      volumes.push({ name, mountPath });
-    }
-
+    const volumes = parseVolumeEntries(workspacePaths);
     if (volumes.length > 0) {
       cachedVolumes = volumes;
       return cachedVolumes;
     }
-
-    console.warn('WORKSPACE_PATHS defined but no valid entries found. Falling back to WORKSPACE_ROOT.');
+    console.warn('WORKSPACE_PATHS defined but no valid entries found. Falling back.');
   }
 
-  // Fallback to WORKSPACE_ROOT
+  // Option 2: WORKSPACE_ROOT + optional EXTRA_VOLUMES
   const workspaceRoot = process.env.WORKSPACE_ROOT || '/workspace';
-  cachedVolumes = [{ name: 'workspace', mountPath: workspaceRoot }];
+  const volumes: VolumeInfo[] = [{ name: 'workspace', mountPath: workspaceRoot }];
+
+  const extraVolumes = process.env.EXTRA_VOLUMES;
+  if (extraVolumes) {
+    const extras = parseVolumeEntries(extraVolumes);
+    // Prevent duplicates with the workspace volume
+    for (const extra of extras) {
+      if (extra.name === 'workspace') {
+        console.warn(`EXTRA_VOLUMES: name "workspace" is reserved. Skipping.`);
+        continue;
+      }
+      volumes.push(extra);
+    }
+  }
+
+  cachedVolumes = volumes;
   return cachedVolumes;
 }
 

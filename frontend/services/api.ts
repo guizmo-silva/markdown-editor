@@ -23,13 +23,15 @@ function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    const apiPort = '3001';
+    // Read port from runtime config (injected by Docker entrypoint) or default
+    const runtimeConfig = (window as unknown as Record<string, unknown>).__RUNTIME_CONFIG__ as { apiPort?: string } | undefined;
+    const apiPort = runtimeConfig?.apiPort || '3011';
     cachedApiBaseUrl = `${protocol}//${hostname}:${apiPort}/api`;
     return cachedApiBaseUrl;
   }
 
   // Fallback for SSR (not cached as it may change)
-  return 'http://localhost:3001/api';
+  return 'http://localhost:3011/api';
 }
 
 export interface FileItem {

@@ -8,9 +8,10 @@ services:
     image: ghcr.io/guizmo-silva/markdown-editor-frontend:latest
     container_name: markdown-editor-frontend
     ports:
-      - "3000:3000"
+      - "3010:3000"
     environment:
       - NODE_ENV=production
+      - API_PORT=3011
     depends_on:
       backend:
         condition: service_healthy
@@ -28,23 +29,22 @@ services:
     image: ghcr.io/guizmo-silva/markdown-editor-backend:latest
     container_name: markdown-editor-backend
     ports:
-      - "3001:3001"
+      - "3011:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
       - PUID=1000
       - PGID=1000
-      - FRONTEND_URL=http://frontend:3000
       - WORKSPACE_ROOT=/workspace
-      # Multi-volume support: uncomment and configure WORKSPACE_PATHS to expose multiple directories
+      # Extra volumes: add additional directories beyond the main workspace
       # Format: name1:/path1,name2:/path2
       # Example:
-      # - WORKSPACE_PATHS=workspace:/workspace,sda1:/md
+      # - EXTRA_VOLUMES=sda1:/md,docs:/docs
     volumes:
       # ZimaOS standard path: /DATA/AppData/<app-name>
       # This creates /DATA/AppData/mkd/workspace for storing markdown files
       - /DATA/AppData/mkd/workspace:/workspace
-      # Additional volumes for multi-volume support:
+      # Additional volumes (must match EXTRA_VOLUMES paths):
       # - /media/sda1/md:/md
     restart: unless-stopped
     networks:
