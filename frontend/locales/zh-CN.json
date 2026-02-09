@@ -61,7 +61,8 @@
     "codeBlocks": "代码块"
   },
   "fileBrowser": {
-    "title": "文件"
+    "title": "文件",
+    "modified": "修改时间"
   },
   "viewToggle": {
     "codeView": "仅代码",

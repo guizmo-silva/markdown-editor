@@ -61,7 +61,8 @@
     "codeBlocks": "Bloques de Código"
   },
   "fileBrowser": {
-    "title": "Archivos"
+    "title": "Archivos",
+    "modified": "Modificado"
   },
   "viewToggle": {
     "codeView": "Solo código",

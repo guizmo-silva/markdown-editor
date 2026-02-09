@@ -85,6 +85,16 @@ export default function EditorLayout() {
     }
   }, [activeTabId]);
 
+  // Update browser tab title with active document name
+  useEffect(() => {
+    if (activeTabId) {
+      const fileName = activeTabId.split('/').pop() || activeTabId;
+      document.title = `${fileName} - Markdown Editor`;
+    } else {
+      document.title = 'Markdown Editor';
+    }
+  }, [activeTabId]);
+
   // Set markdown content for active tab
   const setMarkdown = useCallback((content: string | ((prev: string) => string)) => {
     if (!activeTabId) return;

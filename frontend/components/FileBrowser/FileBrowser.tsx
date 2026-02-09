@@ -122,6 +122,17 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
     }
   }, [item.name, sidebarWidth]);
 
+  // Build tooltip with modified date for files
+  const tooltip = (() => {
+    const baseTooltip = t('tooltips.doubleClickRename', 'Duplo clique para renomear');
+    if (item.type === 'file' && item.modifiedAt) {
+      const date = new Date(item.modifiedAt);
+      const formatted = date.toLocaleString();
+      return `${item.name}\n${t('fileBrowser.modified', 'Modificado')}: ${formatted}\n\n${baseTooltip}`;
+    }
+    return baseTooltip;
+  })();
+
   const handleClick = () => {
     if (isEditingThis) return;
     if (item.type === 'folder') {
@@ -270,7 +281,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
                 WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 16px), transparent)',
               } : {}),
             }}
-            title={t('tooltips.doubleClickRename', 'Duplo clique para renomear')}
+            title={tooltip}
           >
             {item.name}
           </span>
