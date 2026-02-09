@@ -95,7 +95,9 @@
     "enableSpellcheck": "Enable spellcheck",
     "selectLanguage": "Spellcheck language",
     "current": "current",
-    "statistics": "Statistics"
+    "statistics": "Statistics",
+    "scrollSyncOn": "Scroll sync: On",
+    "scrollSyncOff": "Scroll sync: Off"
   },
   "tooltips": {
     "newTab": "New tab",

@@ -95,7 +95,9 @@
     "enableSpellcheck": "Rechtschreibprüfung aktivieren",
     "selectLanguage": "Sprache der Prüfung",
     "current": "aktuell",
-    "statistics": "Statistiken"
+    "statistics": "Statistiken",
+    "scrollSyncOn": "Scroll-Synchronisierung: An",
+    "scrollSyncOff": "Scroll-Synchronisierung: Aus"
   },
   "tooltips": {
     "newTab": "Neuer Tab",

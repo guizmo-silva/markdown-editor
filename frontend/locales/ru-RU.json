@@ -95,7 +95,9 @@
     "enableSpellcheck": "Включить проверку орфографии",
     "selectLanguage": "Язык проверки",
     "current": "текущий",
-    "statistics": "Статистика"
+    "statistics": "Статистика",
+    "scrollSyncOn": "Синхронизация прокрутки: Вкл.",
+    "scrollSyncOff": "Синхронизация прокрутки: Выкл."
   },
   "tooltips": {
     "newTab": "Новая вкладка",

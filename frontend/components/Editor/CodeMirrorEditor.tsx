@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState, useImperativeHandle, forwardRef } from 'react';
 import { EditorState, EditorSelection, Compartment, StateEffect, StateField, Transaction } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine, Decoration, DecorationSet } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine, scrollPastEnd, Decoration, DecorationSet } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -34,6 +34,7 @@ interface CodeMirrorEditorProps {
   onToggleTheme?: () => void;
   saveStatus?: 'saved' | 'saving' | 'unsaved' | 'error';
   documentId?: string | null; // Used to reset undo history when switching documents
+  onScrollFractionChange?: (fraction: number) => void;
 }
 
 // Markdown syntax highlighting for light mode (bg: #D8D8D8)
@@ -359,11 +360,31 @@ const createFormatCommand = (prefix: string, suffix: string) => {
   };
 };
 
+// Command to insert/toggle a markdown link
+const linkCommand = (view: EditorView): boolean => {
+  const { from, to } = view.state.selection.main;
+  const selectedText = view.state.sliceDoc(from, to);
+
+  const linkText = selectedText || 'link text';
+  const replacement = `[${linkText}](url)`;
+
+  view.dispatch({
+    changes: { from, to, insert: replacement },
+    selection: selectedText
+      ? // Text was selected — place cursor selecting "url"
+        { anchor: from + 1 + linkText.length + 2, head: from + 1 + linkText.length + 2 + 3 }
+      : // No text — select "link text" placeholder
+        { anchor: from + 1, head: from + 1 + linkText.length },
+  });
+  return true;
+};
+
 // Keymap for formatting shortcuts (Mod = Ctrl on Windows/Linux, Cmd on macOS)
 const formatKeymap = keymap.of([
   { key: 'Mod-b', run: createFormatCommand('**', '**') },   // Bold
   { key: 'Mod-i', run: createFormatCommand('*', '*') },     // Italic
   { key: 'Mod-Shift-x', run: createFormatCommand('~~', '~~') }, // Strikethrough
+  { key: 'Mod-k', run: linkCommand },                        // Link
 ]);
 
 // Effect to trigger line highlight flash
@@ -401,6 +422,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   onToggleTheme,
   saveStatus,
   documentId,
+  onScrollFractionChange,
 }, ref) => {
   const { i18n } = useTranslation();
   const { theme: globalTheme } = useTheme();
@@ -419,6 +441,12 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  // Ref for scroll fraction callback
+  const onScrollFractionChangeRef = useRef(onScrollFractionChange);
+  useEffect(() => {
+    onScrollFractionChangeRef.current = onScrollFractionChange;
+  }, [onScrollFractionChange]);
 
   // Get theme extensions based on current theme
   const getThemeExtensions = useCallback((isDark: boolean) => {
@@ -521,6 +549,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         spellcheckCompartment.of(getSpellcheckAttrs()),
         flashHighlightField,
         codeBlockAutocomplete,
+        scrollPastEnd(),
       ],
     });
 
@@ -598,6 +627,31 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     }
   }, [value]);
 
+  // Emit scroll fraction from editor's scroll container
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    const scrollDOM = view.scrollDOM;
+    let rafId = 0;
+
+    const handleScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        const maxScroll = scrollDOM.scrollHeight - scrollDOM.clientHeight;
+        const fraction = maxScroll > 0 ? scrollDOM.scrollTop / maxScroll : 0;
+        onScrollFractionChangeRef.current?.(fraction);
+      });
+    };
+
+    scrollDOM.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      scrollDOM.removeEventListener('scroll', handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []); // Attach once after mount
+
   // Clear undo history when switching documents
   useEffect(() => {
     const view = viewRef.current;
@@ -641,6 +695,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           spellcheckCompartment.of(getSpellcheckAttrs()),
           flashHighlightField,
           codeBlockAutocomplete,
+          scrollPastEnd(),
         ],
       });
 

@@ -1,5 +1,6 @@
 'use client';
 
+import type { RefObject } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkGemoji from 'remark-gemoji';
@@ -97,9 +98,12 @@ interface MarkdownPreviewProps {
   content: string;
   viewTheme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  previewScrollRef?: RefObject<HTMLDivElement | null>;
+  isScrollSynced?: boolean;
+  onToggleScrollSync?: () => void;
 }
 
-export default function MarkdownPreview({ content, viewTheme, onToggleTheme }: MarkdownPreviewProps) {
+export default function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync }: MarkdownPreviewProps) {
   const isDark = viewTheme === 'dark';
 
   // Theme-specific colors
@@ -108,7 +112,7 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme }: M
   return (
     <div className={`h-full w-full flex flex-col preview-container ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
       {/* Preview content area */}
-      <div className="flex-1 overflow-auto p-8">
+      <div ref={previewScrollRef} className="flex-1 overflow-auto p-8">
         <div
           className="markdown-preview"
           style={{ fontFamily: 'var(--font-roboto-flex), sans-serif', color: textColor }}
@@ -150,6 +154,8 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme }: M
         content={content}
         viewTheme={viewTheme}
         onToggleTheme={onToggleTheme}
+        isScrollSynced={isScrollSynced}
+        onToggleScrollSync={onToggleScrollSync}
       />
     </div>
   );

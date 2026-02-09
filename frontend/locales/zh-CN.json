@@ -95,7 +95,9 @@
     "enableSpellcheck": "启用拼写检查",
     "selectLanguage": "检查语言",
     "current": "当前",
-    "statistics": "统计"
+    "statistics": "统计",
+    "scrollSyncOn": "滚动同步：开",
+    "scrollSyncOff": "滚动同步：关"
   },
   "tooltips": {
     "newTab": "新标签页",

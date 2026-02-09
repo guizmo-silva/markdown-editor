@@ -95,7 +95,9 @@
     "enableSpellcheck": "Activar corrector ortográfico",
     "selectLanguage": "Idioma del corrector",
     "current": "actual",
-    "statistics": "Estadísticas"
+    "statistics": "Estadísticas",
+    "scrollSyncOn": "Sincronizar desplazamiento: Activado",
+    "scrollSyncOff": "Sincronizar desplazamiento: Desactivado"
   },
   "tooltips": {
     "newTab": "Nueva pestaña",

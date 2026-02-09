@@ -893,23 +893,28 @@ export default function Toolbar({
       const linkText = selectedText || 'link text';
       const replacement = '[' + linkText + '](url)';
 
-      if (editor.replaceRange) {
-        editor.replaceRange(start, end, replacement);
-        setTimeout(() => {
+      const selectAfterInsert = () => {
+        if (selectedText) {
+          // Text was pre-selected — select "url" so user can type the URL immediately
+          const urlStart = start + 1 + linkText.length + 2; // after "[text]("
+          const urlEnd = urlStart + 3; // "url".length
+          editor.setSelectionRange(urlStart, urlEnd);
+        } else {
+          // No text selected — select "link text" placeholder
           const linkTextStart = start + 1;
           const linkTextEnd = linkTextStart + linkText.length;
           editor.setSelectionRange(linkTextStart, linkTextEnd);
-          editor.focus();
-        }, 0);
+        }
+        editor.focus();
+      };
+
+      if (editor.replaceRange) {
+        editor.replaceRange(start, end, replacement);
+        setTimeout(selectAfterInsert, 0);
       } else {
         const newText = currentValue.substring(0, start) + replacement + currentValue.substring(end);
         onChange(newText);
-        setTimeout(() => {
-          const linkTextStart = start + 1;
-          const linkTextEnd = linkTextStart + linkText.length;
-          editor.setSelectionRange(linkTextStart, linkTextEnd);
-          editor.focus();
-        }, 0);
+        setTimeout(selectAfterInsert, 0);
       }
     }
 

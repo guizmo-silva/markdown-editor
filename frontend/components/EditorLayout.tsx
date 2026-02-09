@@ -50,6 +50,9 @@ export default function EditorLayout() {
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
   const [scrollToLine, setScrollToLine] = useState<number | undefined>();
+  const [isScrollSynced, setIsScrollSynced] = useState(true);
+  const isScrollSyncedRef = useRef(true);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
@@ -561,6 +564,32 @@ export default function EditorLayout() {
     setPreviewTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  // Scroll sync callbacks — direct DOM manipulation, no React re-renders
+  const handleEditorScrollFractionChange = useCallback((fraction: number) => {
+    if (!isScrollSyncedRef.current) return;
+    const container = previewScrollRef.current;
+    if (!container) return;
+    const maxScroll = container.scrollHeight - container.clientHeight;
+    if (maxScroll > 0) {
+      container.scrollTop = fraction * maxScroll;
+    }
+  }, []);
+
+  const toggleScrollSync = useCallback(() => {
+    setIsScrollSynced(prev => {
+      const next = !prev;
+      isScrollSyncedRef.current = next;
+      return next;
+    });
+  }, []);
+
+  // Reset preview scroll position when switching tabs
+  useEffect(() => {
+    if (previewScrollRef.current) {
+      previewScrollRef.current.scrollTop = 0;
+    }
+  }, [activeTabId]);
+
   // Sidebar resize handlers
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -765,6 +794,7 @@ export default function EditorLayout() {
                   onToggleTheme={toggleEditorTheme}
                   saveStatus={saveStatus}
                   documentId={activeTabId}
+                  onScrollFractionChange={handleEditorScrollFractionChange}
                 />
               </div>
             </div>
@@ -792,6 +822,9 @@ export default function EditorLayout() {
                 content={markdown}
                 viewTheme={previewTheme}
                 onToggleTheme={togglePreviewTheme}
+                previewScrollRef={previewScrollRef}
+                isScrollSynced={isScrollSynced}
+                onToggleScrollSync={viewMode === 'split' ? toggleScrollSync : undefined}
               />
             </div>
           )}
