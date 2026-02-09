@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState, useImperativeHandle, forwardRef } from 'react';
-import { EditorState, Compartment, StateEffect, StateField, Transaction } from '@codemirror/state';
+import { EditorState, EditorSelection, Compartment, StateEffect, StateField, Transaction } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine, Decoration, DecorationSet } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -572,12 +572,27 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
 
     const currentContent = view.state.doc.toString();
     if (currentContent !== value) {
+      // Preserve cursor/selection position when replacing content
+      const currentSelection = view.state.selection;
+      const newLength = value.length;
+
+      // Clamp selection ranges to the new document length
+      const clampedSelection = EditorSelection.create(
+        currentSelection.ranges.map(range => {
+          const anchor = Math.min(range.anchor, newLength);
+          const head = Math.min(range.head, newLength);
+          return EditorSelection.range(anchor, head);
+        }),
+        currentSelection.mainIndex
+      );
+
       view.dispatch({
         changes: {
           from: 0,
           to: currentContent.length,
           insert: value,
         },
+        selection: clampedSelection,
         annotations: Transaction.addToHistory.of(false),
       });
     }
