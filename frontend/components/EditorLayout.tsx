@@ -311,6 +311,13 @@ export default function EditorLayout() {
 
   // Handle tab rename (double-click on tab)
   const handleTabRename = async (tabId: string, newName: string) => {
+    // Validate filename length (255 bytes max)
+    const nameBytes = new TextEncoder().encode(newName).length;
+    if (nameBytes > 255) {
+      alert('Filename too long (max 255 bytes)');
+      return;
+    }
+
     // Get directory path from tab id (file path)
     const lastSlash = tabId.lastIndexOf('/');
     const directory = lastSlash > 0 ? tabId.substring(0, lastSlash + 1) : '';
@@ -336,7 +343,16 @@ export default function EditorLayout() {
   };
 
   const handleExport = async (format: 'html' | 'md' | 'txt') => {
-    const filename = currentFilePath?.replace(/\.md$/, '').split('/').pop() || 'documento';
+    const baseName = currentFilePath?.replace(/\.md$/, '').split('/').pop() || 'documento';
+    const now = new Date();
+    const timestamp = now.getFullYear().toString()
+      + String(now.getMonth() + 1).padStart(2, '0')
+      + String(now.getDate()).padStart(2, '0')
+      + '_'
+      + String(now.getHours()).padStart(2, '0')
+      + String(now.getMinutes()).padStart(2, '0')
+      + String(now.getSeconds()).padStart(2, '0');
+    const filename = `${baseName}_${timestamp}`;
 
     try {
       let content: string;
@@ -476,8 +492,16 @@ export default function EditorLayout() {
     const heading = extractFirstHeading(activeContent);
     if (!heading || heading === activeLastAutoRenamedTitle) return;
 
-    // Only auto-rename if the heading is different and meaningful
-    const newFileName = `${heading}.md`;
+    // Truncate heading to fit filesystem limits (255 bytes max including .md extension)
+    const MAX_FILENAME_BYTES = 255;
+    const EXTENSION = '.md';
+    let truncatedHeading = heading;
+    while (new TextEncoder().encode(truncatedHeading + EXTENSION).length > MAX_FILENAME_BYTES) {
+      truncatedHeading = truncatedHeading.slice(0, -1);
+    }
+    truncatedHeading = truncatedHeading.trimEnd();
+
+    const newFileName = `${truncatedHeading}.md`;
     const lastSlash = activeTabId.lastIndexOf('/');
     const directory = lastSlash > 0 ? activeTabId.substring(0, lastSlash + 1) : '';
     const currentFileName = activeTabId.substring(lastSlash + 1);

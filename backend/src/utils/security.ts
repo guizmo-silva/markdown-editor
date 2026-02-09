@@ -1,6 +1,24 @@
 import path from 'path';
 import { resolveVolumePath } from '../services/volume.service.js';
 
+// Max filename length in bytes (ext4/NTFS/HFS+/APFS all use 255)
+const MAX_FILENAME_BYTES = 255;
+
+/**
+ * Validates that a filename does not exceed OS filesystem limits.
+ * Checks the basename (last segment) of the path.
+ * Throws if the filename exceeds 255 bytes (UTF-8).
+ */
+export const validateFileName = (filePath: string): void => {
+  const basename = path.basename(filePath);
+  if (!basename) return;
+
+  const byteLength = Buffer.byteLength(basename, 'utf-8');
+  if (byteLength > MAX_FILENAME_BYTES) {
+    throw new Error(`Filename too long: ${byteLength} bytes exceeds the ${MAX_FILENAME_BYTES}-byte limit`);
+  }
+};
+
 /**
  * Validates and sanitizes file paths to prevent path traversal attacks
  */

@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import trash from 'trash';
-import { validatePath } from '../utils/security.js';
+import { validatePath, validateFileName } from '../utils/security.js';
 import { getVolumes, resolveVolumePath } from './volume.service.js';
 
 export interface FileInfo {
@@ -122,6 +122,7 @@ export const createNewFile = async (
   relativePath: string,
   content: string = ''
 ): Promise<void> => {
+  validateFileName(relativePath);
   const { volume, relativePath: volRelativePath } = resolveVolumePath(relativePath);
   const safePath = await validatePath(volRelativePath, volume.mountPath);
 
@@ -143,6 +144,7 @@ export const createNewFile = async (
 };
 
 export const createFolder = async (relativePath: string): Promise<void> => {
+  validateFileName(relativePath);
   const { volume, relativePath: volRelativePath } = resolveVolumePath(relativePath);
   const safePath = await validatePath(volRelativePath, volume.mountPath);
 
@@ -170,6 +172,7 @@ export const renameFileOrDirectory = async (
   oldRelativePath: string,
   newRelativePath: string
 ): Promise<void> => {
+  validateFileName(newRelativePath);
   const oldResolved = resolveVolumePath(oldRelativePath);
   const newResolved = resolveVolumePath(newRelativePath);
 

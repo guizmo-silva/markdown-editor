@@ -55,9 +55,13 @@ export const createFile = async (req: Request, res: Response): Promise<void> => 
 
     await fileService.createNewFile(path, content);
     res.json({ success: true, path });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating file:', error);
-    res.status(500).json({ error: 'Failed to create file' });
+    if (error.message?.startsWith('Filename too long')) {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to create file' });
+    }
   }
 };
 
@@ -105,7 +109,7 @@ export const renameFile = async (req: Request, res: Response): Promise<void> => 
     res.json({ success: true, newPath });
   } catch (error: any) {
     console.error('Error renaming file:', error);
-    if (error.message === 'Cannot move files between different volumes') {
+    if (error.message === 'Cannot move files between different volumes' || error.message?.startsWith('Filename too long')) {
       res.status(400).json({ error: error.message });
     } else {
       res.status(500).json({ error: 'Failed to rename file' });
