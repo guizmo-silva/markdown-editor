@@ -21,7 +21,8 @@ const listVolumeDirectory = async (
   maxDepth: number
 ): Promise<FileInfo[]> => {
   const safePath = await validatePath(relativePath, volumeMountPath);
-  const entries = await fs.readdir(safePath, { withFileTypes: true });
+  const allEntries = await fs.readdir(safePath, { withFileTypes: true });
+  const entries = allEntries.filter(entry => !entry.name.startsWith('.'));
 
   const fileInfos = await Promise.all(
     entries.map(async (entry) => {
