@@ -43,7 +43,8 @@
     "alertImportant": "重要",
     "alertWarning": "警告",
     "alertCaution": "注意",
-    "details": "可折叠"
+    "details": "可折叠",
+    "specialChars": "特殊字符"
   },
   "sidebar": {
     "title": "元素",

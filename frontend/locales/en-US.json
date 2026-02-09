@@ -43,7 +43,8 @@
     "alertImportant": "Important",
     "alertWarning": "Warning",
     "alertCaution": "Caution",
-    "details": "Collapsible"
+    "details": "Collapsible",
+    "specialChars": "Special characters"
   },
   "sidebar": {
     "title": "Assets",

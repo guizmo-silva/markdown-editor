@@ -32,6 +32,7 @@ export default function Toolbar({
   const { getIconPath } = useThemedIcon();
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const [showAlertMenu, setShowAlertMenu] = useState(false);
+  const [showCharMenu, setShowCharMenu] = useState(false);
 
   // Helper to get editor handle (works with both textarea and CodeMirror)
   const getEditor = (): EditorHandle | null => {
@@ -61,8 +62,10 @@ export default function Toolbar({
   const [imageMenuPos, setImageMenuPos] = useState({ top: 0, left: 0 });
   const [tableMenuPos, setTableMenuPos] = useState({ top: 0, left: 0 });
   const [alertMenuPos, setAlertMenuPos] = useState({ top: 0, left: 0 });
+  const [charMenuPos, setCharMenuPos] = useState({ top: 0, left: 0 });
   const headingButtonRef = useRef<HTMLDivElement>(null);
   const alertButtonRef = useRef<HTMLDivElement>(null);
+  const charButtonRef = useRef<HTMLDivElement>(null);
   const quoteButtonRef = useRef<HTMLDivElement>(null);
   const linkButtonRef = useRef<HTMLDivElement>(null);
   const imageButtonRef = useRef<HTMLDivElement>(null);
@@ -74,6 +77,7 @@ export default function Toolbar({
   // Refs for dropdown menus (needed for click outside detection with portals)
   const headingMenuRef = useRef<HTMLDivElement>(null);
   const alertMenuRef = useRef<HTMLDivElement>(null);
+  const charMenuRef = useRef<HTMLDivElement>(null);
   const quoteMenuRef = useRef<HTMLDivElement>(null);
   const linkMenuRef = useRef<HTMLDivElement>(null);
   const imageMenuRef = useRef<HTMLDivElement>(null);
@@ -127,16 +131,23 @@ export default function Toolbar({
           setTableHover({ rows: 0, cols: 0 });
         }
       }
+      if (showCharMenu) {
+        const isInsideButton = charButtonRef.current?.contains(target);
+        const isInsideMenu = charMenuRef.current?.contains(target);
+        if (!isInsideButton && !isInsideMenu) {
+          setShowCharMenu(false);
+        }
+      }
     };
 
-    if (showHeadingMenu || showAlertMenu || showQuoteMenu || showLinkMenu || showImageMenu || showTableMenu) {
+    if (showHeadingMenu || showAlertMenu || showQuoteMenu || showLinkMenu || showImageMenu || showTableMenu || showCharMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showHeadingMenu, showAlertMenu, showQuoteMenu, showLinkMenu, showImageMenu, showTableMenu]);
+  }, [showHeadingMenu, showAlertMenu, showQuoteMenu, showLinkMenu, showImageMenu, showTableMenu, showCharMenu]);
 
   // Helper function to wrap selected text or insert at cursor
   const wrapText = (prefix: string, suffix: string, placeholder: string = '') => {
@@ -1694,6 +1705,75 @@ export default function Toolbar({
     }
   };
 
+  // Special characters grid data
+  const specialCharCategories = [
+    { label: 'Typo', chars: [
+      { char: '\u2014', title: 'Em dash' },
+      { char: '\u2013', title: 'En dash' },
+      { char: '\u2026', title: 'Ellipsis' },
+      { char: '\u00B7', title: 'Middle dot' },
+      { char: '\u2022', title: 'Bullet' },
+      { char: '\u203D', title: 'Interrobang' },
+    ]},
+    { label: '\u2192', chars: [
+      { char: '\u2190', title: 'Left arrow' },
+      { char: '\u2192', title: 'Right arrow' },
+      { char: '\u2191', title: 'Up arrow' },
+      { char: '\u2193', title: 'Down arrow' },
+      { char: '\u2194', title: 'Left right arrow' },
+      { char: '\u21D2', title: 'Right double arrow' },
+    ]},
+    { label: '\u00D7', chars: [
+      { char: '\u00D7', title: 'Multiplication' },
+      { char: '\u00F7', title: 'Division' },
+      { char: '\u00B1', title: 'Plus minus' },
+      { char: '\u2260', title: 'Not equal' },
+      { char: '\u2248', title: 'Almost equal' },
+      { char: '\u2264', title: 'Less or equal' },
+      { char: '\u2265', title: 'Greater or equal' },
+      { char: '\u221E', title: 'Infinity' },
+    ]},
+    { label: '\u00A9', chars: [
+      { char: '\u00A9', title: 'Copyright' },
+      { char: '\u00AE', title: 'Registered' },
+      { char: '\u2122', title: 'Trademark' },
+      { char: '\u00B0', title: 'Degree' },
+      { char: '\u00A7', title: 'Section' },
+      { char: '\u2020', title: 'Dagger' },
+    ]},
+  ];
+
+  const insertSpecialChar = (char: string) => {
+    const editor = getEditor();
+    if (!editor) return;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    if (editor.replaceRange) {
+      editor.replaceRange(start, end, char);
+      setTimeout(() => {
+        editor.setSelectionRange(start + char.length, start + char.length);
+        editor.focus();
+      }, 0);
+    } else {
+      const currentValue = editor.getValue ? editor.getValue() : value;
+      const newText = currentValue.substring(0, start) + char + currentValue.substring(end);
+      onChange(newText);
+      setTimeout(() => {
+        editor.setSelectionRange(start + char.length, start + char.length);
+        editor.focus();
+      }, 0);
+    }
+    setShowCharMenu(false);
+  };
+
+  const handleCharClick = () => {
+    if (charButtonRef.current) {
+      const rect = charButtonRef.current.getBoundingClientRect();
+      setCharMenuPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setShowCharMenu(!showCharMenu);
+  };
+
   // Simple formatting buttons (don't create sidebar elements)
   const simpleFormattingButtons = [
     { icon: getIconPath('Bold_icon.svg'), translationKey: 'toolbar.bold', onClick: handleBold },
@@ -1965,6 +2045,45 @@ export default function Toolbar({
 
         {/* Other sidebar element buttons */}
         {otherSidebarButtons.map((button, index) => renderButton(button, index + 200))}
+
+        {/* Special characters button with dropdown */}
+        <div className="relative flex-shrink-0" ref={charButtonRef}>
+          <button
+            onClick={handleCharClick}
+            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+            aria-label={t('toolbar.specialChars')}
+            title={t('toolbar.specialChars')}
+          >
+            <img src={getIconPath('SpecialChar_icon.svg')} alt={t('toolbar.specialChars')} className="w-6 h-6" />
+          </button>
+
+          {showCharMenu && isMounted && createPortal(
+            <div
+              ref={charMenuRef}
+              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] p-2 w-[220px]"
+              style={{ top: charMenuPos.top, left: charMenuPos.left }}
+            >
+              {specialCharCategories.map((category) => (
+                <div key={category.label}>
+                  <div className="text-[10px] text-[var(--text-muted)] px-1 pt-1 pb-0.5">{category.label}</div>
+                  <div className="grid grid-cols-6 gap-1">
+                    {category.chars.map((item) => (
+                      <button
+                        key={item.char}
+                        onClick={() => insertSpecialChar(item.char)}
+                        title={item.title}
+                        className="w-8 h-8 flex items-center justify-center text-base text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] rounded transition-colors"
+                      >
+                        {item.char}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>,
+            document.body
+          )}
+        </div>
 
         {/* Alert button with dropdown */}
         <div className="relative flex-shrink-0" ref={alertButtonRef}>

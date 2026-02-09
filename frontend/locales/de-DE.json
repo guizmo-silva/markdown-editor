@@ -43,7 +43,8 @@
     "alertImportant": "Wichtig",
     "alertWarning": "Warnung",
     "alertCaution": "Vorsicht",
-    "details": "Einklappbar"
+    "details": "Einklappbar",
+    "specialChars": "Sonderzeichen"
   },
   "sidebar": {
     "title": "Elemente",

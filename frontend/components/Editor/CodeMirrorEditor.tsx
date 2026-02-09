@@ -324,6 +324,37 @@ const codeBlockAutocomplete = autocompletion({
   defaultKeymap: true,
 });
 
+// Smart typography: auto-replace --- → em dash (inline) and ... → ellipsis
+const smartTypography = EditorView.inputHandler.of((view, from, to, text) => {
+  // Em dash: third '-' after '--', only inline (text before dashes on the line)
+  if (text === '-') {
+    const before = view.state.sliceDoc(Math.max(0, from - 2), from);
+    if (before === '--') {
+      const line = view.state.doc.lineAt(from);
+      const textBeforeDashes = line.text.substring(0, from - 2 - line.from).trim();
+      if (textBeforeDashes.length > 0) {
+        view.dispatch({
+          changes: { from: from - 2, to, insert: '\u2014' },
+        });
+        return true;
+      }
+    }
+  }
+
+  // Ellipsis: third '.' after '..'
+  if (text === '.') {
+    const before = view.state.sliceDoc(Math.max(0, from - 2), from);
+    if (before === '..') {
+      view.dispatch({
+        changes: { from: from - 2, to, insert: '\u2026' },
+      });
+      return true;
+    }
+  }
+
+  return false;
+});
+
 // Compartment for dynamic theme switching
 const themeCompartment = new Compartment();
 
@@ -549,6 +580,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         spellcheckCompartment.of(getSpellcheckAttrs()),
         flashHighlightField,
         codeBlockAutocomplete,
+        smartTypography,
         scrollPastEnd(),
       ],
     });
@@ -695,6 +727,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           spellcheckCompartment.of(getSpellcheckAttrs()),
           flashHighlightField,
           codeBlockAutocomplete,
+          smartTypography,
           scrollPastEnd(),
         ],
       });

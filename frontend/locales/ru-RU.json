@@ -43,7 +43,8 @@
     "alertImportant": "Важно",
     "alertWarning": "Предупреждение",
     "alertCaution": "Осторожно",
-    "details": "Сворачиваемый"
+    "details": "Сворачиваемый",
+    "specialChars": "Спецсимволы"
   },
   "sidebar": {
     "title": "Элементы",

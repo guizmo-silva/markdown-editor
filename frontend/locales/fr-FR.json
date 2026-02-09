@@ -43,7 +43,8 @@
     "alertImportant": "Important",
     "alertWarning": "Avertissement",
     "alertCaution": "Attention",
-    "details": "Dépliable"
+    "details": "Dépliable",
+    "specialChars": "Caractères spéciaux"
   },
   "sidebar": {
     "title": "Éléments",

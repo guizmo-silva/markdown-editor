@@ -43,7 +43,8 @@
     "alertImportant": "Importante",
     "alertWarning": "Aviso",
     "alertCaution": "Cuidado",
-    "details": "Recolhível"
+    "details": "Recolhível",
+    "specialChars": "Caracteres especiais"
   },
   "sidebar": {
     "title": "Elementos",
