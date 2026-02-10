@@ -16,6 +16,11 @@
   color: var(--text-preview);
 }
 
+/* Clickable preview: show text cursor in split mode */
+.markdown-preview.clickable-source {
+  cursor: text;
+}
+
 /* Headings */
 .markdown-preview h1 {
   font-size: 2em;

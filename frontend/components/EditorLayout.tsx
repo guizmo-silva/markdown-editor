@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeMirrorEditor, type CodeMirrorHandle } from './Editor';
-import { MarkdownPreview } from './Preview';
+import { MarkdownPreview, type PreviewClickInfo } from './Preview';
 import { AssetsSidebar } from './Sidebar';
 import { ViewToggle, type ViewMode } from './ViewToggle';
 import { Tabs } from './Tabs';
@@ -53,6 +53,8 @@ export default function EditorLayout() {
   const [isScrollSynced, setIsScrollSynced] = useState(true);
   const isScrollSyncedRef = useRef(true);
   const previewScrollRef = useRef<HTMLDivElement>(null);
+  const scrollOffsetRef = useRef(0);
+  const lastEditorLineRef = useRef(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
@@ -574,30 +576,132 @@ export default function EditorLayout() {
     setPreviewTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  // Scroll sync callbacks — direct DOM manipulation, no React re-renders
-  const handleEditorScrollFractionChange = useCallback((fraction: number) => {
+  // Calculate the target scroll position in the preview for a given source line
+  const calculateTargetScroll = useCallback((lineNumber: number) => {
+    const container = previewScrollRef.current;
+    if (!container) return 0;
+
+    const elements = container.querySelectorAll('[data-source-line]');
+    if (elements.length === 0) {
+      // Fallback to fraction-based sync if no line markers
+      const totalLines = (container.querySelector('.markdown-preview')?.textContent || '').split('\n').length || 1;
+      const fraction = lineNumber / totalLines;
+      return fraction * (container.scrollHeight - container.clientHeight);
+    }
+
+    // Build sorted anchor list: { line, top }
+    const containerRect = container.getBoundingClientRect();
+    const anchors: { line: number; top: number }[] = [];
+    for (const el of elements) {
+      const line = parseInt(el.getAttribute('data-source-line')!, 10);
+      if (!isNaN(line)) {
+        const rect = (el as HTMLElement).getBoundingClientRect();
+        const top = rect.top - containerRect.top + container.scrollTop;
+        anchors.push({ line, top });
+      }
+    }
+    if (anchors.length === 0) return 0;
+    anchors.sort((a, b) => a.line - b.line);
+
+    // Find bracketing anchors
+    let prev = anchors[0];
+    let next = anchors[anchors.length - 1];
+
+    for (let i = 0; i < anchors.length; i++) {
+      if (anchors[i].line <= lineNumber) {
+        prev = anchors[i];
+        next = anchors[i + 1] || prev;
+      } else {
+        next = anchors[i];
+        break;
+      }
+    }
+
+    // Interpolate between bracketing anchors
+    let targetTop: number;
+    if (prev === next || prev.line === next.line) {
+      targetTop = prev.top;
+    } else {
+      const t = (lineNumber - prev.line) / (next.line - prev.line);
+      targetTop = prev.top + t * (next.top - prev.top);
+    }
+
+    return targetTop;
+  }, []);
+
+  // Scroll sync callback — line-based mapping with offset support
+  const handleEditorScrollLineChange = useCallback((lineNumber: number) => {
+    lastEditorLineRef.current = lineNumber;
     if (!isScrollSyncedRef.current) return;
     const container = previewScrollRef.current;
     if (!container) return;
+
+    const targetTop = calculateTargetScroll(lineNumber);
     const maxScroll = container.scrollHeight - container.clientHeight;
-    if (maxScroll > 0) {
-      container.scrollTop = fraction * maxScroll;
-    }
-  }, []);
+    container.scrollTop = Math.max(0, Math.min(maxScroll, targetTop + scrollOffsetRef.current));
+  }, [calculateTargetScroll]);
 
   const toggleScrollSync = useCallback(() => {
     setIsScrollSynced(prev => {
       const next = !prev;
       isScrollSyncedRef.current = next;
+      if (next) {
+        // Re-locking: calculate offset so preview continues from where it is
+        const container = previewScrollRef.current;
+        if (container) {
+          const targetTop = calculateTargetScroll(lastEditorLineRef.current);
+          scrollOffsetRef.current = container.scrollTop - targetTop;
+        }
+      }
       return next;
     });
-  }, []);
+  }, [calculateTargetScroll]);
 
-  // Reset preview scroll position when switching tabs
+  // Handle click on preview to navigate editor to source position
+  const handlePreviewClickSource = useCallback((info: PreviewClickInfo) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    // Determine search range
+    const searchStart = info.inlineStartOffset ?? info.blockStartOffset;
+    const searchEnd = info.inlineEndOffset ?? info.blockEndOffset;
+    const slice = markdown.slice(searchStart, searchEnd);
+
+    // Search for the word in the slice
+    let idx = slice.indexOf(info.word);
+
+    if (idx === -1) {
+      // Fallback: strip markdown syntax chars and search again
+      const stripped = slice.replace(/[*_`~\[\]]/g, '');
+      const strippedIdx = stripped.indexOf(info.word);
+      if (strippedIdx !== -1) {
+        // Map back to original: find the word by scanning original slice
+        let origPos = 0;
+        let strippedPos = 0;
+        while (strippedPos < strippedIdx && origPos < slice.length) {
+          if (!/[*_`~\[\]]/.test(slice[origPos])) {
+            strippedPos++;
+          }
+          origPos++;
+        }
+        idx = origPos;
+      }
+    }
+
+    if (idx !== -1) {
+      editor.scrollToOffset(searchStart + idx);
+    } else {
+      // Fallback: navigate to block start
+      editor.scrollToOffset(info.blockStartOffset);
+    }
+  }, [markdown]);
+
+  // Reset preview scroll position and offset when switching tabs
   useEffect(() => {
     if (previewScrollRef.current) {
       previewScrollRef.current.scrollTop = 0;
     }
+    scrollOffsetRef.current = 0;
   }, [activeTabId]);
 
   // Sidebar resize handlers
@@ -804,7 +908,7 @@ export default function EditorLayout() {
                   onToggleTheme={toggleEditorTheme}
                   saveStatus={saveStatus}
                   documentId={activeTabId}
-                  onScrollFractionChange={handleEditorScrollFractionChange}
+                  onScrollLineChange={handleEditorScrollLineChange}
                 />
               </div>
             </div>
@@ -835,6 +939,7 @@ export default function EditorLayout() {
                 previewScrollRef={previewScrollRef}
                 isScrollSynced={isScrollSynced}
                 onToggleScrollSync={viewMode === 'split' ? toggleScrollSync : undefined}
+                onClickSourcePosition={viewMode === 'split' ? handlePreviewClickSource : undefined}
               />
             </div>
           )}

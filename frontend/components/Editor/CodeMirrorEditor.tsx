@@ -22,6 +22,7 @@ export interface CodeMirrorHandle {
   // Direct CodeMirror operations (supports undo/redo)
   replaceRange: (from: number, to: number, text: string) => void;
   getValue: () => string;
+  scrollToOffset: (offset: number) => void;
 }
 
 interface CodeMirrorEditorProps {
@@ -34,7 +35,7 @@ interface CodeMirrorEditorProps {
   onToggleTheme?: () => void;
   saveStatus?: 'saved' | 'saving' | 'unsaved' | 'error';
   documentId?: string | null; // Used to reset undo history when switching documents
-  onScrollFractionChange?: (fraction: number) => void;
+  onScrollLineChange?: (line: number) => void;
 }
 
 // Markdown syntax highlighting for light mode (bg: #D8D8D8)
@@ -341,10 +342,18 @@ const smartTypography = EditorView.inputHandler.of((view, from, to, text) => {
     }
   }
 
-  // Ellipsis: third '.' after '..'
+  // Ellipsis: third '.' after '..' → replace with '…'
+  // Revert: '.' after '…' → revert back to '...' (literal dots)
   if (text === '.') {
-    const before = view.state.sliceDoc(Math.max(0, from - 2), from);
-    if (before === '..') {
+    const charBefore = view.state.sliceDoc(Math.max(0, from - 1), from);
+    if (charBefore === '\u2026') {
+      view.dispatch({
+        changes: { from: from - 1, to, insert: '...' },
+      });
+      return true;
+    }
+    const twoBefore = view.state.sliceDoc(Math.max(0, from - 2), from);
+    if (twoBefore === '..') {
       view.dispatch({
         changes: { from: from - 2, to, insert: '\u2026' },
       });
@@ -453,7 +462,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   onToggleTheme,
   saveStatus,
   documentId,
-  onScrollFractionChange,
+  onScrollLineChange,
 }, ref) => {
   const { i18n } = useTranslation();
   const { theme: globalTheme } = useTheme();
@@ -473,11 +482,11 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  // Ref for scroll fraction callback
-  const onScrollFractionChangeRef = useRef(onScrollFractionChange);
+  // Ref for scroll line callback
+  const onScrollLineChangeRef = useRef(onScrollLineChange);
   useEffect(() => {
-    onScrollFractionChangeRef.current = onScrollFractionChange;
-  }, [onScrollFractionChange]);
+    onScrollLineChangeRef.current = onScrollLineChange;
+  }, [onScrollLineChange]);
 
   // Get theme extensions based on current theme
   const getThemeExtensions = useCallback((isDark: boolean) => {
@@ -501,6 +510,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       if (viewRef.current) {
         viewRef.current.dispatch({
           selection: { anchor: start, head: end },
+          scrollIntoView: true,
         });
       }
     },
@@ -514,6 +524,34 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     },
     getValue() {
       return viewRef.current?.state.doc.toString() ?? '';
+    },
+    scrollToOffset(offset: number) {
+      const view = viewRef.current;
+      if (!view) return;
+
+      const docLength = view.state.doc.length;
+      const clampedOffset = Math.max(0, Math.min(offset, docLength));
+      const line = view.state.doc.lineAt(clampedOffset);
+
+      // Move cursor, scroll to center, and flash highlight
+      view.dispatch({
+        selection: { anchor: clampedOffset },
+        effects: [
+          EditorView.scrollIntoView(clampedOffset, { y: 'center' }),
+          flashLineEffect.of({ from: line.from, to: line.to }),
+        ],
+      });
+
+      // Remove decoration after animation
+      setTimeout(() => {
+        if (viewRef.current) {
+          viewRef.current.dispatch({
+            effects: flashLineEffect.of(null),
+          });
+        }
+      }, 850);
+
+      view.focus();
     },
   }));
 
@@ -659,7 +697,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     }
   }, [value]);
 
-  // Emit scroll fraction from editor's scroll container
+  // Emit top visible line number from editor's scroll container
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
@@ -671,9 +709,12 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = 0;
-        const maxScroll = scrollDOM.scrollHeight - scrollDOM.clientHeight;
-        const fraction = maxScroll > 0 ? scrollDOM.scrollTop / maxScroll : 0;
-        onScrollFractionChangeRef.current?.(fraction);
+        const block = view.lineBlockAtHeight(scrollDOM.scrollTop);
+        const topLine = view.state.doc.lineAt(block.from).number;
+        const lineOffset = block.height > 0
+          ? (scrollDOM.scrollTop - block.top) / block.height
+          : 0;
+        onScrollLineChangeRef.current?.(topLine + lineOffset);
       });
     };
 
@@ -746,15 +787,13 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     const lineNumber = Math.min(scrollToLine, view.state.doc.lines);
     const line = view.state.doc.line(lineNumber);
 
-    // Scroll and select
+    // Scroll to center and flash highlight
     view.dispatch({
       selection: { anchor: line.from },
-      scrollIntoView: true,
-    });
-
-    // Add flash highlight (CSS animation handles the fade)
-    view.dispatch({
-      effects: flashLineEffect.of({ from: line.from, to: line.to }),
+      effects: [
+        EditorView.scrollIntoView(line.from, { y: 'center' }),
+        flashLineEffect.of({ from: line.from, to: line.to }),
+      ],
     });
 
     // Remove decoration after animation completes (800ms)
