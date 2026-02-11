@@ -11,6 +11,23 @@ import { useThemedIcon } from '@/utils/useThemedIcon';
 
 type SectionId = 'headings' | 'images' | 'links' | 'alerts' | 'footnotes' | 'tables' | 'quotes' | 'orderedLists' | 'unorderedLists' | 'codeBlocks';
 
+function SidebarItemText({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="text-[11px] text-[var(--text-primary)] font-medium overflow-hidden"
+      style={{
+        fontFamily: 'Roboto Mono, monospace',
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical' as const,
+        wordBreak: 'break-word',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 const SECTION_MIN_PERCENT = 20; // Minimum 20% for each section
 const SECTION_MAX_PERCENT = 80; // Maximum 80% for each section
 
@@ -202,15 +219,15 @@ export default function AssetsSidebar({
                       style={{ left: '-12px', width: `${lineWidth}px` }}
                     ></div>
 
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <div className="flex items-start gap-1.5">
+                      <span className="flex-shrink-0 text-[10px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                         {'#'.repeat(heading.level)}
                       </span>
-                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {heading.text}
-                      </span>
-                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        (Line {heading.line})
+                      <div className="flex-1 min-w-0">
+                        <SidebarItemText>{heading.text}</SidebarItemText>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {heading.line}
                       </span>
                     </div>
                   </div>
@@ -233,16 +250,16 @@ export default function AssetsSidebar({
                     {/* Horizontal connector from vertical line to item */}
                     <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {image.alt}
-                      </span>
-                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        (Line {image.line})
-                      </span>
+                    <div className="mb-1">
+                      <SidebarItemText>{image.alt}</SidebarItemText>
                     </div>
-                    <div className="text-[10px] text-[var(--text-secondary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {image.url}
+                    <div className="flex items-center gap-1">
+                      <div className="text-[10px] text-[var(--text-secondary)] truncate flex-1 min-w-0" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {image.url}
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {image.line}
+                      </span>
                     </div>
                   </div>
                 );
@@ -264,21 +281,21 @@ export default function AssetsSidebar({
                     {/* Horizontal connector from vertical line to item */}
                     <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <div className="flex items-start gap-1.5 mb-1">
                       {link.isExternal ? (
-                        <svg className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0 mt-[2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                       ) : (
-                        <svg className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0 mt-[2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                       )}
-                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {link.text}
-                      </span>
-                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        (Line {link.line})
+                      <div className="flex-1 min-w-0">
+                        <SidebarItemText>{link.text}</SidebarItemText>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {link.line}
                       </span>
                     </div>
                     <div className="text-[10px] text-[var(--text-secondary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
@@ -304,9 +321,9 @@ export default function AssetsSidebar({
                     {/* Horizontal connector from vertical line to item */}
                     <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <div className="flex items-start gap-1.5 mb-1">
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                        className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded font-bold ${
                           alert.type === 'NOTE' ? 'bg-blue-100 text-blue-800' :
                           alert.type === 'TIP' ? 'bg-green-100 text-green-800' :
                           alert.type === 'IMPORTANT' ? 'bg-purple-100 text-purple-800' :
@@ -317,12 +334,12 @@ export default function AssetsSidebar({
                       >
                         {alert.type}
                       </span>
-                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        (Line {alert.line})
+                      <div className="flex-1 min-w-0">
+                        <SidebarItemText>{alert.content}</SidebarItemText>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {alert.line}
                       </span>
-                    </div>
-                    <div className="text-[11px] text-[var(--text-primary)] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {alert.content}
                     </div>
                   </div>
                 );
@@ -344,19 +361,19 @@ export default function AssetsSidebar({
                     {/* Horizontal connector from vertical line to item */}
                     <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                    <div className="flex items-start gap-1.5 mb-1">
+                      <span className="flex-shrink-0 text-[11px] text-[var(--text-primary)] font-medium mt-[1px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                         [^{footnote.id}]
                       </span>
-                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        (Line {footnote.line})
+                      <div className="flex-1 min-w-0">
+                        {footnote.definition && (
+                          <SidebarItemText>{footnote.definition}</SidebarItemText>
+                        )}
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {footnote.line}
                       </span>
                     </div>
-                    {footnote.definition && (
-                      <div className="text-[10px] text-[var(--text-secondary)] line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {footnote.definition}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -377,12 +394,12 @@ export default function AssetsSidebar({
                     {/* Horizontal connector from vertical line to item */}
                     <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {table.header}
-                      </span>
-                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        (Line {table.line})
+                    <div className="flex items-start gap-1.5 mb-1">
+                      <div className="flex-1 min-w-0">
+                        <SidebarItemText>{table.header}</SidebarItemText>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {table.line}
                       </span>
                     </div>
                     <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
@@ -408,14 +425,14 @@ export default function AssetsSidebar({
                     {/* Horizontal connector from vertical line to item */}
                     <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[11px] text-[var(--text-primary)] font-medium line-clamp-2" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {quote.content}
+                    <div className="flex items-start gap-1.5">
+                      <div className="flex-1 min-w-0">
+                        <SidebarItemText>{quote.content}</SidebarItemText>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {quote.line}
                       </span>
                     </div>
-                    <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      (Line {quote.line})
-                    </span>
                   </div>
                 );
               })}
@@ -436,12 +453,12 @@ export default function AssetsSidebar({
                     {/* Horizontal connector from vertical line to item */}
                     <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {list.items[0]}
-                      </span>
-                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        (Line {list.line})
+                    <div className="flex items-start gap-1.5 mb-1">
+                      <div className="flex-1 min-w-0">
+                        <SidebarItemText>{list.items[0]}</SidebarItemText>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {list.line}
                       </span>
                     </div>
                     <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
@@ -467,12 +484,12 @@ export default function AssetsSidebar({
                     {/* Horizontal connector from vertical line to item */}
                     <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[11px] text-[var(--text-primary)] font-medium" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {list.items[0]}
-                      </span>
-                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        (Line {list.line})
+                    <div className="flex items-start gap-1.5 mb-1">
+                      <div className="flex-1 min-w-0">
+                        <SidebarItemText>{list.items[0]}</SidebarItemText>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {list.line}
                       </span>
                     </div>
                     <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
@@ -498,19 +515,19 @@ export default function AssetsSidebar({
                     {/* Horizontal connector from vertical line to item */}
                     <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <div className="flex items-start gap-1.5 mb-1">
                       <span
-                        className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-[var(--bg-secondary)] text-[var(--text-secondary)]"
+                        className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded font-bold bg-[var(--bg-secondary)] text-[var(--text-secondary)]"
                         style={{ fontFamily: 'Roboto Mono, monospace' }}
                       >
                         {codeBlock.language}
                       </span>
-                      <span className="text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        (Line {codeBlock.line})
+                      <div className="flex-1 min-w-0 text-[10px] text-[var(--text-secondary)] truncate" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {codeBlock.content.split('\n')[0] || 'Empty block'}
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {codeBlock.line}
                       </span>
-                    </div>
-                    <div className="text-[10px] text-[var(--text-secondary)] line-clamp-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {codeBlock.content.split('\n')[0] || 'Empty block'}
                     </div>
                   </div>
                 );
