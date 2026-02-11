@@ -134,3 +134,24 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: var(--text-muted);
 }
+
+/* Column width slider thumb */
+.column-width-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  cursor: pointer;
+  border: none;
+}
+
+.column-width-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  cursor: pointer;
+  border: none;
+}

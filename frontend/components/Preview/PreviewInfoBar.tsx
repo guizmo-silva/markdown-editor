@@ -9,9 +9,11 @@ interface PreviewInfoBarProps {
   onToggleTheme?: () => void;
   isScrollSynced?: boolean;
   onToggleScrollSync?: () => void;
+  columnWidth?: number;
+  onColumnWidthChange?: (value: number) => void;
 }
 
-export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isScrollSynced, onToggleScrollSync }: PreviewInfoBarProps) {
+export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isScrollSynced, onToggleScrollSync, columnWidth, onColumnWidthChange }: PreviewInfoBarProps) {
   const { t } = useTranslation();
 
   // Calculate statistics
@@ -57,8 +59,37 @@ export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isSc
         <span>{t('infobar.words')}: {stats.words}</span>
       </div>
 
-      {/* Center - Scroll sync toggle + Theme toggle */}
+      {/* Center - Column width slider + Scroll sync toggle + Theme toggle */}
       <div className="flex items-center gap-2">
+        {/* Column width slider */}
+        {columnWidth !== undefined && onColumnWidthChange && (
+          <div className="flex items-center gap-1.5">
+            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke={textColor} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" />
+            </svg>
+            <input
+              type="range"
+              min={50}
+              max={100}
+              step={1}
+              value={columnWidth}
+              onChange={(e) => onColumnWidthChange(Number(e.target.value))}
+              className="column-width-slider"
+              style={{
+                width: '80px',
+                height: '2px',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                background: isDark ? '#AAAAAA' : '#999999',
+                borderRadius: '1px',
+                outline: 'none',
+                cursor: 'pointer',
+                accentColor: textColor,
+              }}
+              title={`${columnWidth}%`}
+            />
+          </div>
+        )}
         {onToggleScrollSync && (
           <button
             onClick={onToggleScrollSync}

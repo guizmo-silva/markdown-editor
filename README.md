@@ -118,22 +118,22 @@ WORKSPACE_ROOT=/workspace
 
 ### Phase 1 - MVP (Current)
 - [x] Project setup
-- [ ] Basic split editor
-- [ ] Markdown rendering
-- [ ] File save/open
-- [ ] Basic toolbar
-- [ ] Tab system
+- [X] Basic split editor
+- [X] Markdown rendering
+- [X] File save/open
+- [X] Basic toolbar
+- [X] Tab system
 
 ### Phase 2 - Essential Features
-- [ ] Assets sidebar
-- [ ] File browser
-- [ ] MD & HTML export
-- [ ] i18n (pt-BR & en-US)
+- [X] Assets sidebar
+- [X] File browser
+- [X] MD & HTML export
+- [X] i18n (pt-BR & en-US)
 
 ### Phase 3 - Polish
-- [ ] Full spellchecking
-- [ ] All 5 languages
-- [ ] Complete assets tracking
+- [X] Full spellchecking
+- [X] All 5 languages
+- [X] Complete assets tracking
 - [ ] PDF & DOCX export
 - [ ] Performance optimizations
 
@@ -141,10 +141,6 @@ WORKSPACE_ROOT=/workspace
 - [ ] Electron/Tauri adaptation
 - [ ] Windows/Linux packages
 
-## Known Issues
-
-- **Symlink issues on certain filesystems**: The project is located on a Google Drive mount which doesn't support symlinks. For development, consider copying the project to a native filesystem (ext4, NTFS with symlink support, etc.)
-- **npm install failures**: Due to symlink issues, `npm install` may fail. Use Docker for production deployment which handles this correctly.
 
 ## Contributing
 

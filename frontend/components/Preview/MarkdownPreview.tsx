@@ -148,6 +148,7 @@ export interface PreviewClickInfo {
   blockEndOffset: number;
   inlineStartOffset?: number;
   inlineEndOffset?: number;
+  wordOccurrenceIndex: number;
 }
 
 interface MarkdownPreviewProps {
@@ -158,12 +159,14 @@ interface MarkdownPreviewProps {
   isScrollSynced?: boolean;
   onToggleScrollSync?: () => void;
   onClickSourcePosition?: (info: PreviewClickInfo) => void;
+  columnWidth?: number;
+  onColumnWidthChange?: (value: number) => void;
 }
 
 // Inline tag names that correspond to inlineTypes in the remark plugin
 const inlineTagNames = new Set(['EM', 'STRONG', 'A', 'CODE', 'DEL']);
 
-export default function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition }: MarkdownPreviewProps) {
+export default function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange }: MarkdownPreviewProps) {
   const isDark = viewTheme === 'dark';
 
   // Theme-specific colors
@@ -235,19 +238,45 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme, pre
 
     if (blockStartOffset === undefined || blockEndOffset === undefined) return;
 
+    // Count which occurrence of the word in the block's rendered text was clicked
+    let wordOccurrenceIndex = 0;
+    if (el) {
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let textBeforeWord = '';
+      let currentNode: Node | null;
+      const wordStartInTextNode = textOffset - wordBefore.length;
+
+      while ((currentNode = walker.nextNode())) {
+        if (currentNode === textNode) {
+          textBeforeWord += (textNode.textContent ?? '').slice(0, Math.max(0, wordStartInTextNode));
+          break;
+        }
+        textBeforeWord += currentNode.textContent ?? '';
+      }
+
+      let pos = 0;
+      while (true) {
+        const found = textBeforeWord.indexOf(word, pos);
+        if (found === -1) break;
+        wordOccurrenceIndex++;
+        pos = found + word.length;
+      }
+    }
+
     onClickSourcePosition({
       word,
       blockStartOffset,
       blockEndOffset,
       inlineStartOffset,
       inlineEndOffset,
+      wordOccurrenceIndex,
     });
   }, [onClickSourcePosition]);
 
   return (
     <div className={`h-full w-full flex flex-col preview-container ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
       {/* Preview content area */}
-      <div ref={previewScrollRef} className="flex-1 overflow-auto p-8">
+      <div ref={previewScrollRef} className="flex-1 overflow-auto p-8 pb-[50vh]">
         <div
           className={`markdown-preview${onClickSourcePosition ? ' clickable-source' : ''}`}
           style={{ fontFamily: 'var(--font-roboto-flex), sans-serif', color: textColor }}
@@ -292,6 +321,8 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme, pre
         onToggleTheme={onToggleTheme}
         isScrollSynced={isScrollSynced}
         onToggleScrollSync={onToggleScrollSync}
+        columnWidth={columnWidth}
+        onColumnWidthChange={onColumnWidthChange}
       />
     </div>
   );

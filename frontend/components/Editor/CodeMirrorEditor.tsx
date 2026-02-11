@@ -36,6 +36,8 @@ interface CodeMirrorEditorProps {
   saveStatus?: 'saved' | 'saving' | 'unsaved' | 'error';
   documentId?: string | null; // Used to reset undo history when switching documents
   onScrollLineChange?: (line: number) => void;
+  columnWidth?: number;
+  onColumnWidthChange?: (value: number) => void;
 }
 
 // Markdown syntax highlighting for light mode (bg: #D8D8D8)
@@ -327,6 +329,9 @@ const codeBlockAutocomplete = autocompletion({
 
 // Smart typography: auto-replace --- → em dash (inline) and ... → ellipsis
 const smartTypography = EditorView.inputHandler.of((view, from, to, text) => {
+  // Don't interfere with IME composition (dead keys, accents, etc.)
+  if (view.composing) return false;
+
   // Em dash: third '-' after '--', only inline (text before dashes on the line)
   if (text === '-') {
     const before = view.state.sliceDoc(Math.max(0, from - 2), from);
@@ -463,6 +468,8 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   saveStatus,
   documentId,
   onScrollLineChange,
+  columnWidth,
+  onColumnWidthChange,
 }, ref) => {
   const { i18n } = useTranslation();
   const { theme: globalTheme } = useTheme();
@@ -481,6 +488,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  // Track last content sent via onChange to distinguish round-trip updates from external changes
+  const lastSentContent = useRef(value);
 
   // Ref for scroll line callback
   const onScrollLineChangeRef = useRef(onScrollLineChange);
@@ -584,6 +594,8 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         const newContent = update.state.doc.toString();
+        // Track what we sent so the value-sync useEffect can detect round-trips
+        lastSentContent.current = newContent;
         // Use ref to always call the latest onChange callback
         onChangeRef.current(newContent);
         setCharacterCount(newContent.length);
@@ -665,9 +677,14 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
 
   // Sync external value changes (e.g., when switching tabs or loading a file)
   // Use Transaction.addToHistory.of(false) to prevent this from being undoable
+  // Skip round-trip updates (CM6 → onChange → React state → value prop → here)
+  // Only sync when value comes from an external source (tab switch, file load)
   useEffect(() => {
     const view = viewRef.current;
-    if (!view) return;
+    if (!view || view.composing) return;
+
+    // If this value matches what we last sent via onChange, it's a round-trip → skip
+    if (value === lastSentContent.current) return;
 
     const currentContent = view.state.doc.toString();
     if (currentContent !== value) {
@@ -684,6 +701,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         }),
         currentSelection.mainIndex
       );
+
+      // Update ref so the updateListener's onChange for this dispatch is recognized as round-trip
+      lastSentContent.current = value;
 
       view.dispatch({
         changes: {
@@ -827,6 +847,8 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         viewTheme={theme}
         onToggleTheme={onToggleTheme}
         saveStatus={saveStatus}
+        columnWidth={columnWidth}
+        onColumnWidthChange={onColumnWidthChange}
       />
     </div>
   );

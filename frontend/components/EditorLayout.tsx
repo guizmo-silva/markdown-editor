@@ -42,6 +42,7 @@ export default function EditorLayout() {
   const [isResizing, setIsResizing] = useState(false);
   const [splitPosition, setSplitPosition] = useState(50); // Percentage for code editor width
   const [isResizingSplit, setIsResizingSplit] = useState(false);
+  const [columnWidth, setColumnWidth] = useState(100); // Column width percentage (50-100) for single-view modes
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<CodeMirrorHandle>(null);
 
@@ -662,18 +663,45 @@ export default function EditorLayout() {
     const editor = editorRef.current;
     if (!editor) return;
 
-    // Determine search range
-    const searchStart = info.inlineStartOffset ?? info.blockStartOffset;
-    const searchEnd = info.inlineEndOffset ?? info.blockEndOffset;
+    // Always search within the full block range for correct occurrence matching
+    const searchStart = info.blockStartOffset;
+    const searchEnd = info.blockEndOffset;
     const slice = markdown.slice(searchStart, searchEnd);
 
-    // Search for the word in the slice
-    let idx = slice.indexOf(info.word);
+    // Find the Nth occurrence of the word (N = wordOccurrenceIndex, 0-based)
+    let idx = -1;
+    let occurrence = 0;
+    let searchPos = 0;
+
+    while (searchPos < slice.length) {
+      const found = slice.indexOf(info.word, searchPos);
+      if (found === -1) break;
+      if (occurrence === info.wordOccurrenceIndex) {
+        idx = found;
+        break;
+      }
+      occurrence++;
+      searchPos = found + info.word.length;
+    }
 
     if (idx === -1) {
       // Fallback: strip markdown syntax chars and search again
       const stripped = slice.replace(/[*_`~\[\]]/g, '');
-      const strippedIdx = stripped.indexOf(info.word);
+      let strippedOccurrence = 0;
+      let strippedSearchPos = 0;
+      let strippedIdx = -1;
+
+      while (strippedSearchPos < stripped.length) {
+        const found = stripped.indexOf(info.word, strippedSearchPos);
+        if (found === -1) break;
+        if (strippedOccurrence === info.wordOccurrenceIndex) {
+          strippedIdx = found;
+          break;
+        }
+        strippedOccurrence++;
+        strippedSearchPos = found + info.word.length;
+      }
+
       if (strippedIdx !== -1) {
         // Map back to original: find the word by scanning original slice
         let origPos = 0;
@@ -890,7 +918,8 @@ export default function EditorLayout() {
               className="flex flex-col overflow-hidden"
               style={{
                 width: viewMode === 'split' ? `${splitPosition}%` : '100%',
-                minWidth: viewMode === 'split' ? `${CODE_VIEW_MIN_WIDTH}px` : undefined
+                minWidth: viewMode === 'split' ? `${CODE_VIEW_MIN_WIDTH}px` : undefined,
+                ...(viewMode === 'code' ? { maxWidth: `${columnWidth}%`, margin: '0 auto' } : {})
               }}
             >
               <Toolbar
@@ -909,6 +938,8 @@ export default function EditorLayout() {
                   saveStatus={saveStatus}
                   documentId={activeTabId}
                   onScrollLineChange={handleEditorScrollLineChange}
+                  columnWidth={viewMode !== 'split' ? columnWidth : undefined}
+                  onColumnWidthChange={viewMode !== 'split' ? setColumnWidth : undefined}
                 />
               </div>
             </div>
@@ -930,7 +961,10 @@ export default function EditorLayout() {
           {(viewMode === 'preview' || viewMode === 'split') && (
             <div
               className="overflow-hidden"
-              style={{ width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 5px)` : '100%' }}
+              style={{
+                width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 5px)` : '100%',
+                ...(viewMode === 'preview' ? { maxWidth: `${columnWidth}%`, margin: '0 auto' } : {})
+              }}
             >
               <MarkdownPreview
                 content={markdown}
@@ -940,6 +974,8 @@ export default function EditorLayout() {
                 isScrollSynced={isScrollSynced}
                 onToggleScrollSync={viewMode === 'split' ? toggleScrollSync : undefined}
                 onClickSourcePosition={viewMode === 'split' ? handlePreviewClickSource : undefined}
+                columnWidth={viewMode !== 'split' ? columnWidth : undefined}
+                onColumnWidthChange={viewMode !== 'split' ? setColumnWidth : undefined}
               />
             </div>
           )}

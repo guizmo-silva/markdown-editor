@@ -26,6 +26,8 @@ interface InfoBarProps {
   viewTheme?: 'light' | 'dark';
   onToggleTheme?: () => void;
   saveStatus?: 'saved' | 'saving' | 'unsaved' | 'error';
+  columnWidth?: number;
+  onColumnWidthChange?: (value: number) => void;
 }
 
 const COMPACT_THRESHOLD = 500;
@@ -41,6 +43,8 @@ export default function InfoBar({
   viewTheme,
   onToggleTheme,
   saveStatus,
+  columnWidth,
+  onColumnWidthChange,
 }: InfoBarProps) {
   const { t, i18n } = useTranslation();
   const [showSpellcheckMenu, setShowSpellcheckMenu] = useState(false);
@@ -368,6 +372,36 @@ export default function InfoBar({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
+          </div>
+        )}
+
+        {/* Column width slider */}
+        {columnWidth !== undefined && onColumnWidthChange && (
+          <div className="flex items-center gap-1.5">
+            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke={textMuted} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" />
+            </svg>
+            <input
+              type="range"
+              min={50}
+              max={100}
+              step={1}
+              value={columnWidth}
+              onChange={(e) => onColumnWidthChange(Number(e.target.value))}
+              className="column-width-slider"
+              style={{
+                width: '80px',
+                height: '2px',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                background: textMuted,
+                borderRadius: '1px',
+                outline: 'none',
+                cursor: 'pointer',
+                accentColor: textColor,
+              }}
+              title={`${columnWidth}%`}
+            />
           </div>
         )}
 
