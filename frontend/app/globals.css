@@ -155,3 +155,29 @@ body {
   cursor: pointer;
   border: none;
 }
+
+/* Text selection colors */
+::selection {
+  background: #A0A0A0;
+}
+.dark ::selection {
+  background: #606060;
+}
+
+/* InfoBar full-bleed background (extends beyond column-width container) */
+.infobar-fullbleed {
+  position: relative;
+  isolation: isolate;
+}
+.infobar-fullbleed::before {
+  content: '';
+  position: absolute;
+  top: -1px; /* align with border-top */
+  bottom: 0;
+  left: -100vw;
+  right: -100vw;
+  background: inherit;
+  border-top: inherit;
+  z-index: -1;
+  pointer-events: none;
+}

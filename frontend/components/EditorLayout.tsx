@@ -56,6 +56,12 @@ export default function EditorLayout() {
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const scrollOffsetRef = useRef(0);
   const lastEditorLineRef = useRef(1);
+  // Scroll memory: save scroll positions when switching view modes
+  const editorScrollMemory = useRef(0);
+  const previewScrollMemory = useRef(0);
+  // Pending navigation: set in preview-only mode, applied when editor becomes visible
+  const pendingCursorOffset = useRef<number | null>(null);
+  const pendingScrollLine = useRef<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
@@ -171,9 +177,21 @@ export default function EditorLayout() {
   }, []);
 
   const handleNavigateToLine = (line: number) => {
-    setScrollToLine(line);
-    // Reset after navigation to allow re-navigation to same line
-    setTimeout(() => setScrollToLine(undefined), 100);
+    if (viewMode === 'preview') {
+      // In preview-only mode, scroll the preview directly
+      const container = previewScrollRef.current;
+      if (container) {
+        const targetTop = calculateTargetScroll(line);
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        container.scrollTop = Math.max(0, Math.min(maxScroll, targetTop));
+      }
+      // Save line so the editor scrolls to match when it becomes visible
+      pendingScrollLine.current = line;
+    } else {
+      setScrollToLine(line);
+      // Reset after navigation to allow re-navigation to same line
+      setTimeout(() => setScrollToLine(undefined), 100);
+    }
   };
 
   const handleFileSelect = async (filePath: string) => {
@@ -439,11 +457,18 @@ export default function EditorLayout() {
     }
 
     // Mark as unsaved immediately when content changes
-    setTabs(prevTabs => prevTabs.map(tab =>
-      tab.id === activeTabId && tab.saveStatus !== 'unsaved'
-        ? { ...tab, saveStatus: 'unsaved' }
-        : tab
-    ));
+    // Return same reference if nothing changed to avoid unnecessary re-renders
+    setTabs(prevTabs => {
+      const needsUpdate = prevTabs.some(tab =>
+        tab.id === activeTabId && tab.saveStatus !== 'unsaved'
+      );
+      if (!needsUpdate) return prevTabs;
+      return prevTabs.map(tab =>
+        tab.id === activeTabId && tab.saveStatus !== 'unsaved'
+          ? { ...tab, saveStatus: 'unsaved' }
+          : tab
+      );
+    });
 
     // Set up debounced save
     const tabIdToSave = activeTabId;
@@ -658,15 +683,10 @@ export default function EditorLayout() {
     });
   }, [calculateTargetScroll]);
 
-  // Handle click on preview to navigate editor to source position
-  const handlePreviewClickSource = useCallback((info: PreviewClickInfo) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    // Always search within the full block range for correct occurrence matching
+  // Resolve clicked word to a source offset in the markdown string
+  const resolvePreviewClickOffset = useCallback((info: PreviewClickInfo): number => {
     const searchStart = info.blockStartOffset;
-    const searchEnd = info.blockEndOffset;
-    const slice = markdown.slice(searchStart, searchEnd);
+    const slice = markdown.slice(searchStart, info.blockEndOffset);
 
     // Find the Nth occurrence of the word (N = wordOccurrenceIndex, 0-based)
     let idx = -1;
@@ -703,7 +723,6 @@ export default function EditorLayout() {
       }
 
       if (strippedIdx !== -1) {
-        // Map back to original: find the word by scanning original slice
         let origPos = 0;
         let strippedPos = 0;
         while (strippedPos < strippedIdx && origPos < slice.length) {
@@ -716,13 +735,22 @@ export default function EditorLayout() {
       }
     }
 
-    if (idx !== -1) {
-      editor.scrollToOffset(searchStart + idx);
-    } else {
-      // Fallback: navigate to block start
-      editor.scrollToOffset(info.blockStartOffset);
-    }
+    return idx !== -1 ? searchStart + idx : info.blockStartOffset;
   }, [markdown]);
+
+  // Handle click on preview to navigate editor to source position
+  const handlePreviewClickSource = useCallback((info: PreviewClickInfo) => {
+    const offset = resolvePreviewClickOffset(info);
+    const editor = editorRef.current;
+
+    if (editor && (viewMode === 'split' || viewMode === 'code')) {
+      // Editor is visible — navigate immediately
+      editor.scrollToOffset(offset);
+    } else {
+      // Preview-only mode — store offset for when editor becomes visible
+      pendingCursorOffset.current = offset;
+    }
+  }, [resolvePreviewClickOffset, viewMode]);
 
   // Reset preview scroll position and offset when switching tabs
   useEffect(() => {
@@ -731,6 +759,46 @@ export default function EditorLayout() {
     }
     scrollOffsetRef.current = 0;
   }, [activeTabId]);
+
+  // Wrapper: save scroll positions BEFORE switching, then restore after render
+  const handleViewModeChange = useCallback((next: ViewMode) => {
+    const prev = viewMode;
+    if (prev === next) return;
+
+    // Save scroll from views currently visible (components still mounted here)
+    if (prev === 'code' || prev === 'split') {
+      editorScrollMemory.current = editorRef.current?.getScrollTop() ?? 0;
+    }
+    if (prev === 'preview' || prev === 'split') {
+      previewScrollMemory.current = previewScrollRef.current?.scrollTop ?? 0;
+    }
+
+    setViewMode(next);
+
+    // Restore after React renders the new view
+    requestAnimationFrame(() => {
+      if (next === 'code' || next === 'split') {
+        if (pendingCursorOffset.current !== null) {
+          // Word-click from preview: scroll editor to exact offset
+          editorRef.current?.scrollToOffset(pendingCursorOffset.current);
+          pendingCursorOffset.current = null;
+          pendingScrollLine.current = null;
+        } else if (pendingScrollLine.current !== null) {
+          // Sidebar navigation from preview: scroll editor to that line
+          setScrollToLine(pendingScrollLine.current);
+          setTimeout(() => setScrollToLine(undefined), 100);
+          pendingScrollLine.current = null;
+        } else {
+          editorRef.current?.setScrollTop(editorScrollMemory.current);
+        }
+      }
+      if (next === 'preview' || next === 'split') {
+        if (previewScrollRef.current) {
+          previewScrollRef.current.scrollTop = previewScrollMemory.current;
+        }
+      }
+    });
+  }, [viewMode]);
 
   // Sidebar resize handlers
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -838,7 +906,7 @@ export default function EditorLayout() {
           <AssetsSidebar
             markdown={markdown}
             viewMode={viewMode}
-            onViewModeChange={setViewMode}
+            onViewModeChange={handleViewModeChange}
             onNavigateToLine={handleNavigateToLine}
             onFileSelect={handleFileSelect}
             onDeleteFile={handleDeleteFile}
@@ -873,7 +941,7 @@ export default function EditorLayout() {
 
           {/* Vertical Toggle */}
           <div className="py-3 flex-1">
-            <ViewToggle currentMode={viewMode} onModeChange={setViewMode} vertical={true} />
+            <ViewToggle currentMode={viewMode} onModeChange={handleViewModeChange} vertical={true} />
           </div>
 
           {/* Expand Button - Fixed at bottom */}
@@ -915,7 +983,7 @@ export default function EditorLayout() {
           {/* Code Editor */}
           {(viewMode === 'code' || viewMode === 'split') && (
             <div
-              className="flex flex-col overflow-hidden"
+              className={`flex flex-col ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}
               style={{
                 width: viewMode === 'split' ? `${splitPosition}%` : '100%',
                 minWidth: viewMode === 'split' ? `${CODE_VIEW_MIN_WIDTH}px` : undefined,
@@ -927,7 +995,7 @@ export default function EditorLayout() {
                 value={markdown}
                 onChange={setMarkdown}
               />
-              <div className="flex-1 overflow-hidden">
+              <div className={`flex-1 ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}>
                 <CodeMirrorEditor
                   ref={editorRef}
                   value={markdown}
@@ -960,7 +1028,7 @@ export default function EditorLayout() {
           {/* Preview */}
           {(viewMode === 'preview' || viewMode === 'split') && (
             <div
-              className="overflow-hidden"
+              className={viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}
               style={{
                 width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 5px)` : '100%',
                 ...(viewMode === 'preview' ? { maxWidth: `${columnWidth}%`, margin: '0 auto' } : {})
@@ -973,7 +1041,7 @@ export default function EditorLayout() {
                 previewScrollRef={previewScrollRef}
                 isScrollSynced={isScrollSynced}
                 onToggleScrollSync={viewMode === 'split' ? toggleScrollSync : undefined}
-                onClickSourcePosition={viewMode === 'split' ? handlePreviewClickSource : undefined}
+                onClickSourcePosition={handlePreviewClickSource}
                 columnWidth={viewMode !== 'split' ? columnWidth : undefined}
                 onColumnWidthChange={viewMode !== 'split' ? setColumnWidth : undefined}
               />

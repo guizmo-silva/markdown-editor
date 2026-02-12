@@ -276,7 +276,7 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme, pre
   return (
     <div className={`h-full w-full flex flex-col preview-container ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
       {/* Preview content area */}
-      <div ref={previewScrollRef} className="flex-1 overflow-auto p-8 pb-[50vh]">
+      <div ref={previewScrollRef} className="flex-1 overflow-auto p-8 pb-[calc(100vh-8rem)]">
         <div
           className={`markdown-preview${onClickSourcePosition ? ' clickable-source' : ''}`}
           style={{ fontFamily: 'var(--font-roboto-flex), sans-serif', color: textColor }}

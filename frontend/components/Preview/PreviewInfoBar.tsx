@@ -45,7 +45,7 @@ export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isSc
 
   return (
     <div
-      className="h-[24px] flex items-center justify-between px-4"
+      className="infobar-fullbleed h-[24px] flex items-center justify-between px-4"
       style={{
         backgroundColor: bgColor,
         borderTop: `1px solid ${borderColor}`
@@ -64,16 +64,17 @@ export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isSc
         {/* Column width slider */}
         {columnWidth !== undefined && onColumnWidthChange && (
           <div className="flex items-center gap-1.5">
-            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke={textColor} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" />
+            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke={textColor} viewBox="0 0 24 24" strokeWidth={1.8}>
+              <path strokeLinecap="round" d="M9 5h6M8 12h8M9 19h6" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 9l2 3-2 3M20 9l-2 3 2 3" />
             </svg>
             <input
               type="range"
-              min={50}
-              max={100}
+              min={0}
+              max={60}
               step={1}
-              value={columnWidth}
-              onChange={(e) => onColumnWidthChange(Number(e.target.value))}
+              value={100 - columnWidth}
+              onChange={(e) => onColumnWidthChange(100 - Number(e.target.value))}
               className="column-width-slider"
               style={{
                 width: '80px',

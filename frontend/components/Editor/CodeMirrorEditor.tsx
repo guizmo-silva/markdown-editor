@@ -8,7 +8,7 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
-import { autocompletion, CompletionContext } from '@codemirror/autocomplete';
+import { autocompletion, CompletionContext, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
 import InfoBar from './InfoBar';
@@ -23,6 +23,8 @@ export interface CodeMirrorHandle {
   replaceRange: (from: number, to: number, text: string) => void;
   getValue: () => string;
   scrollToOffset: (offset: number) => void;
+  getScrollTop: () => number;
+  setScrollTop: (top: number) => void;
 }
 
 interface CodeMirrorEditorProps {
@@ -120,10 +122,10 @@ const lightTheme = EditorView.theme({
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   '.cm-selectionBackground': {
-    backgroundColor: 'rgba(0, 0, 0, 0.15) !important',
+    backgroundColor: '#B0B0B0 !important',
   },
   '&.cm-focused .cm-selectionBackground': {
-    backgroundColor: 'rgba(0, 0, 0, 0.2) !important',
+    backgroundColor: '#A0A0A0 !important',
   },
   '.cm-cursor': {
     borderLeftColor: '#333',
@@ -204,10 +206,10 @@ const darkTheme = EditorView.theme({
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   '.cm-selectionBackground': {
-    backgroundColor: 'rgba(255, 255, 255, 0.15) !important',
+    backgroundColor: '#555555 !important',
   },
   '&.cm-focused .cm-selectionBackground': {
-    backgroundColor: 'rgba(255, 255, 255, 0.2) !important',
+    backgroundColor: '#606060 !important',
   },
   '.cm-cursor': {
     borderLeftColor: '#FFFFFF',
@@ -483,6 +485,12 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   const [spellcheckLanguage, setSpellcheckLanguage] = useState(i18n.language);
   const previousDocumentIdRef = useRef<string | null | undefined>(documentId);
 
+  // Deferred state update refs - batch React state updates to avoid
+  // synchronous re-renders during CodeMirror transactions (prevents scroll jumps)
+  const pendingCharCount = useRef<number | null>(null);
+  const pendingCursorPos = useRef<{ line: number; column: number } | null>(null);
+  const infoBarRafId = useRef(0);
+
   // Use ref to always have access to the latest onChange callback
   const onChangeRef = useRef(onChange);
   useEffect(() => {
@@ -563,17 +571,43 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
 
       view.focus();
     },
+    getScrollTop() {
+      return viewRef.current?.scrollDOM.scrollTop ?? 0;
+    },
+    setScrollTop(top: number) {
+      if (viewRef.current) {
+        viewRef.current.scrollDOM.scrollTop = top;
+      }
+    },
   }));
 
-  // Update cursor position
+  // Flush pending info bar updates in a single RAF (avoids synchronous
+  // React re-renders during CodeMirror transactions which cause scroll jumps)
+  const scheduleInfoBarUpdate = useCallback(() => {
+    if (infoBarRafId.current) return; // already scheduled
+    infoBarRafId.current = requestAnimationFrame(() => {
+      infoBarRafId.current = 0;
+      if (pendingCharCount.current !== null) {
+        setCharacterCount(pendingCharCount.current);
+        pendingCharCount.current = null;
+      }
+      if (pendingCursorPos.current !== null) {
+        setCursorPosition(pendingCursorPos.current);
+        pendingCursorPos.current = null;
+      }
+    });
+  }, []);
+
+  // Update cursor position (deferred via RAF)
   const updateCursorPosition = useCallback((view: EditorView) => {
     const pos = view.state.selection.main.head;
     const line = view.state.doc.lineAt(pos);
-    setCursorPosition({
+    pendingCursorPos.current = {
       line: line.number,
       column: pos - line.from + 1,
-    });
-  }, []);
+    };
+    scheduleInfoBarUpdate();
+  }, [scheduleInfoBarUpdate]);
 
   // Get spellcheck content attributes
   const getSpellcheckAttrs = useCallback(() => {
@@ -594,11 +628,17 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         const newContent = update.state.doc.toString();
-        // Track what we sent so the value-sync useEffect can detect round-trips
-        lastSentContent.current = newContent;
-        // Use ref to always call the latest onChange callback
-        onChangeRef.current(newContent);
-        setCharacterCount(newContent.length);
+        // During IME composition (dead keys, accents), DON'T propagate to React.
+        // This prevents a race condition where intermediate composition content
+        // gets dispatched back from React's stale render, overwriting the final
+        // composed character (e.g., eating accented letters like á, é, ó).
+        if (!update.view.composing) {
+          lastSentContent.current = newContent;
+          onChangeRef.current(newContent);
+        }
+        // Defer character count update to avoid synchronous re-render during CM transaction
+        pendingCharCount.current = newContent.length;
+        scheduleInfoBarUpdate();
       }
       if (update.selectionSet) {
         updateCursorPosition(update.view);
@@ -614,7 +654,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         highlightActiveLine(),
         history(),
         formatKeymap,
+        closeBrackets(),
         keymap.of([
+          ...closeBracketsKeymap,
           ...defaultKeymap,
           ...historyKeymap,
           indentWithTab,
@@ -648,9 +690,26 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       onEditorReady(view);
     }
 
+    // Safety net: after IME composition ends, ensure React gets the final content.
+    // Some browser/IME combos may not fire a docChanged after compositionend.
+    const handleCompositionEnd = () => {
+      requestAnimationFrame(() => {
+        const v = viewRef.current;
+        if (!v) return;
+        const content = v.state.doc.toString();
+        if (content !== lastSentContent.current) {
+          lastSentContent.current = content;
+          onChangeRef.current(content);
+        }
+      });
+    };
+    view.contentDOM.addEventListener('compositionend', handleCompositionEnd);
+
     return () => {
+      view.contentDOM.removeEventListener('compositionend', handleCompositionEnd);
       view.destroy();
       viewRef.current = null;
+      if (infoBarRafId.current) cancelAnimationFrame(infoBarRafId.current);
     };
   }, []); // Only run once on mount
 
@@ -688,6 +747,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
 
     const currentContent = view.state.doc.toString();
     if (currentContent !== value) {
+      // Preserve scroll position to avoid jumps during external content sync
+      const scrollTop = view.scrollDOM.scrollTop;
+
       // Preserve cursor/selection position when replacing content
       const currentSelection = view.state.selection;
       const newLength = value.length;
@@ -714,6 +776,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         selection: clampedSelection,
         annotations: Transaction.addToHistory.of(false),
       });
+
+      // Restore scroll position after the dispatch to prevent jumps
+      view.scrollDOM.scrollTop = scrollTop;
     }
   }, [value]);
 
@@ -764,7 +829,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           highlightActiveLine(),
           history(),
           formatKeymap,
+          closeBrackets(),
           keymap.of([
+            ...closeBracketsKeymap,
             ...defaultKeymap,
             ...historyKeymap,
             indentWithTab,
@@ -777,8 +844,12 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               const newContent = update.state.doc.toString();
-              onChangeRef.current(newContent);
-              setCharacterCount(newContent.length);
+              if (!update.view.composing) {
+                lastSentContent.current = newContent;
+                onChangeRef.current(newContent);
+              }
+              pendingCharCount.current = newContent.length;
+              scheduleInfoBarUpdate();
             }
             if (update.selectionSet) {
               updateCursorPosition(update.view);
