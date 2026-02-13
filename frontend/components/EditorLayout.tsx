@@ -56,6 +56,11 @@ export default function EditorLayout() {
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const scrollOffsetRef = useRef(0);
   const lastEditorLineRef = useRef(1);
+  // Track which side initiated scroll to prevent infinite loops
+  const scrollingFromRef = useRef<'editor' | 'preview' | null>(null);
+  const scrollResetTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Track preview scroll direction for monotonic editor sync
+  const lastPreviewScrollTopRef = useRef(0);
   // Scroll memory: save scroll positions when switching view modes
   const editorScrollMemory = useRef(0);
   const previewScrollMemory = useRef(0);
@@ -655,10 +660,21 @@ export default function EditorLayout() {
     return targetTop;
   }, []);
 
-  // Scroll sync callback — line-based mapping with offset support
+  // Scroll sync callback — editor scrolls → preview follows
   const handleEditorScrollLineChange = useCallback((lineNumber: number) => {
     lastEditorLineRef.current = lineNumber;
     if (!isScrollSyncedRef.current) return;
+    if (scrollingFromRef.current === 'preview') {
+      // Restart timer — programmatic scroll events are still arriving
+      clearTimeout(scrollResetTimerRef.current);
+      scrollResetTimerRef.current = setTimeout(() => { scrollingFromRef.current = null; }, 150);
+      return;
+    }
+
+    scrollingFromRef.current = 'editor';
+    clearTimeout(scrollResetTimerRef.current);
+    scrollResetTimerRef.current = setTimeout(() => { scrollingFromRef.current = null; }, 100);
+
     const container = previewScrollRef.current;
     if (!container) return;
 
@@ -682,6 +698,52 @@ export default function EditorLayout() {
       return next;
     });
   }, [calculateTargetScroll]);
+
+  // Scroll sync callback — preview scrolls → editor follows
+  // Uses fraction-based mapping to avoid CodeMirror's virtualization issues
+  // (estimated heights for off-screen lines cause wrong scroll positions)
+  const handlePreviewScroll = useCallback(() => {
+    if (!isScrollSyncedRef.current) return;
+    if (scrollingFromRef.current === 'editor') return;
+
+    scrollingFromRef.current = 'preview';
+    clearTimeout(scrollResetTimerRef.current);
+    scrollResetTimerRef.current = setTimeout(() => { scrollingFromRef.current = null; }, 150);
+
+    const container = previewScrollRef.current;
+    if (!container) return;
+
+    const previewMaxScroll = container.scrollHeight - container.clientHeight;
+    if (previewMaxScroll <= 0) return;
+
+    // Detect scroll direction
+    const isScrollingDown = container.scrollTop >= lastPreviewScrollTopRef.current;
+    lastPreviewScrollTopRef.current = container.scrollTop;
+
+    const fraction = container.scrollTop / previewMaxScroll;
+    editorRef.current?.scrollToFraction(fraction, isScrollingDown);
+  }, []);
+
+  // Attach scroll listener to preview container for bidirectional sync
+  useEffect(() => {
+    const container = previewScrollRef.current;
+    if (!container || viewMode !== 'split') return;
+
+    let rafId = 0;
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        handlePreviewScroll();
+      });
+    };
+
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      container.removeEventListener('scroll', onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [viewMode, handlePreviewScroll]);
 
   // Resolve clicked word to a source offset in the markdown string
   const resolvePreviewClickOffset = useCallback((info: PreviewClickInfo): number => {

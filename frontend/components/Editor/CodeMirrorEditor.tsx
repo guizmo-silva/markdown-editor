@@ -23,6 +23,8 @@ export interface CodeMirrorHandle {
   replaceRange: (from: number, to: number, text: string) => void;
   getValue: () => string;
   scrollToOffset: (offset: number) => void;
+  scrollToLineTop: (lineNumber: number) => void;
+  scrollToFraction: (fraction: number, isScrollingDown?: boolean) => void;
   getScrollTop: () => number;
   setScrollTop: (top: number) => void;
 }
@@ -570,6 +572,31 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       }, 850);
 
       view.focus();
+    },
+    scrollToLineTop(lineNumber: number) {
+      const view = viewRef.current;
+      if (!view) return;
+      const clampedLine = Math.max(1, Math.min(Math.floor(lineNumber), view.state.doc.lines));
+      const line = view.state.doc.line(clampedLine);
+      view.dispatch({
+        effects: EditorView.scrollIntoView(line.from, { y: 'start', yMargin: 0 }),
+      });
+    },
+    scrollToFraction(fraction: number, isScrollingDown?: boolean) {
+      const view = viewRef.current;
+      if (!view) return;
+      const f = Math.max(0, Math.min(1, fraction));
+      const maxScroll = view.scrollDOM.scrollHeight - view.scrollDOM.clientHeight;
+      let target = Math.round(f * maxScroll);
+      // Monotonic constraint: CM's scrollHeight can change as virtualized
+      // lines are measured, causing fraction * maxScroll to jump backward.
+      // Enforce same-direction scrolling to prevent this.
+      if (isScrollingDown === true) {
+        target = Math.max(target, view.scrollDOM.scrollTop);
+      } else if (isScrollingDown === false) {
+        target = Math.min(target, view.scrollDOM.scrollTop);
+      }
+      view.scrollDOM.scrollTop = target;
     },
     getScrollTop() {
       return viewRef.current?.scrollDOM.scrollTop ?? 0;
