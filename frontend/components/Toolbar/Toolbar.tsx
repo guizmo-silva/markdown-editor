@@ -159,16 +159,19 @@ export default function Toolbar({
     const end = editor.selectionEnd;
     const selectedText = currentValue.substring(start, end);
     const textToInsert = selectedText || placeholder;
-    const replacement = prefix + textToInsert + suffix;
+    // Strip trailing newline(s) from selection (e.g. triple-click selects the line break)
+    const trailingNewlines = textToInsert.match(/\n+$/)?.[0] ?? '';
+    const trimmedText = trailingNewlines ? textToInsert.slice(0, -trailingNewlines.length) : textToInsert;
+    const replacement = prefix + trimmedText + suffix + trailingNewlines;
 
     // Use replaceRange if available (CodeMirror) for proper undo support
     if (editor.replaceRange) {
       editor.replaceRange(start, end, replacement);
       setTimeout(() => {
         if (selectedText) {
-          editor.setSelectionRange(start, start + replacement.length);
+          editor.setSelectionRange(start, start + prefix.length + trimmedText.length + suffix.length);
         } else {
-          const newPos = start + prefix.length + textToInsert.length;
+          const newPos = start + prefix.length + trimmedText.length;
           editor.setSelectionRange(newPos, newPos);
         }
         editor.focus();
@@ -178,9 +181,9 @@ export default function Toolbar({
       onChange(newText);
       setTimeout(() => {
         if (selectedText) {
-          editor.setSelectionRange(start, start + replacement.length);
+          editor.setSelectionRange(start, start + prefix.length + trimmedText.length + suffix.length);
         } else {
-          const newPos = start + prefix.length + textToInsert.length;
+          const newPos = start + prefix.length + trimmedText.length;
           editor.setSelectionRange(newPos, newPos);
         }
         editor.focus();
@@ -242,14 +245,18 @@ export default function Toolbar({
       } else {
         // Add formatting
         const textToInsert = selectedText || placeholder;
-        const replacement = prefix + textToInsert + suffix;
+        // Strip trailing newline(s) from selection (e.g. triple-click selects the line break)
+        const trailingNewlines = textToInsert.match(/\n+$/)?.[0] ?? '';
+        const trimmedText = trailingNewlines ? textToInsert.slice(0, -trailingNewlines.length) : textToInsert;
+        const replacement = prefix + trimmedText + suffix + trailingNewlines;
+        const selectionEnd = start + prefix.length + trimmedText.length;
         if (editor.replaceRange) {
           editor.replaceRange(start, end, replacement);
           setTimeout(() => {
             if (selectedText) {
-              editor.setSelectionRange(start + prefix.length, end + prefix.length);
+              editor.setSelectionRange(start + prefix.length, selectionEnd);
             } else {
-              editor.setSelectionRange(start + prefix.length, start + prefix.length + textToInsert.length);
+              editor.setSelectionRange(start + prefix.length, start + prefix.length + trimmedText.length);
             }
             editor.focus();
           }, 0);
@@ -258,9 +265,9 @@ export default function Toolbar({
           onChange(newText);
           setTimeout(() => {
             if (selectedText) {
-              editor.setSelectionRange(start + prefix.length, end + prefix.length);
+              editor.setSelectionRange(start + prefix.length, selectionEnd);
             } else {
-              editor.setSelectionRange(start + prefix.length, start + prefix.length + textToInsert.length);
+              editor.setSelectionRange(start + prefix.length, start + prefix.length + trimmedText.length);
             }
             editor.focus();
           }, 0);
@@ -1776,9 +1783,9 @@ export default function Toolbar({
 
   // Simple formatting buttons (don't create sidebar elements)
   const simpleFormattingButtons = [
-    { icon: getIconPath('Bold_icon.svg'), translationKey: 'toolbar.bold', onClick: handleBold },
-    { icon: getIconPath('Italic_icon.svg'), translationKey: 'toolbar.italic', onClick: handleItalic },
-    { icon: getIconPath('Strike_icon.svg'), translationKey: 'toolbar.strikethrough', onClick: handleStrikethrough },
+    { icon: getIconPath('Bold_icon.svg'), translationKey: 'toolbar.bold', onClick: handleBold, shortcut: 'Ctrl+B' },
+    { icon: getIconPath('Italic_icon.svg'), translationKey: 'toolbar.italic', onClick: handleItalic, shortcut: 'Ctrl+I' },
+    { icon: getIconPath('Strike_icon.svg'), translationKey: 'toolbar.strikethrough', onClick: handleStrikethrough, shortcut: 'Ctrl+Shift+X' },
     { icon: getIconPath('InLineCode_icon.svg'), translationKey: 'toolbar.code', onClick: handleInlineCode },
     { icon: getIconPath('Sobrescrito_icon.svg'), translationKey: 'toolbar.superscript', onClick: handleSuperscript },
     { icon: getIconPath('Subescrito_icon.svg'), translationKey: 'toolbar.subscript', onClick: handleSubscript },
@@ -1802,15 +1809,16 @@ export default function Toolbar({
   const GRID_COLS = 10;
   const GRID_ROWS = 8;
 
-  const renderButton = (button: { icon: string; translationKey: string; onClick: () => void }, index: number) => {
+  const renderButton = (button: { icon: string; translationKey: string; onClick: () => void; shortcut?: string }, index: number) => {
     const label = t(button.translationKey);
+    const title = button.shortcut ? `${label} (${button.shortcut})` : label;
     return (
       <button
         key={index}
         onClick={button.onClick}
         className="w-[30px] h-[30px] flex-shrink-0 flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
         aria-label={label}
-        title={label}
+        title={title}
       >
         <img src={button.icon} alt={label} className="w-6 h-6" />
       </button>
@@ -1905,7 +1913,7 @@ export default function Toolbar({
             onMouseLeave={handleLinkMouseLeave}
             className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.link')}
-            title={t('toolbar.link')}
+            title={`${t('toolbar.link')} (Ctrl+K)`}
           >
             <img src={getIconPath('URL_icon.svg')} alt={t('toolbar.link')} className="w-6 h-6" />
           </button>

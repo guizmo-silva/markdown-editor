@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState, useImperativeHandle, forwardRef } from 'react';
-import { EditorState, EditorSelection, Compartment, StateEffect, StateField, Transaction } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine, scrollPastEnd, Decoration, DecorationSet } from '@codemirror/view';
+import { EditorState, EditorSelection, Compartment, StateEffect, StateField, Transaction, Text, Range } from '@codemirror/state';
+import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine, scrollPastEnd, Decoration, DecorationSet, ViewPlugin, ViewUpdate } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
-import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
+import { syntaxHighlighting, HighlightStyle, foldGutter, codeFolding, foldService } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { autocompletion, CompletionContext, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { useTranslation } from 'react-i18next';
@@ -170,6 +170,14 @@ const lightTheme = EditorView.theme({
   '.cm-completionIcon': {
     display: 'none',
   },
+  '.cm-fm-line': { backgroundColor: 'rgba(100,120,160,0.07)', borderLeft: '2px solid #8899bb' },
+  '.cm-fm-delim': { color: '#8899bb', fontWeight: 'bold' },
+  '.cm-fm-key': { color: '#005cc5' },
+  '.cm-fm-string': { color: '#22863a' },
+  '.cm-fm-bool': { color: '#e36209' },
+  '.cm-fm-number': { color: '#005cc5' },
+  '.cm-fm-comment': { color: '#6a737d', fontStyle: 'italic' },
+  '.cm-foldGutter .cm-gutterElement': { padding: '0 4px', cursor: 'pointer', color: '#999999' },
 });
 
 // Dark theme for CodeMirror
@@ -254,6 +262,14 @@ const darkTheme = EditorView.theme({
   '.cm-completionIcon': {
     display: 'none',
   },
+  '.cm-fm-line': { backgroundColor: 'rgba(100,140,220,0.08)', borderLeft: '2px solid #4a6080' },
+  '.cm-fm-delim': { color: '#4a6080', fontWeight: 'bold' },
+  '.cm-fm-key': { color: '#79b8ff' },
+  '.cm-fm-string': { color: '#85e89d' },
+  '.cm-fm-bool': { color: '#ffab70' },
+  '.cm-fm-number': { color: '#79b8ff' },
+  '.cm-fm-comment': { color: '#6a737d', fontStyle: 'italic' },
+  '.cm-foldGutter .cm-gutterElement': { padding: '0 4px', cursor: 'pointer', color: '#666666' },
 });
 
 // Build language completions from @codemirror/language-data
@@ -331,6 +347,9 @@ const codeBlockAutocomplete = autocompletion({
   defaultKeymap: true,
 });
 
+const isUrl = (text: string): boolean =>
+  /^https?:\/\/\S+$/.test(text);
+
 // Smart typography: auto-replace --- → em dash (inline) and ... → ellipsis
 const smartTypography = EditorView.inputHandler.of((view, from, to, text) => {
   // Don't interfere with IME composition (dead keys, accents, etc.)
@@ -371,6 +390,33 @@ const smartTypography = EditorView.inputHandler.of((view, from, to, text) => {
   }
 
   return false;
+});
+
+const pasteLinkHandler = EditorView.domEventHandlers({
+  paste(event, view) {
+    const clipboardText = event.clipboardData?.getData('text/plain')?.trim() ?? '';
+    if (!isUrl(clipboardText)) return false;
+
+    const { from, to } = view.state.selection.main;
+    const selectedText = view.state.sliceDoc(from, to).replace(/\n+$/, '').trim();
+
+    event.preventDefault();
+
+    if (selectedText) {
+      const replacement = `[${selectedText}](${clipboardText})`;
+      view.dispatch({
+        changes: { from, to, insert: replacement },
+        selection: { anchor: from + replacement.length, head: from + replacement.length },
+      });
+    } else {
+      const replacement = `[](${clipboardText})`;
+      view.dispatch({
+        changes: { from, to, insert: replacement },
+        selection: { anchor: from + 1, head: from + 1 },
+      });
+    }
+    return true;
+  },
 });
 
 // Compartment for dynamic theme switching
@@ -460,6 +506,121 @@ const flashHighlightField = StateField.define<DecorationSet>({
   },
   provide: (f) => EditorView.decorations.from(f),
 });
+
+// --- Front Matter Support ---
+
+// Detects a YAML (---) or TOML (+++) front matter block at the start of the document.
+// Returns { from, to } covering from first delimiter line to last delimiter line (inclusive).
+function detectFrontMatter(doc: Text): { from: number; to: number } | null {
+  if (doc.lines < 3) return null;
+  const firstLine = doc.line(1);
+  const delim = firstLine.text === '---' ? '---' : firstLine.text === '+++' ? '+++' : null;
+  if (!delim) return null;
+  for (let i = 2; i <= doc.lines; i++) {
+    if (doc.line(i).text === delim) {
+      return { from: firstLine.from, to: doc.line(i).to };
+    }
+  }
+  return null;
+}
+
+// StateField: tracks the front matter range so it can be shared between plugins
+const frontMatterRangeField = StateField.define<{ from: number; to: number } | null>({
+  create(state) { return detectFrontMatter(state.doc); },
+  update(value, tr) {
+    return tr.docChanged ? detectFrontMatter(tr.newDoc) : value;
+  },
+});
+
+// Decoration factories
+const fmLineDeco = Decoration.line({ class: 'cm-fm-line' });
+const fmDelimDeco = Decoration.line({ class: 'cm-fm-line cm-fm-delim' });
+
+// ViewPlugin: applies line and inline token decorations for front matter
+const frontMatterPlugin = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+
+    constructor(view: EditorView) {
+      this.decorations = this.buildDecorations(view);
+    }
+
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = this.buildDecorations(update.view);
+      }
+    }
+
+    buildDecorations(view: EditorView): DecorationSet {
+      const fm = view.state.field(frontMatterRangeField);
+      if (!fm) return Decoration.none;
+
+      const decos: Range<Decoration>[] = [];
+      const doc = view.state.doc;
+      const firstLine = doc.lineAt(fm.from);
+      const lastLine = doc.lineAt(fm.to);
+
+      for (let i = firstLine.number; i <= lastLine.number; i++) {
+        const line = doc.line(i);
+        const isDelim = i === firstLine.number || i === lastLine.number;
+
+        // Line decoration (background + border)
+        decos.push(isDelim ? fmDelimDeco.range(line.from) : fmLineDeco.range(line.from));
+
+        // Skip inline tokens on delimiter lines
+        if (isDelim) continue;
+
+        const text = line.text;
+
+        // Key: word at start followed by ':'
+        const keyMatch = text.match(/^([\w][\w.-]*)(?=\s*:)/);
+        if (keyMatch) {
+          decos.push(Decoration.mark({ class: 'cm-fm-key' }).range(line.from, line.from + keyMatch[0].length));
+        }
+
+        // Comments: # to end of line
+        const commentMatch = text.match(/#.*/);
+        if (commentMatch && commentMatch.index !== undefined) {
+          decos.push(Decoration.mark({ class: 'cm-fm-comment' }).range(line.from + commentMatch.index, line.to));
+        }
+
+        // Strings: "..." or '...'
+        const stringRe = /"[^"]*"|'[^']*'/g;
+        let m: RegExpExecArray | null;
+        while ((m = stringRe.exec(text)) !== null) {
+          decos.push(Decoration.mark({ class: 'cm-fm-string' }).range(line.from + m.index!, line.from + m.index! + m[0].length));
+        }
+
+        // Booleans and null
+        const boolRe = /\b(true|false|null)\b/g;
+        while ((m = boolRe.exec(text)) !== null) {
+          decos.push(Decoration.mark({ class: 'cm-fm-bool' }).range(line.from + m.index!, line.from + m.index! + m[0].length));
+        }
+
+        // Numbers and dates
+        const numRe = /\b-?\d{4}-\d{2}-\d{2}|\b-?\d+(\.\d+)?\b/g;
+        while ((m = numRe.exec(text)) !== null) {
+          decos.push(Decoration.mark({ class: 'cm-fm-number' }).range(line.from + m.index!, line.from + m.index! + m[0].length));
+        }
+      }
+
+      return Decoration.set(decos, true);
+    }
+  },
+  { decorations: (v) => v.decorations }
+);
+
+// foldService: allows folding from the first --- to the closing ---
+const frontMatterFoldService = foldService.of((state, lineStart) => {
+  const fm = state.field(frontMatterRangeField);
+  if (!fm) return null;
+  const firstLine = state.doc.lineAt(fm.from);
+  if (lineStart !== firstLine.from) return null;
+  // Fold from end of first delimiter line to end of last delimiter line
+  return { from: firstLine.to, to: fm.to };
+});
+
+// --- End Front Matter Support ---
 
 const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   value,
@@ -698,8 +859,14 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         placeholder ? EditorView.contentAttributes.of({ 'data-placeholder': placeholder }) : [],
         spellcheckCompartment.of(getSpellcheckAttrs()),
         flashHighlightField,
+        frontMatterRangeField,
+        frontMatterPlugin,
+        frontMatterFoldService,
+        codeFolding(),
+        foldGutter(),
         codeBlockAutocomplete,
         smartTypography,
+        pasteLinkHandler,
         scrollPastEnd(),
       ],
     });
@@ -885,8 +1052,14 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           EditorView.lineWrapping,
           spellcheckCompartment.of(getSpellcheckAttrs()),
           flashHighlightField,
+          frontMatterRangeField,
+          frontMatterPlugin,
+          frontMatterFoldService,
+          codeFolding(),
+          foldGutter(),
           codeBlockAutocomplete,
           smartTypography,
+          pasteLinkHandler,
           scrollPastEnd(),
         ],
       });

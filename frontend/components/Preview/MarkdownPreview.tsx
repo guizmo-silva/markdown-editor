@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import remarkGemoji from 'remark-gemoji';
 import remarkMath from 'remark-math';
 import { remarkAlert } from 'remark-github-blockquote-alert';
+import remarkFrontmatter from 'remark-frontmatter';
 import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
@@ -283,7 +284,7 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme, pre
           onClick={handlePreviewClick}
         >
           <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkGemoji, remarkMath, remarkAlert, remarkSourceLines]}
+            remarkPlugins={[remarkGfm, remarkGemoji, remarkMath, remarkAlert, remarkFrontmatter, remarkSourceLines]}
             rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeKatex]}
             components={{
               code({ node, className, children, ...props }) {

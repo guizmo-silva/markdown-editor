@@ -21,7 +21,11 @@ const languages: Language[] = [
   { code: 'zh-CN', name: '简体中文', flag: '🇨🇳' },
 ];
 
-export default function LogoMenu() {
+interface LogoMenuProps {
+  onImportClick?: () => void;
+}
+
+export default function LogoMenu({ onImportClick }: LogoMenuProps) {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { getIconPath } = useThemedIcon();
@@ -69,11 +73,14 @@ export default function LogoMenu() {
       </button>
 
       {/* Dropdown Menu */}
-      {isOpen && (
-        <div
-          className="absolute top-full left-0 mt-2 w-[200px] bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 overflow-hidden"
-          style={{ fontFamily: 'Roboto Mono, monospace' }}
-        >
+      <div
+        className={`absolute top-full left-0 mt-2 w-[200px] bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50 overflow-hidden transition-all duration-150 ease-out origin-top-left ${
+          isOpen
+            ? 'opacity-100 scale-100 pointer-events-auto'
+            : 'opacity-0 scale-95 pointer-events-none'
+        }`}
+        style={{ fontFamily: 'Roboto Mono, monospace' }}
+      >
           {/* Language Section */}
           <div className="p-3 border-b border-[var(--border-secondary)]">
             <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-2">
@@ -100,6 +107,21 @@ export default function LogoMenu() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Import Section */}
+          <div className="px-3 py-2 border-b border-[var(--border-secondary)]">
+            <button
+              onClick={() => { onImportClick?.(); setIsOpen(false); }}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-[12px]
+                         text-[var(--text-secondary)] hover:bg-[var(--hover-bg-subtle)]
+                         hover:text-[var(--text-primary)] transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <span>{t('menu.importFile', 'Importar arquivo')}</span>
+            </button>
           </div>
 
           {/* Dark Mode Section */}
@@ -139,7 +161,6 @@ export default function LogoMenu() {
             </button>
           </div>
         </div>
-      )}
-    </div>
+      </div>
   );
 }

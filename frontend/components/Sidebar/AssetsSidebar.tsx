@@ -40,6 +40,7 @@ interface AssetsSidebarProps {
   onDeleteFile?: (filePath: string) => void;
   onRenameFolder?: (oldPath: string, newPath: string) => void;
   onExport?: () => void;
+  onImportClick?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   width?: number;
@@ -55,6 +56,7 @@ export default function AssetsSidebar({
   onDeleteFile,
   onRenameFolder,
   onExport,
+  onImportClick,
   isCollapsed = false,
   onToggleCollapse,
   width = 230,
@@ -174,7 +176,7 @@ export default function AssetsSidebar({
       {/* Top Section: Logo and View Toggle */}
       <div className="pl-[20px] pr-4 pt-[20px] pb-3 flex items-center justify-between gap-3">
         {/* Logo with Menu */}
-        <LogoMenu />
+        <LogoMenu onImportClick={onImportClick} />
 
         {/* View Toggle */}
         <ViewToggle currentMode={viewMode} onModeChange={onViewModeChange} />

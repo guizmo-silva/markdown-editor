@@ -57,7 +57,9 @@ export const createFile = async (req: Request, res: Response): Promise<void> => 
     res.json({ success: true, path });
   } catch (error: any) {
     console.error('Error creating file:', error);
-    if (error.message?.startsWith('Filename too long')) {
+    if (error.message === 'File already exists') {
+      res.status(409).json({ error: 'File already exists' });
+    } else if (error.message?.startsWith('Filename too long')) {
       res.status(400).json({ error: error.message });
     } else {
       res.status(500).json({ error: 'Failed to create file' });

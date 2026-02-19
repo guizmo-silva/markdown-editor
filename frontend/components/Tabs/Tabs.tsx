@@ -251,6 +251,13 @@ export default function Tabs({
   // Custom drag start handler
   const handleMouseDown = (e: React.MouseEvent, tabId: string, tabIndex: number) => {
     if (editingTabId === tabId) return;
+
+    if (e.button === 1) {
+      e.preventDefault(); // Prevent auto-scroll on middle click
+      if (tabs.length > 1) onTabClose?.(tabId);
+      return;
+    }
+
     if (e.button !== 0) return; // Only left click
 
     const tabElement = tabRefs.current.get(tabId);

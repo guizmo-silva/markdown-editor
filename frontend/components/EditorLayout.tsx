@@ -9,6 +9,7 @@ import { Tabs } from './Tabs';
 import { Toolbar } from './Toolbar';
 import { WelcomeModal } from './WelcomeModal';
 import { ExportModal } from './ExportModal';
+import { ImportModal } from './ImportModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
 import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, getVolumes } from '@/services/api';
@@ -72,6 +73,9 @@ export default function EditorLayout() {
   const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const importDestFolderRef = useRef<string>('/');
+  const importFileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const AUTOSAVE_DELAY = 1000; // 1 second debounce
 
@@ -380,6 +384,53 @@ export default function EditorLayout() {
   const handleExportClick = () => {
     setShowExportModal(true);
   };
+
+  const handleImportConfirm = useCallback((destFolder: string) => {
+    importDestFolderRef.current = destFolder;
+    importFileInputRef.current?.click();
+  }, []);
+
+  const handleImportFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const content = ev.target?.result as string;
+      const destFolder = importDestFolderRef.current;
+      // Convert .txt to .md — backend only indexes .md files
+      const rawName = file.name;
+      const baseName = rawName.endsWith('.txt')
+        ? rawName.slice(0, -4) + '.md'
+        : rawName;
+      const stem = baseName.endsWith('.md') ? baseName.slice(0, -3) : baseName;
+      const ext = baseName.endsWith('.md') ? '.md' : '';
+
+      let finalPath = '';
+      let counter = 0;
+      while (true) {
+        const candidateName = counter === 0 ? baseName : `${stem} (${counter})${ext}`;
+        finalPath = destFolder === '/' ? candidateName : `${destFolder}/${candidateName}`;
+        try {
+          await createFile(finalPath, content);
+          break;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : '';
+          if (msg.toLowerCase().includes('already exists')) {
+            counter++;
+          } else {
+            alert(msg || 'Erro ao importar arquivo');
+            return;
+          }
+        }
+      }
+
+      await handleFileSelect(finalPath);
+      setFileRefreshTrigger(t => t + 1);
+    };
+    reader.readAsText(file, 'UTF-8');
+  }, [handleFileSelect]);
 
   const handleExport = async (format: 'html' | 'md' | 'txt') => {
     const baseName = currentFilePath?.replace(/\.md$/, '').split('/').pop() || 'documento';
@@ -974,6 +1025,7 @@ export default function EditorLayout() {
             onDeleteFile={handleDeleteFile}
             onRenameFolder={handleRenameFile}
             onExport={handleExportClick}
+            onImportClick={() => setShowImportModal(true)}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={handleToggleSidebar}
             width={sidebarWidth}
@@ -1080,6 +1132,7 @@ export default function EditorLayout() {
             <div
               className="w-[5px] bg-[var(--split-line)] cursor-col-resize hover:bg-[var(--text-secondary)] active:bg-[var(--text-secondary)] transition-colors flex-shrink-0 flex flex-col items-center justify-center gap-[3px]"
               onMouseDown={handleSplitResizeStart}
+              onDoubleClick={() => setSplitPosition(50)}
             >
               <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
               <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
@@ -1127,6 +1180,22 @@ export default function EditorLayout() {
         onClose={() => setShowExportModal(false)}
         onExport={handleExport}
         filename={currentFilePath?.split('/').pop()?.replace(/\.md$/, '') || 'documento'}
+      />
+
+      {/* Hidden input for file import */}
+      <input
+        ref={importFileInputRef}
+        type="file"
+        accept=".md,.txt"
+        className="hidden"
+        onChange={handleImportFileChange}
+      />
+
+      {/* Import Modal */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onConfirm={handleImportConfirm}
       />
     </div>
   );
