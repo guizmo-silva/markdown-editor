@@ -34,3 +34,25 @@ export const exportToPDF = async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ error: 'Failed to export to PDF' });
   }
 };
+
+export const exportDocumentWithImages = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { documentPath, format = 'html', title = 'document' } = req.body;
+    if (!documentPath) {
+      res.status(400).json({ error: 'documentPath is required' });
+      return;
+    }
+    if (!['html', 'md', 'txt'].includes(format)) {
+      res.status(400).json({ error: 'format must be html, md, or txt' });
+      return;
+    }
+
+    const zipBuffer = await exportService.exportWithImages(documentPath, format as 'html' | 'md' | 'txt', title);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${title}.zip"`);
+    res.send(zipBuffer);
+  } catch (error) {
+    console.error('Error exporting with images:', error);
+    res.status(500).json({ error: 'Failed to export document with images' });
+  }
+};

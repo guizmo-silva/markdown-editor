@@ -106,7 +106,8 @@
     "export": "Export document",
     "menu": "Menu",
     "doubleClickRename": "Double-click to rename",
-    "hideSidebar": "Hide sidebar"
+    "hideSidebar": "Hide sidebar",
+    "unfold": "Expand"
   },
   "welcomeModal": {
     "newDocument": "New Document",

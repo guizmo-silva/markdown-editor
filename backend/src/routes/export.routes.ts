@@ -1,5 +1,5 @@
 import express from 'express';
-import { exportToHTML, exportToPDF } from '../controllers/export.controller.js';
+import { exportToHTML, exportToPDF, exportDocumentWithImages } from '../controllers/export.controller.js';
 
 const router = express.Router();
 
@@ -8,5 +8,8 @@ router.post('/html', exportToHTML);
 
 // Export to PDF (Phase 2)
 router.post('/pdf', exportToPDF);
+
+// Export document with images as zip
+router.post('/with-images', exportDocumentWithImages);
 
 export default router;

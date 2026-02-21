@@ -106,7 +106,8 @@
     "export": "Dokument exportieren",
     "menu": "Menü",
     "doubleClickRename": "Doppelklick zum Umbenennen",
-    "hideSidebar": "Seitenleiste ausblenden"
+    "hideSidebar": "Seitenleiste ausblenden",
+    "unfold": "Ausklappen"
   },
   "welcomeModal": {
     "newDocument": "Neues Dokument",

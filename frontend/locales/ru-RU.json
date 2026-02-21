@@ -106,7 +106,8 @@
     "export": "Экспорт документа",
     "menu": "Меню",
     "doubleClickRename": "Двойной клик для переименования",
-    "hideSidebar": "Скрыть боковую панель"
+    "hideSidebar": "Скрыть боковую панель",
+    "unfold": "Развернуть"
   },
   "welcomeModal": {
     "newDocument": "Новый документ",

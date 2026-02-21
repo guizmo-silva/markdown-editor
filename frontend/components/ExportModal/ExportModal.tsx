@@ -8,13 +8,15 @@ interface ExportModalProps {
   onClose: () => void;
   onExport: (format: 'html' | 'md' | 'txt') => void;
   filename: string;
+  hasImages?: boolean;
 }
 
 export default function ExportModal({
   isOpen,
   onClose,
   onExport,
-  filename
+  filename,
+  hasImages = false,
 }: ExportModalProps) {
   const { t } = useTranslation();
 
@@ -129,6 +131,16 @@ export default function ExportModal({
         >
           {filename}
         </p>
+
+        {/* Images notice */}
+        {hasImages && (
+          <p
+            className="text-[11px] text-[var(--text-secondary)] mb-4 px-3 py-2 bg-[var(--bg-secondary)] rounded border border-[var(--border-primary)]"
+            style={{ fontFamily: 'Roboto Mono, monospace' }}
+          >
+            {t('exportModal.hasImages', 'Este documento possui imagens. Será exportado como arquivo .zip contendo o documento e as imagens.')}
+          </p>
+        )}
 
         {/* Format cards */}
         <div className="flex gap-3 mb-5">

@@ -64,7 +64,7 @@ export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isSc
         {/* Column width slider */}
         {columnWidth !== undefined && onColumnWidthChange && (
           <div className="flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke={textColor} viewBox="0 0 24 24" strokeWidth={1.8}>
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke={textColor} viewBox="0 0 24 24" strokeWidth={1.8}>
               <path strokeLinecap="round" d="M9 5h6M8 12h8M9 19h6" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 9l2 3-2 3M20 9l-2 3 2 3" />
             </svg>

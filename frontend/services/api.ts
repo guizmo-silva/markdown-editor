@@ -36,7 +36,7 @@ function getApiBaseUrl(): string {
 
 export interface FileItem {
   name: string;
-  type: 'file' | 'folder';
+  type: 'file' | 'folder' | 'image';
   path: string;
   children?: FileItem[];
   modifiedAt?: string;
@@ -197,6 +197,60 @@ export async function exportToHtml(content: string, title?: string): Promise<Blo
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to export HTML' }));
     throw new Error(error.error || 'Failed to export HTML');
+  }
+
+  return response.blob();
+}
+
+/**
+ * Import an image into a document folder.
+ * Returns the new document path (after folder creation) and the final image name.
+ */
+export async function importImage(
+  documentPath: string,
+  file: File,
+): Promise<{ newDocumentPath: string; imageName: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('documentPath', documentPath);
+
+  const response = await fetch(`${getApiBaseUrl()}/files/import-image`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to import image' }));
+    throw new Error(error.error || 'Failed to import image');
+  }
+
+  return response.json();
+}
+
+/**
+ * Returns the URL to serve an image file from the backend.
+ */
+export function getImageUrl(imagePath: string): string {
+  return `${getApiBaseUrl()}/files/image?path=${encodeURIComponent(imagePath)}`;
+}
+
+/**
+ * Export a document with images as a zip archive.
+ */
+export async function exportWithImages(
+  documentPath: string,
+  format: 'html' | 'md' | 'txt',
+  title: string,
+): Promise<Blob> {
+  const response = await fetch(`${getApiBaseUrl()}/export/with-images`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ documentPath, format, title }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to export with images' }));
+    throw new Error(error.error || 'Failed to export with images');
   }
 
   return response.blob();

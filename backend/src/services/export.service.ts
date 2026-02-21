@@ -1,5 +1,11 @@
 import { marked } from 'marked';
 import { markedEmoji } from 'marked-emoji';
+import archiver from 'archiver';
+import fs from 'fs/promises';
+import path from 'path';
+import { resolveVolumePath } from './volume.service.js';
+import { validatePath } from '../utils/security.js';
+import { SUPPORTED_IMAGE_EXTENSIONS } from '../utils/imageFormats.js';
 
 // Emoji map for common GitHub-style emoji shortcodes
 import { emojis } from './emojis.js';
@@ -136,3 +142,61 @@ function escapeHTML(text: string): string {
   };
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
+
+/**
+ * Exports a document (possibly with images) as a zip archive.
+ * documentPath: volume-prefixed path to the .md file, e.g. "workspace/artigos/doc/doc.md"
+ * format: 'html' | 'md' | 'txt'
+ * Returns a Buffer containing the zip.
+ */
+export const exportWithImages = async (
+  documentPath: string,
+  format: 'html' | 'md' | 'txt',
+  title: string,
+): Promise<Buffer> => {
+  const { volume, relativePath: volRelativePath } = resolveVolumePath(documentPath);
+  const safeMdPath = await validatePath(volRelativePath, volume.mountPath);
+  const markdown = await fs.readFile(safeMdPath, 'utf-8');
+
+  // Build exported document content
+  let documentContent: string;
+  let documentExt: string;
+  if (format === 'html') {
+    documentContent = await convertToHTML(markdown, title);
+    documentExt = 'html';
+  } else if (format === 'txt') {
+    documentContent = markdown;
+    documentExt = 'txt';
+  } else {
+    documentContent = markdown;
+    documentExt = 'md';
+  }
+
+  const docFolder = path.dirname(safeMdPath);
+
+  // Collect images from the same folder
+  const siblings = await fs.readdir(docFolder, { withFileTypes: true });
+  const imageFiles = siblings.filter(
+    e => e.isFile() && SUPPORTED_IMAGE_EXTENSIONS.has(path.extname(e.name).toLowerCase())
+  );
+
+  // Build zip in memory
+  const zip = archiver('zip', { zlib: { level: 6 } });
+  const chunks: Buffer[] = [];
+
+  await new Promise<void>((resolve, reject) => {
+    zip.on('data', (chunk: Buffer) => chunks.push(chunk));
+    zip.on('end', resolve);
+    zip.on('error', reject);
+
+    zip.append(Buffer.from(documentContent, 'utf-8'), { name: `${title}.${documentExt}` });
+
+    for (const img of imageFiles) {
+      zip.file(path.join(docFolder, img.name), { name: img.name });
+    }
+
+    zip.finalize();
+  });
+
+  return Buffer.concat(chunks);
+};

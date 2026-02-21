@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { CodeMirrorHandle } from '@/components/Editor';
 import { useThemedIcon } from '@/utils/useThemedIcon';
+import { importImage } from '@/services/api';
 
 // Unified interface for textarea-like editors
 interface EditorHandle {
@@ -21,12 +22,16 @@ interface ToolbarProps {
   textareaRef: RefObject<HTMLTextAreaElement | CodeMirrorHandle | null>;
   value: string;
   onChange: (value: string) => void;
+  currentFilePath?: string;
+  onImageImported?: (newDocPath: string, imageName: string) => void;
 }
 
 export default function Toolbar({
   textareaRef,
   value,
-  onChange
+  onChange,
+  currentFilePath,
+  onImageImported,
 }: ToolbarProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
@@ -1426,11 +1431,22 @@ export default function Toolbar({
     fileInputRef.current?.click();
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const imagePath = file.name;
-      insertText(`![${file.name}](${imagePath})`);
+      if (currentFilePath) {
+        try {
+          const { newDocumentPath, imageName } = await importImage(currentFilePath, file);
+          insertText(`![${imageName}](${imageName})`);
+          onImageImported?.(newDocumentPath, imageName);
+        } catch (err) {
+          console.error('Failed to import image:', err);
+          alert(err instanceof Error ? err.message : 'Erro ao importar imagem');
+        }
+      } else {
+        // Fallback when no file is open: just insert the reference
+        insertText(`![${file.name}](${file.name})`);
+      }
     }
     // Reset input so the same file can be selected again
     event.target.value = '';
@@ -1982,7 +1998,7 @@ export default function Toolbar({
           type="file"
           ref={fileInputRef}
           onChange={handleFileSelect}
-          accept="image/*"
+          accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.bmp,.ico,.avif"
           className="hidden"
         />
 

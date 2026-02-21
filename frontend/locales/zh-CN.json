@@ -106,7 +106,8 @@
     "export": "导出文档",
     "menu": "菜单",
     "doubleClickRename": "双击重命名",
-    "hideSidebar": "隐藏侧边栏"
+    "hideSidebar": "隐藏侧边栏",
+    "unfold": "展开"
   },
   "welcomeModal": {
     "newDocument": "新建文档",

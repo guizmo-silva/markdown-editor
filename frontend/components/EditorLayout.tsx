@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { CodeMirrorEditor, type CodeMirrorHandle } from './Editor';
 import { MarkdownPreview, type PreviewClickInfo } from './Preview';
 import { AssetsSidebar } from './Sidebar';
+import LogoMenu from './Sidebar/LogoMenu';
 import { ViewToggle, type ViewMode } from './ViewToggle';
 import { Tabs } from './Tabs';
 import { Toolbar } from './Toolbar';
@@ -12,7 +13,7 @@ import { ExportModal } from './ExportModal';
 import { ImportModal } from './ImportModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
-import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, getVolumes } from '@/services/api';
+import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, getVolumes } from '@/services/api';
 
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
@@ -23,6 +24,7 @@ const CODE_VIEW_MIN_WIDTH = 350; // Minimum width in pixels for code view
 // Interface for tab data
 interface TabData {
   id: string; // file path
+  stableKey: number; // stable numeric key — never changes, even when id (path) changes
   content: string;
   lastSavedContent: string;
   isAutoNamed: boolean;
@@ -46,6 +48,7 @@ export default function EditorLayout() {
   const [columnWidth, setColumnWidth] = useState(100); // Column width percentage (50-100) for single-view modes
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<CodeMirrorHandle>(null);
+  const tabKeyCounter = useRef(0);
 
   // Multi-tab state
   const [tabs, setTabs] = useState<TabData[]>([]);
@@ -71,6 +74,8 @@ export default function EditorLayout() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
+  // Track which open tabs belong to a document folder (have images)
+  const [tabsWithImages, setTabsWithImages] = useState<Set<string>>(new Set());
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -218,6 +223,7 @@ export default function EditorLayout() {
       const content = await readFile(filePath);
       const newTab: TabData = {
         id: filePath,
+        stableKey: ++tabKeyCounter.current,
         content,
         lastSavedContent: content,
         isAutoNamed: false,
@@ -270,6 +276,7 @@ export default function EditorLayout() {
       // Create new tab for the file
       const newTab: TabData = {
         id: fileName,
+        stableKey: ++tabKeyCounter.current,
         content: initialContent,
         lastSavedContent: initialContent,
         isAutoNamed: markAsAutoNamed,
@@ -432,6 +439,28 @@ export default function EditorLayout() {
     reader.readAsText(file, 'UTF-8');
   }, [handleFileSelect]);
 
+  const handleImageImported = useCallback((newDocPath: string, _imageName: string) => {
+    if (!activeTabId) return;
+    const oldTabId = activeTabId;
+
+    // Mark this document as having images
+    setTabsWithImages(prev => {
+      const next = new Set(prev);
+      next.add(newDocPath);
+      return next;
+    });
+
+    // If the .md was moved into a document folder, update the tab ID in place.
+    // The content is preserved — insertText already modified CodeMirror before this
+    // callback fires, so re-reading the disk would lose the just-inserted image tag.
+    if (newDocPath !== oldTabId) {
+      updateTabId(oldTabId, newDocPath);
+    }
+
+    // Refresh file tree
+    setFileRefreshTrigger(t => t + 1);
+  }, [activeTabId, updateTabId]);
+
   const handleExport = async (format: 'html' | 'md' | 'txt') => {
     const baseName = currentFilePath?.replace(/\.md$/, '').split('/').pop() || 'documento';
     const now = new Date();
@@ -445,39 +474,54 @@ export default function EditorLayout() {
     const filename = `${baseName}_${timestamp}`;
 
     try {
-      let content: string;
-      let mimeType: string;
-      let extension: string;
+      const hasImages = currentFilePath ? tabsWithImages.has(currentFilePath) : false;
 
-      switch (format) {
-        case 'html':
-          const blob = await exportToHtml(markdown, filename);
-          content = await blob.text();
-          mimeType = 'text/html';
-          extension = 'html';
-          break;
-        case 'md':
-          content = markdown;
-          mimeType = 'text/markdown';
-          extension = 'md';
-          break;
-        case 'txt':
-          content = markdown;
-          mimeType = 'text/plain';
-          extension = 'txt';
-          break;
+      if (hasImages && currentFilePath) {
+        // Export as zip with images
+        const zipBlob = await exportWithImages(currentFilePath, format, filename);
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        let content: string;
+        let mimeType: string;
+        let extension: string;
+
+        switch (format) {
+          case 'html':
+            const blob = await exportToHtml(markdown, filename);
+            content = await blob.text();
+            mimeType = 'text/html';
+            extension = 'html';
+            break;
+          case 'md':
+            content = markdown;
+            mimeType = 'text/markdown';
+            extension = 'md';
+            break;
+          case 'txt':
+            content = markdown;
+            mimeType = 'text/plain';
+            extension = 'txt';
+            break;
+        }
+
+        // Download using traditional method (works in all browsers)
+        const downloadBlob = new Blob([content!], { type: mimeType! });
+        const url = URL.createObjectURL(downloadBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.${extension!}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }
-
-      // Download using traditional method (works in all browsers)
-      const downloadBlob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(downloadBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${filename}.${extension}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
 
       setShowExportModal(false);
     } catch (err) {
@@ -1033,9 +1077,11 @@ export default function EditorLayout() {
           />
           {/* Resize Handle */}
           <div
-            className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-[var(--split-line)] transition-colors z-10"
+            className="absolute top-0 right-0 w-3 h-full cursor-col-resize z-10 flex items-stretch justify-center group"
             onMouseDown={handleResizeStart}
-          />
+          >
+            <div className="w-px h-full bg-transparent group-hover:bg-[var(--split-line)] transition-colors" />
+          </div>
         </div>
 
         {/* Collapsed Sidebar */}
@@ -1044,13 +1090,9 @@ export default function EditorLayout() {
             isSidebarCollapsed ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
         >
-          {/* Logo at top */}
+          {/* Logo with Menu at top */}
           <div className="py-3 w-full flex items-center justify-center">
-            <img
-              src={getIconPath('Logo.svg')}
-              alt="MD Logo"
-              className="h-[32px] w-auto"
-            />
+            <LogoMenu onImportClick={() => setShowImportModal(true)} />
           </div>
 
           {/* Vertical Toggle */}
@@ -1108,6 +1150,8 @@ export default function EditorLayout() {
                 textareaRef={editorRef}
                 value={markdown}
                 onChange={setMarkdown}
+                currentFilePath={currentFilePath ?? undefined}
+                onImageImported={handleImageImported}
               />
               <div className={`flex-1 ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}>
                 <CodeMirrorEditor
@@ -1118,7 +1162,7 @@ export default function EditorLayout() {
                   viewTheme={editorTheme}
                   onToggleTheme={toggleEditorTheme}
                   saveStatus={saveStatus}
-                  documentId={activeTabId}
+                  documentId={activeTab ? String(activeTab.stableKey) : null}
                   onScrollLineChange={handleEditorScrollLineChange}
                   columnWidth={viewMode !== 'split' ? columnWidth : undefined}
                   onColumnWidthChange={viewMode !== 'split' ? setColumnWidth : undefined}
@@ -1159,6 +1203,7 @@ export default function EditorLayout() {
                 onClickSourcePosition={handlePreviewClickSource}
                 columnWidth={viewMode !== 'split' ? columnWidth : undefined}
                 onColumnWidthChange={viewMode !== 'split' ? setColumnWidth : undefined}
+                filePath={currentFilePath ?? undefined}
               />
             </div>
           )}
@@ -1180,6 +1225,7 @@ export default function EditorLayout() {
         onClose={() => setShowExportModal(false)}
         onExport={handleExport}
         filename={currentFilePath?.split('/').pop()?.replace(/\.md$/, '') || 'documento'}
+        hasImages={currentFilePath ? tabsWithImages.has(currentFilePath) : false}
       />
 
       {/* Hidden input for file import */}

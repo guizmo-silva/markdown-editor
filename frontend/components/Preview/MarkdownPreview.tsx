@@ -14,6 +14,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import PreviewInfoBar from './PreviewInfoBar';
 import CodeBlock from './CodeBlock';
+import { getImageUrl } from '@/services/api';
 import './preview.css';
 import './prism-theme.css';
 import 'remark-github-blockquote-alert/alert.css';
@@ -162,16 +163,20 @@ interface MarkdownPreviewProps {
   onClickSourcePosition?: (info: PreviewClickInfo) => void;
   columnWidth?: number;
   onColumnWidthChange?: (value: number) => void;
+  filePath?: string;
 }
 
 // Inline tag names that correspond to inlineTypes in the remark plugin
 const inlineTagNames = new Set(['EM', 'STRONG', 'A', 'CODE', 'DEL']);
 
-export default function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange }: MarkdownPreviewProps) {
+export default function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange, filePath }: MarkdownPreviewProps) {
   const isDark = viewTheme === 'dark';
 
   // Theme-specific colors
   const textColor = isDark ? '#BEBEBE' : '#333333';
+
+  // Compute the base path for resolving relative image srcs
+  const imageBasePath = filePath ? filePath.substring(0, filePath.lastIndexOf('/')) : null;
 
   const handlePreviewClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
     if (!onClickSourcePosition) return;
@@ -307,6 +312,16 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme, pre
               pre({ children }) {
                 // Just pass through children since CodeBlock handles the pre wrapper
                 return <>{children}</>;
+              },
+              img({ src, alt, ...props }) {
+                // Resolve relative image paths via the backend image endpoint
+                const srcStr = typeof src === 'string' ? src : undefined;
+                let resolvedSrc: string | undefined = srcStr;
+                if (srcStr && imageBasePath && !/^https?:\/\//.test(srcStr) && !srcStr.startsWith('/')) {
+                  resolvedSrc = getImageUrl(`${imageBasePath}/${srcStr}`);
+                }
+                // eslint-disable-next-line @next/next/no-img-element
+                return <img src={resolvedSrc} alt={alt || ''} {...props} />;
               },
             }}
           >

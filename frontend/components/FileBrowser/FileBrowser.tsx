@@ -92,6 +92,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
   const isCreatingHere = creatingFolderIn === item.path;
   const isEditingThis = editingItemPath === item.path;
   const isEmptyFolder = item.type === 'folder' && (!item.children || item.children.length === 0);
+  const isDocumentFile = item.type === 'file' && item.children && item.children.length > 0;
 
   // Drag state calculations
   const isDraggingActive = draggedItem !== null && draggedItem !== undefined;
@@ -124,6 +125,9 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
 
   // Build tooltip with modified date for files
   const tooltip = (() => {
+    if (item.type === 'image') {
+      return item.name;
+    }
     const baseTooltip = t('tooltips.doubleClickRename', 'Duplo clique para renomear');
     if (item.type === 'file' && item.modifiedAt) {
       const date = new Date(item.modifiedAt);
@@ -137,15 +141,26 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
     if (isEditingThis) return;
     if (item.type === 'folder') {
       onToggleExpand(item.path);
+    } else if (item.type === 'image') {
+      // Images are not openable
     } else {
+      // For document files with images, single click also toggles children
+      if (isDocumentFile) {
+        onToggleExpand(item.path);
+      }
       onSelect(item.path);
     }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (item.type === 'file' && onDragStart && !isEditingThis) {
+    if (item.type === 'file' && !isDocumentFile && onDragStart && !isEditingThis) {
       onDragStart(item, e);
     }
+  };
+
+  const handleImageDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/x-md-image', JSON.stringify({ name: item.name, path: item.path }));
+    e.dataTransfer.effectAllowed = 'copy';
   };
 
   const handleMouseEnter = () => {
@@ -163,6 +178,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (item.type === 'image') return; // No rename for images
     // For files, remove .md extension for editing
     const editName = item.type === 'file' ? item.name.replace(/\.md$/, '') : item.name;
     onStartEditItem(item.path, editName);
@@ -236,13 +252,19 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
         onDoubleClick={handleDoubleClick}
         onMouseDown={handleMouseDown}
         onMouseEnter={handleMouseEnter}
+        draggable={item.type === 'image'}
+        onDragStart={item.type === 'image' ? handleImageDragStart : undefined}
         className={`relative overflow-hidden group flex items-center gap-1 py-1 pr-2 cursor-pointer transition-colors ${
           isDragSource ? 'opacity-50' : 'hover:bg-[var(--hover-bg)]'
         } ${isDragTarget ? 'bg-[var(--accent-color)]/20 ring-1 ring-[var(--accent-color)]' : ''}`}
         style={{ paddingLeft: '8px' }}
       >
-        {/* File/Folder icon */}
-        {item.type === 'folder' ? (
+        {/* File/Folder/Image icon */}
+        {item.type === 'image' ? (
+          <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        ) : item.type === 'folder' ? (
           <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
             {isExpanded ? (
               <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
@@ -287,8 +309,8 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
           </span>
         )}
 
-        {/* Folder expand/collapse icon (after name) */}
-        {item.type === 'folder' && !isEditingThis && (
+        {/* Folder or document-file expand/collapse icon (after name) */}
+        {(item.type === 'folder' || isDocumentFile) && !isEditingThis && (
           <img
             src={getIconPath('element_fold_icon.svg')}
             alt={isExpanded ? 'Collapse' : 'Expand'}
@@ -296,8 +318,8 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
           />
         )}
 
-        {/* Action buttons with fade gradient */}
-        {item.type === 'file' && onDelete && (
+        {/* Action buttons with fade gradient — plain .md files and image files */}
+        {(item.type === 'file' || item.type === 'image') && onDelete && (
           <div
             className="absolute right-0 top-0 bottom-0 flex items-center pr-2 pl-6 opacity-0 group-hover:opacity-100 transition-opacity"
             style={{ background: 'linear-gradient(to right, transparent, var(--bg-primary) 40%)' }}
@@ -357,8 +379,8 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
         />
       )}
 
-      {/* Children (if folder) with animation */}
-      {item.type === 'folder' && (
+      {/* Children: for folders AND document files with images */}
+      {(item.type === 'folder' || isDocumentFile) && (
         <div
           className="grid transition-[grid-template-rows] duration-200 ease-out"
           style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}

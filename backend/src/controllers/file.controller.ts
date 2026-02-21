@@ -1,6 +1,13 @@
 import { Request, Response } from 'express';
+import multer from 'multer';
+import fs from 'fs/promises';
+import path from 'path';
 import * as fileService from '../services/file.service.js';
 import { getVolumes } from '../services/volume.service.js';
+import { validateVolumePath } from '../utils/security.js';
+import { SUPPORTED_IMAGE_EXTENSIONS, MIME_MAP } from '../utils/imageFormats.js';
+
+export const upload = multer({ storage: multer.memoryStorage() });
 
 export const listFiles = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -126,5 +133,70 @@ export const listVolumes = async (_req: Request, res: Response): Promise<void> =
   } catch (error) {
     console.error('Error listing volumes:', error);
     res.status(500).json({ error: 'Failed to list volumes' });
+  }
+};
+
+export const serveImage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { path: imagePath } = req.query;
+    if (!imagePath || typeof imagePath !== 'string') {
+      res.status(400).json({ error: 'Path is required' });
+      return;
+    }
+
+    const ext = path.extname(imagePath).toLowerCase();
+    if (!SUPPORTED_IMAGE_EXTENSIONS.has(ext)) {
+      res.status(400).json({ error: 'Unsupported image format' });
+      return;
+    }
+
+    const safePath = await validateVolumePath(imagePath);
+    const buffer = await fs.readFile(safePath);
+    const mimeType = MIME_MAP[ext] || 'application/octet-stream';
+
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error serving image:', error);
+    res.status(404).json({ error: 'Image not found' });
+  }
+};
+
+export const importImage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { documentPath } = req.body;
+    const file = (req as Request & { file?: Express.Multer.File }).file;
+
+    if (!file) {
+      res.status(400).json({ error: 'Image file is required' });
+      return;
+    }
+    if (!documentPath || typeof documentPath !== 'string') {
+      res.status(400).json({ error: 'documentPath is required' });
+      return;
+    }
+
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!SUPPORTED_IMAGE_EXTENSIONS.has(ext)) {
+      res.status(400).json({ error: 'Unsupported image format' });
+      return;
+    }
+
+    // 1. Ensure document folder exists and move .md into it
+    const newDocumentPath = await fileService.createDocumentFolder(documentPath);
+
+    // 2. Copy image into the folder
+    const imageName = await fileService.addImageToDocumentFolder(
+      newDocumentPath,
+      file.buffer,
+      file.originalname,
+    );
+
+    res.json({ newDocumentPath, imageName });
+  } catch (error) {
+    console.error('Error importing image:', error);
+    res.status(500).json({ error: 'Failed to import image' });
   }
 };

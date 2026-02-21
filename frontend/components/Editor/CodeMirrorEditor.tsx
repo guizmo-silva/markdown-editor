@@ -177,7 +177,8 @@ const lightTheme = EditorView.theme({
   '.cm-fm-bool': { color: '#e36209' },
   '.cm-fm-number': { color: '#005cc5' },
   '.cm-fm-comment': { color: '#6a737d', fontStyle: 'italic' },
-  '.cm-foldGutter .cm-gutterElement': { padding: '0 4px', cursor: 'pointer', color: '#999999' },
+  '.cm-foldGutter .cm-gutterElement': { padding: '0 4px 0 1px', cursor: 'pointer', color: '#999999' },
+  '.cm-foldPlaceholder': { marginLeft: '6px' },
 });
 
 // Dark theme for CodeMirror
@@ -269,7 +270,8 @@ const darkTheme = EditorView.theme({
   '.cm-fm-bool': { color: '#ffab70' },
   '.cm-fm-number': { color: '#79b8ff' },
   '.cm-fm-comment': { color: '#6a737d', fontStyle: 'italic' },
-  '.cm-foldGutter .cm-gutterElement': { padding: '0 4px', cursor: 'pointer', color: '#666666' },
+  '.cm-foldGutter .cm-gutterElement': { padding: '0 4px 0 1px', cursor: 'pointer', color: '#666666' },
+  '.cm-foldPlaceholder': { marginLeft: '6px' },
 });
 
 // Build language completions from @codemirror/language-data
@@ -636,7 +638,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   columnWidth,
   onColumnWidthChange,
 }, ref) => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { theme: globalTheme } = useTheme();
   // Use viewTheme if provided, otherwise fall back to global theme
   const theme = viewTheme ?? globalTheme;
@@ -647,6 +649,10 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
   const [spellcheckLanguage, setSpellcheckLanguage] = useState(i18n.language);
   const previousDocumentIdRef = useRef<string | null | undefined>(documentId);
+  // Always holds the current translation for the fold placeholder tooltip.
+  // Updated every render so placeholderDOM always reads the latest language.
+  const unfoldLabelRef = useRef('');
+  unfoldLabelRef.current = t('tooltips.unfold', 'Expandir');
 
   // Deferred state update refs - batch React state updates to avoid
   // synchronous re-renders during CodeMirror transactions (prevents scroll jumps)
@@ -862,7 +868,17 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         frontMatterRangeField,
         frontMatterPlugin,
         frontMatterFoldService,
-        codeFolding(),
+        codeFolding({
+          placeholderDOM(_view, onclick) {
+            const el = document.createElement('span');
+            el.textContent = '…';
+            el.className = 'cm-foldPlaceholder';
+            el.title = unfoldLabelRef.current;
+            el.setAttribute('aria-label', unfoldLabelRef.current);
+            el.onclick = onclick;
+            return el;
+          },
+        }),
         foldGutter(),
         codeBlockAutocomplete,
         smartTypography,
@@ -899,7 +915,43 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     };
     view.contentDOM.addEventListener('compositionend', handleCompositionEnd);
 
+    // Image drag-and-drop from the FileBrowser sidebar.
+    // We register listeners in the CAPTURE phase so they fire before CodeMirror's
+    // internal drop handler (which would otherwise steal focus / clear the selection).
+    const handleImageDragOver = (e: DragEvent) => {
+      if (e.dataTransfer?.types?.includes('application/x-md-image')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      }
+    };
+
+    const handleImageDrop = (e: DragEvent) => {
+      const data = e.dataTransfer?.getData('application/x-md-image');
+      if (!data) return;
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        const { name } = JSON.parse(data) as { name: string };
+        const pos = view.posAtCoords({ x: e.clientX, y: e.clientY });
+        if (pos === null) return;
+        const text = `![${name}](${name})`;
+        view.dispatch({
+          changes: { from: pos, to: pos, insert: text },
+          selection: { anchor: pos + text.length },
+        });
+        // Defer focus so the browser finishes the drag-end sequence (dragend event on the
+        // source element fires after drop returns, which can remove focus we just set).
+        requestAnimationFrame(() => view.focus());
+      } catch { /* ignore malformed data */ }
+    };
+
+    view.dom.addEventListener('dragover', handleImageDragOver, { capture: true });
+    view.dom.addEventListener('drop', handleImageDrop, { capture: true });
+
     return () => {
+      view.dom.removeEventListener('dragover', handleImageDragOver, { capture: true });
+      view.dom.removeEventListener('drop', handleImageDrop, { capture: true });
       view.contentDOM.removeEventListener('compositionend', handleCompositionEnd);
       view.destroy();
       viewRef.current = null;
@@ -1055,7 +1107,17 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           frontMatterRangeField,
           frontMatterPlugin,
           frontMatterFoldService,
-          codeFolding(),
+          codeFolding({
+            placeholderDOM(_view, onclick) {
+              const el = document.createElement('span');
+              el.textContent = '…';
+              el.className = 'cm-foldPlaceholder';
+              el.title = unfoldLabelRef.current;
+              el.setAttribute('aria-label', unfoldLabelRef.current);
+              el.onclick = onclick;
+              return el;
+            },
+          }),
           foldGutter(),
           codeBlockAutocomplete,
           smartTypography,
@@ -1069,6 +1131,17 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
 
     previousDocumentIdRef.current = documentId;
   }, [documentId, theme, getThemeExtensions, getSpellcheckAttrs, updateCursorPosition]);
+
+  // Update existing fold placeholder tooltips when language changes
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const label = unfoldLabelRef.current;
+    view.dom.querySelectorAll('.cm-foldPlaceholder').forEach(el => {
+      (el as HTMLElement).title = label;
+      el.setAttribute('aria-label', label);
+    });
+  }, [i18n.language]);
 
   // Scroll to line with flash highlight effect
   useEffect(() => {

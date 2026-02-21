@@ -10,17 +10,23 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
+    "archiver": "^7.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "helmet": "^8.0.0",
     "marked": "^17.0.1",
     "marked-emoji": "^2.0.2",
+    "mime-types": "^3.0.2",
+    "multer": "^2.0.2",
     "trash": "^10.1.0"
   },
   "devDependencies": {
+    "@types/archiver": "^7.0.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/mime-types": "^3.0.1",
+    "@types/multer": "^2.0.0",
     "@types/node": "^22.10.5",
     "@typescript-eslint/eslint-plugin": "^8.18.2",
     "@typescript-eslint/parser": "^8.18.2",
