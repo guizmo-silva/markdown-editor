@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { RefObject, MouseEvent } from 'react';
 import type { Root, RootContent } from 'mdast';
 import ReactMarkdown from 'react-markdown';
@@ -169,7 +169,7 @@ interface MarkdownPreviewProps {
 // Inline tag names that correspond to inlineTypes in the remark plugin
 const inlineTagNames = new Set(['EM', 'STRONG', 'A', 'CODE', 'DEL']);
 
-export default function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange, filePath }: MarkdownPreviewProps) {
+function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange, filePath }: MarkdownPreviewProps) {
   const isDark = viewTheme === 'dark';
 
   // Theme-specific colors
@@ -279,6 +279,46 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme, pre
     });
   }, [onClickSourcePosition]);
 
+  // Memoize components so their function references are stable across re-renders.
+  // Without this, ReactMarkdown treats each new reference as a different component type
+  // and unmounts/remounts elements (including <img>), triggering image reload cycles
+  // that cause layout shifts and scroll flicker. Only depends on imageBasePath
+  // (changes only on file/tab switch, not on every keystroke).
+  const markdownComponents = useMemo(() => ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    code({ node, className, children, ...props }: React.ComponentPropsWithoutRef<'code'> & { node?: unknown; className?: string }) {
+      const isInline = !className && typeof children === 'string' && !(children as string).includes('\n');
+
+      if (isInline) {
+        return (
+          <code className="inline-code" {...props}>
+            {children}
+          </code>
+        );
+      }
+
+      return (
+        <CodeBlock className={className}>
+          {String(children).replace(/\n$/, '')}
+        </CodeBlock>
+      );
+    },
+    pre({ children }: React.ComponentPropsWithoutRef<'pre'>) {
+      // Just pass through children since CodeBlock handles the pre wrapper
+      return <>{children}</>;
+    },
+    img({ src, alt, ...props }: React.ComponentPropsWithoutRef<'img'>) {
+      // Resolve relative image paths via the backend image endpoint
+      const srcStr = typeof src === 'string' ? src : undefined;
+      let resolvedSrc: string | undefined = srcStr;
+      if (srcStr && imageBasePath && !/^https?:\/\//.test(srcStr) && !srcStr.startsWith('/')) {
+        resolvedSrc = getImageUrl(`${imageBasePath}/${srcStr}`);
+      }
+      // eslint-disable-next-line @next/next/no-img-element
+      return <img src={resolvedSrc} alt={alt || ''} {...props} />;
+    },
+  }), [imageBasePath]);
+
   return (
     <div className={`h-full w-full flex flex-col preview-container ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
       {/* Preview content area */}
@@ -291,39 +331,7 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme, pre
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkGemoji, remarkMath, remarkAlert, remarkFrontmatter, remarkSourceLines]}
             rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeKatex]}
-            components={{
-              code({ node, className, children, ...props }) {
-                const isInline = !className && typeof children === 'string' && !children.includes('\n');
-
-                if (isInline) {
-                  return (
-                    <code className="inline-code" {...props}>
-                      {children}
-                    </code>
-                  );
-                }
-
-                return (
-                  <CodeBlock className={className}>
-                    {String(children).replace(/\n$/, '')}
-                  </CodeBlock>
-                );
-              },
-              pre({ children }) {
-                // Just pass through children since CodeBlock handles the pre wrapper
-                return <>{children}</>;
-              },
-              img({ src, alt, ...props }) {
-                // Resolve relative image paths via the backend image endpoint
-                const srcStr = typeof src === 'string' ? src : undefined;
-                let resolvedSrc: string | undefined = srcStr;
-                if (srcStr && imageBasePath && !/^https?:\/\//.test(srcStr) && !srcStr.startsWith('/')) {
-                  resolvedSrc = getImageUrl(`${imageBasePath}/${srcStr}`);
-                }
-                // eslint-disable-next-line @next/next/no-img-element
-                return <img src={resolvedSrc} alt={alt || ''} {...props} />;
-              },
-            }}
+            components={markdownComponents}
           >
             {content}
           </ReactMarkdown>
@@ -343,3 +351,9 @@ export default function MarkdownPreview({ content, viewTheme, onToggleTheme, pre
     </div>
   );
 }
+
+// Memoized: only re-renders when props actually change.
+// Combined with the debounced previewContent in EditorLayout, this prevents
+// per-keystroke ReactMarkdown re-renders that destroy/recreate <img> elements
+// causing layout shifts and the visible scroll tremor.
+export default React.memo(MarkdownPreview);

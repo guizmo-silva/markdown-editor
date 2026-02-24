@@ -232,6 +232,9 @@
   height: auto;
   margin: 16px 0;
   border-radius: 6px;
+  /* Exclude images from scroll anchor selection — broken/loading images have
+     unstable heights that cause incorrect scroll anchoring adjustments and flicker. */
+  overflow-anchor: none;
 }
 
 /* First and last child margins */

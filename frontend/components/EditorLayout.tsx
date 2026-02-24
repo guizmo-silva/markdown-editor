@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { CodeMirrorEditor, type CodeMirrorHandle } from './Editor';
 import { MarkdownPreview, type PreviewClickInfo } from './Preview';
 import { AssetsSidebar } from './Sidebar';
@@ -63,6 +63,10 @@ export default function EditorLayout() {
   // Track which side initiated scroll to prevent infinite loops
   const scrollingFromRef = useRef<'editor' | 'preview' | null>(null);
   const scrollResetTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Suppress both sync directions during content re-renders (prevents scroll tremor while typing)
+  const suppressPreviewSyncRef = useRef(false);
+  const suppressEditorSyncRef = useRef(false);
+  const suppressSyncTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   // Track preview scroll direction for monotonic editor sync
   const lastPreviewScrollTopRef = useRef(0);
   // Scroll memory: save scroll positions when switching view modes
@@ -87,9 +91,19 @@ export default function EditorLayout() {
   // Get active tab data
   const activeTab = tabs.find(t => t.id === activeTabId);
   const markdown = activeTab?.content ?? '';
+  const markdownRef = useRef(markdown);
+  markdownRef.current = markdown;
   const saveStatus = activeTab?.saveStatus ?? 'saved';
   const isAutoNamed = activeTab?.isAutoNamed ?? false;
   const currentFilePath = activeTabId;
+
+  // Debounced content for preview — prevents per-keystroke ReactMarkdown re-renders,
+  // which destroy and recreate <img> elements on every keystroke causing layout shifts.
+  const [previewContent, setPreviewContent] = useState(markdown);
+  useEffect(() => {
+    const timer = setTimeout(() => setPreviewContent(markdown), 150);
+    return () => clearTimeout(timer);
+  }, [markdown]);
 
   // Helper function to update a specific tab
   const updateTab = useCallback((tabId: string, updates: Partial<TabData>) => {
@@ -129,6 +143,21 @@ export default function EditorLayout() {
       return tab;
     }));
   }, [activeTabId]);
+
+  // onChange handler for CodeMirrorEditor: sets suppress flags synchronously, BEFORE any
+  // rAFs from CodeMirror (cursor-visibility scroll adjustment) can fire handleEditorScrollLineChange.
+  // The useLayoutEffect below only fires after React re-renders, which is too late — by that time
+  // the CodeMirror rAF has already run and set a wrong scrollTop (causing the visible "jump").
+  const handleEditorChange = useCallback((content: string | ((prev: string) => string)) => {
+    suppressEditorSyncRef.current = true;
+    suppressPreviewSyncRef.current = true;
+    clearTimeout(suppressSyncTimerRef.current);
+    suppressSyncTimerRef.current = setTimeout(() => {
+      suppressEditorSyncRef.current = false;
+      suppressPreviewSyncRef.current = false;
+    }, 150);
+    setMarkdown(content);
+  }, [setMarkdown]);
 
   // Add a new tab or switch to existing
   const addOrSwitchToTab = useCallback((tabData: TabData) => {
@@ -759,6 +788,7 @@ export default function EditorLayout() {
   const handleEditorScrollLineChange = useCallback((lineNumber: number) => {
     lastEditorLineRef.current = lineNumber;
     if (!isScrollSyncedRef.current) return;
+    if (suppressEditorSyncRef.current) return;
     if (scrollingFromRef.current === 'preview') {
       // Restart timer — programmatic scroll events are still arriving
       clearTimeout(scrollResetTimerRef.current);
@@ -819,13 +849,58 @@ export default function EditorLayout() {
     editorRef.current?.scrollToFraction(fraction, isScrollingDown);
   }, []);
 
-  // Attach scroll listener to preview container for bidirectional sync
+  // When content changes, suppress both sync directions for 150ms (trailing debounce).
+  // This prevents tremor caused by:
+  // - Browser scroll anchoring firing 'scroll' on the preview after DOM height changes
+  //   (which would incorrectly trigger preview→editor sync)
+  // - CodeMirror firing scroll events per-keystroke (cursor visibility maintenance)
+  //   (which would incorrectly trigger editor→preview sync with stale DOM positions)
+  // 2 rAF frames (~32ms) is insufficient because CodeMirror measures line heights lazily
+  // over multiple frames for large documents, firing scroll adjustments well after the
+  // initial keystroke. A 150ms trailing debounce covers all lazy measurement frames.
+  // We intentionally do NOT do a forced re-sync after the window: calculateTargetScroll
+  // reads getBoundingClientRect() which changes on every keystroke due to text reflow,
+  // and forcing a scrollTop update would cause the visible tremor in lines below the cursor.
+  // The browser's scroll anchoring already keeps the viewport visually stable.
+  // useLayoutEffect fires before paint (before any rAF scroll handlers), so the flags
+  // are always set before handlePreviewScroll / handleEditorScrollLineChange can run.
+  // Suppress scroll sync WHEN THE PREVIEW ACTUALLY RE-RENDERS (previewContent changes),
+  // not when markdown changes. With the debounce, previewContent lags markdown by 150ms.
+  // If we suppress on [markdown], the 150ms window expires before previewContent updates,
+  // leaving scroll anchoring events from the debounced re-render unsuppressed.
+  useLayoutEffect(() => {
+    if (viewMode !== 'split') return;
+    suppressPreviewSyncRef.current = true;
+    suppressEditorSyncRef.current = true;
+    clearTimeout(suppressSyncTimerRef.current);
+    suppressSyncTimerRef.current = setTimeout(() => {
+      suppressPreviewSyncRef.current = false;
+      suppressEditorSyncRef.current = false;
+    }, 150);
+    return () => clearTimeout(suppressSyncTimerRef.current);
+  }, [previewContent, viewMode]);
+
+  // Attach scroll listener to preview container for bidirectional sync.
+  // KEY: only sync when the user actually scrolled (wheel/touch event preceded the scroll).
+  // Scroll anchoring fires 'scroll' events but NOT 'wheel' events, so this gate
+  // eliminates the entire class of spurious syncs caused by scroll anchoring adjustments
+  // during React re-renders — no timing heuristics needed, works in all browsers.
   useEffect(() => {
     const container = previewScrollRef.current;
     if (!container || viewMode !== 'split') return;
 
+    let userScrolling = false;
+    let userScrollTimeout = 0;
     let rafId = 0;
+
+    const markUserScroll = () => {
+      userScrolling = true;
+      clearTimeout(userScrollTimeout);
+      userScrollTimeout = window.setTimeout(() => { userScrolling = false; }, 300);
+    };
+
     const onScroll = () => {
+      if (!userScrolling) return; // skip scroll anchoring and programmatic scrollTop changes
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = 0;
@@ -833,17 +908,25 @@ export default function EditorLayout() {
       });
     };
 
+    container.addEventListener('wheel', markUserScroll, { passive: true });
+    container.addEventListener('touchstart', markUserScroll, { passive: true });
     container.addEventListener('scroll', onScroll, { passive: true });
     return () => {
+      container.removeEventListener('wheel', markUserScroll);
+      container.removeEventListener('touchstart', markUserScroll);
       container.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
+      clearTimeout(userScrollTimeout);
     };
   }, [viewMode, handlePreviewScroll]);
 
-  // Resolve clicked word to a source offset in the markdown string
+  // Resolve clicked word to a source offset in the markdown string.
+  // Uses markdownRef (not markdown state) so the callback is stable and never
+  // causes MarkdownPreview to re-render per-keystroke.
   const resolvePreviewClickOffset = useCallback((info: PreviewClickInfo): number => {
+    const md = markdownRef.current;
     const searchStart = info.blockStartOffset;
-    const slice = markdown.slice(searchStart, info.blockEndOffset);
+    const slice = md.slice(searchStart, info.blockEndOffset);
 
     // Find the Nth occurrence of the word (N = wordOccurrenceIndex, 0-based)
     let idx = -1;
@@ -893,7 +976,7 @@ export default function EditorLayout() {
     }
 
     return idx !== -1 ? searchStart + idx : info.blockStartOffset;
-  }, [markdown]);
+  }, []); // stable — reads markdown via ref, no reactive deps
 
   // Handle click on preview to navigate editor to source position
   const handlePreviewClickSource = useCallback((info: PreviewClickInfo) => {
@@ -1157,7 +1240,7 @@ export default function EditorLayout() {
                 <CodeMirrorEditor
                   ref={editorRef}
                   value={markdown}
-                  onChange={setMarkdown}
+                  onChange={handleEditorChange}
                   scrollToLine={scrollToLine}
                   viewTheme={editorTheme}
                   onToggleTheme={toggleEditorTheme}
@@ -1194,7 +1277,7 @@ export default function EditorLayout() {
               }}
             >
               <MarkdownPreview
-                content={markdown}
+                content={previewContent}
                 viewTheme={previewTheme}
                 onToggleTheme={togglePreviewTheme}
                 previewScrollRef={previewScrollRef}
