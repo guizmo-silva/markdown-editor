@@ -1,8 +1,6 @@
 services:
   frontend:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.frontend
+    image: ghcr.io/guizmo-silva/markdown-editor-frontend:latest
     container_name: markdown-editor-frontend
     ports:
       - "3010:3000"
@@ -23,9 +21,7 @@ services:
       start_period: 30s
 
   backend:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.backend
+    image: ghcr.io/guizmo-silva/markdown-editor-backend:latest
     container_name: markdown-editor-backend
     ports:
       - "3011:3001"
@@ -35,18 +31,15 @@ services:
       - PUID=1000
       - PGID=1000
       - WORKSPACE_ROOT=/workspace
-      # Extra volumes: add additional directories beyond the main workspace
-      # Format: name1:/path1,name2:/path2
-      - EXTRA_VOLUMES=teste:/teste
+      # Volumes adicionais além do workspace principal
+      # Formato: nome1:/caminho1,nome2:/caminho2
+      # Exemplo: EXTRA_VOLUMES=documentos:/docs,projetos:/projetos
     volumes:
-      # Configure your workspace directories here
-      # Example: Map local directories to container workspace
-      # :z flag for SELinux systems to allow container access
-      - ./workspace:/workspace:z
-      # Additional volumes for multi-volume support:
-      # - /path/to/docs:/docs:z
-      # - /path/to/media:/media:z
-      - /home/guizmo/Teste/:/teste:z
+      # Configure aqui as pastas que o editor terá acesso
+      # Apenas pastas explicitamente mapeadas ficam acessíveis
+      - /caminho/para/seus/arquivos:/workspace
+      # Volumes adicionais (devem coincidir com EXTRA_VOLUMES):
+      # - /outro/caminho:/docs
     restart: unless-stopped
     networks:
       - markdown-editor
@@ -60,7 +53,3 @@ services:
 networks:
   markdown-editor:
     driver: bridge
-
-volumes:
-  workspace:
-    driver: local

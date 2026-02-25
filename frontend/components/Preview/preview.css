@@ -109,6 +109,18 @@
   text-decoration: line-through;
 }
 
+/* Highlight ==texto== */
+.markdown-preview mark {
+  background-color: #fff3b0;
+  color: inherit;
+  border-radius: 3px;
+  padding: 0.1em 0.2em;
+}
+
+.preview-container.dark .markdown-preview mark {
+  background-color: #5a4a00;
+}
+
 /* Lists */
 .markdown-preview ul,
 .markdown-preview ol {

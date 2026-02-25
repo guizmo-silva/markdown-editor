@@ -13,7 +13,7 @@ import { ExportModal } from './ExportModal';
 import { ImportModal } from './ImportModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
-import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, getVolumes } from '@/services/api';
+import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, getVolumes, listFiles } from '@/services/api';
 
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
@@ -176,13 +176,17 @@ export default function EditorLayout() {
   // Close a tab
   const closeTab = useCallback((tabId: string) => {
     setTabs(prevTabs => {
-      // Don't close if it's the last tab
-      if (prevTabs.length <= 1) return prevTabs;
-
       const newTabs = prevTabs.filter(t => t.id !== tabId);
 
+      if (newTabs.length === 0) {
+        // Last tab closed — show welcome modal
+        setActiveTabId('');
+        setShowWelcomeModal(true);
+        return newTabs;
+      }
+
       // If we're closing the active tab, switch to another
-      if (activeTabId === tabId && newTabs.length > 0) {
+      if (activeTabId === tabId) {
         const closedIndex = prevTabs.findIndex(t => t.id === tabId);
         const newActiveIndex = Math.min(closedIndex, newTabs.length - 1);
         setActiveTabId(newTabs[newActiveIndex].id);
@@ -297,7 +301,7 @@ export default function EditorLayout() {
   }, [activeTabId, tabs, updateTab]);
 
   const handleCreateFile = async (fileName: string, markAsAutoNamed: boolean = false): Promise<'ok' | 'exists' | 'error'> => {
-    const initialContent = '# ';
+    const initialContent = '';
     try {
       await createFile(fileName, initialContent);
       setFileRefreshTrigger(prev => prev + 1);
@@ -676,10 +680,10 @@ export default function EditorLayout() {
     const directory = lastSlash > 0 ? activeTabId.substring(0, lastSlash + 1) : '';
     const currentFileName = activeTabId.substring(lastSlash + 1);
 
-    // Don't rename if it's already the same name
+    // Don't rename if it's already the same name — but mark as done
     if (newFileName === currentFileName) {
       setTabs(prevTabs => prevTabs.map(tab =>
-        tab.id === activeTabId ? { ...tab, lastAutoRenamedTitle: heading } : tab
+        tab.id === activeTabId ? { ...tab, isAutoNamed: false, lastAutoRenamedTitle: heading } : tab
       ));
       return;
     }
@@ -689,19 +693,50 @@ export default function EditorLayout() {
     const contentToSave = activeContent;
 
     const renameTimeout = setTimeout(async () => {
-      const newPath = directory + newFileName;
+      // Resolve a unique name to avoid conflicts with existing files or open tabs
+      let uniqueFileName = newFileName;
+      try {
+        const dirPath = directory || '/';
+        const existingFiles = await listFiles(dirPath);
+        const existingNames = new Set(existingFiles.map(f => f.name));
+
+        // Also include names from other open tabs in the same directory
+        tabs.forEach(tab => {
+          if (tab.id !== currentTabId) {
+            const lastSlash = tab.id.lastIndexOf('/');
+            const tabDir = lastSlash > 0 ? tab.id.substring(0, lastSlash + 1) : '';
+            if (tabDir === directory) {
+              existingNames.add(tab.id.substring(lastSlash + 1));
+            }
+          }
+        });
+
+        // Remove current file from the set (it will be renamed, not a conflict)
+        existingNames.delete(currentFileName);
+
+        if (existingNames.has(newFileName)) {
+          let counter = 1;
+          while (existingNames.has(`${truncatedHeading} (${counter}).md`)) counter++;
+          uniqueFileName = `${truncatedHeading} (${counter}).md`;
+        }
+      } catch {
+        // If listing fails, proceed with the original name
+      }
+
+      const newPath = directory + uniqueFileName;
 
       try {
         // First save current content
         await saveFile(currentTabId, contentToSave);
         // Then rename
         await renameFile(currentTabId, newPath);
-        // Update tab ID and state
+        // Update tab ID and state — disable auto-rename after first successful rename
         setTabs(prevTabs => prevTabs.map(tab =>
           tab.id === currentTabId
             ? {
                 ...tab,
                 id: newPath,
+                isAutoNamed: false,
                 lastSavedContent: contentToSave,
                 lastAutoRenamedTitle: heading,
                 saveStatus: 'saved' as const
@@ -720,7 +755,7 @@ export default function EditorLayout() {
     }, 1500); // Wait 1.5s after typing stops
 
     return () => clearTimeout(renameTimeout);
-  }, [activeTabId, activeContent, activeIsAutoNamed, activeSaveStatus, activeLastAutoRenamedTitle, extractFirstHeading]);
+  }, [activeTabId, activeContent, activeIsAutoNamed, activeSaveStatus, activeLastAutoRenamedTitle, extractFirstHeading, tabs]);
 
   // Toggle individual view themes
   const toggleEditorTheme = () => {

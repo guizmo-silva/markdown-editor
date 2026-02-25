@@ -199,7 +199,8 @@ export default function AssetsSidebar({
               {t('sidebar.content')}
             </h2>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 relative overflow-hidden">
+            <div className="absolute inset-0 overflow-y-auto sidebar-scroll">
 
           {/* Headings Section */}
           {assets.headings.length > 0 && (
@@ -536,6 +537,11 @@ export default function AssetsSidebar({
               })}
             </AssetSection>
           )}
+            </div>
+            <div
+              className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none z-10"
+              style={{ background: 'linear-gradient(to bottom, transparent, var(--bg-primary))' }}
+            />
           </div>
         </div>
 
@@ -562,8 +568,14 @@ export default function AssetsSidebar({
               {t('fileBrowser.title')}
             </h2>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            <FileBrowser onFileSelect={onFileSelect} onDeleteFile={onDeleteFile} onRenameFolder={onRenameFolder} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
+          <div className="flex-1 relative overflow-hidden">
+            <div className="absolute inset-0 overflow-y-auto sidebar-scroll">
+              <FileBrowser onFileSelect={onFileSelect} onDeleteFile={onDeleteFile} onRenameFolder={onRenameFolder} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
+            </div>
+            <div
+              className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none z-10"
+              style={{ background: 'linear-gradient(to bottom, transparent, var(--bg-primary))' }}
+            />
           </div>
         </div>
       </div>

@@ -1,158 +1,137 @@
-# Markdown Editor
+# MKD — Editor de Markdown auto-hospedado
 
-Self-hosted markdown editor with advanced features for personal use.
+[English](docs/about/en-US.md) · [Español](docs/about/es-ES.md) · [Français](docs/about/fr-FR.md) · [Deutsch](docs/about/de-DE.md) · [Русский](docs/about/ru-RU.md) · [中文](docs/about/zh-CN.md)
 
-## Features
+Editor de Markdown self-hosted pensado para uso pessoal, rodando via Docker em servidores domésticos, NAS e plataformas como ZimaOS.
 
-- **Split Editor**: Side-by-side code and preview with real-time rendering
-- **Tab System**: Multiple documents open simultaneously
-- **Toolbar**: Quick formatting buttons for all markdown syntax
-- **Assets Sidebar**: Track images, links, alerts, footnotes, and tables
-- **File Browser**: Navigate and manage markdown files
-- **Spellcheck**: Multi-language support (pt-BR, en-US, es-ES, fr-FR, de-DE)
-- **i18n**: Interface available in 5 languages
-- **Export**: MD and HTML export (PDF and DOCX in Phase 2)
+---
 
-## Tech Stack
+## Funcionalidades
 
-### Frontend
-- React with TypeScript
-- Next.js 15
-- Tailwind CSS
-- react-i18next (internationalization)
-- nspell (spellchecking)
+- **Barra lateral** com navegador de elementos do documento (títulos, citações, links, imagens, tabelas, alertas e notas de rodapé) e explorador de arquivos integrado
+- **Modos de visualização** — apenas código, apenas preview ou tela dividida lado a lado
+- **Importação** de arquivos `.md` e `.txt`
+- **Exportação** em `.txt`, `.md`, `.html` e ZIP com imagens linkacas localmente; PDF planejado para fase futura
+- **Salvamento automático**
+- **Abas** — edite múltiplos documentos ao mesmo tempo
+- **Interface e correção ortográfica em vários idiomas** — Português, Inglês, Espanhol, Francês, Alemão, Russo e Chinês Simplificado
+- **Suporte a imagens** — importação de imagem externa ou linkada
+- **Modos claro e escuro**
 
-### Backend
-- Node.js with TypeScript
-- Express
-- REST API
+### Markdown suportado
 
-### Deployment
-- Docker & Docker Compose
-- ZimaOS ready
+- GitHub Flavored Markdown (GFM): tabelas, task lists, strikethrough, autolinks
+- Alertas (`[!NOTE]`, `[!WARNING]`, `[!TIP]`, etc.)
+- Notas de rodapé
+- Syntax highlighting em blocos de código
+- Fórmulas matemáticas
 
-## Quick Start
+---
 
-### Development Mode
+## Instalação
+
+Consulte o guia completo em **[docs/install/SETUP.md](docs/install/SETUP.md)**.
+
+### Resumo rápido
+
+1. Baixe o [`docker-compose.yml`](docs/install/docker-compose.yml) da pasta `docs/install/`
+1. Configure os volumes com as pastas que deseja acessar
+1. Suba os containers:
+
+```bash
+docker compose up -d
+```
+
+1. Acesse em <http://localhost:3010>
+
+> O editor só acessa as pastas explicitamente configuradas no `docker-compose.yml` — sem acesso arbitrário ao sistema de arquivos do servidor.
+
+---
+
+## Desenvolvimento
+
+### Pré-requisitos
+
+| Ferramenta | Versão mínima |
+| --- | --- |
+| Node.js | 20+ |
+| npm | 10+ |
+| Docker | 20.10+ (para produção) |
+
+### Dependências principais
 
 #### Frontend
-```bash
-cd frontend
-npm install  # May have issues on certain filesystems
-npm run dev
-```
+
+- [Next.js 15](https://nextjs.org/) + React 19 + TypeScript
+- [Tailwind CSS](https://tailwindcss.com/)
+- [CodeMirror 6](https://codemirror.net/) — núcleo do editor
+- [react-markdown](https://github.com/remarkjs/react-markdown) + plugins remark/rehype — renderização do preview
+- [react-i18next](https://react.i18next.com/) — internacionalização
+- [nspell](https://github.com/wooorm/nspell) — correção ortográfica com dicionários Hunspell
 
 #### Backend
+
+- [Express](https://expressjs.com/) + TypeScript
+- [multer](https://github.com/expressjs/multer) — upload de imagens
+- [archiver](https://github.com/archiverjs/node-archiver) — exportação em ZIP
+
+### Rodando localmente
+
+**Backend:**
+
 ```bash
 cd backend
-npm install  # May have issues on certain filesystems
+npm install
 npm run dev
 ```
 
-### Production Mode (Docker)
+**Frontend** (em outro terminal):
 
-1. Build and start containers:
 ```bash
-docker-compose up -d
+cd frontend
+npm install
+npm run dev
 ```
 
-2. Access the application:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
+- Frontend: <http://localhost:3000>
+- API: <http://localhost:3001>
 
-3. Configure workspace volumes in `docker-compose.yml`:
-```yaml
-volumes:
-  - /your/documents/path:/workspace/docs
-  - /your/projects/path:/workspace/projects
-```
+### Estrutura do projeto
 
-## Project Structure
-
-```
+```text
 markdown-editor/
-├── frontend/                 # React/Next.js application
-│   ├── app/                 # Next.js app directory
-│   ├── components/          # React components
-│   │   ├── Editor/
-│   │   ├── Preview/
-│   │   ├── Toolbar/
-│   │   ├── Sidebar/
-│   │   ├── Tabs/
-│   │   └── FileBrowser/
-│   ├── hooks/               # Custom React hooks
-│   ├── utils/               # Utilities
-│   ├── locales/             # Translation files
-│   └── styles/              # CSS files
+├── frontend/
+│   ├── app/                # Rotas e layout (Next.js App Router)
+│   ├── components/         # Componentes React
+│   │   ├── Editor/         # Editor CodeMirror
+│   │   ├── Preview/        # Renderização Markdown
+│   │   ├── Toolbar/        # Barra de ferramentas
+│   │   ├── Sidebar/        # Barra lateral de assets
+│   │   ├── Tabs/           # Sistema de abas
+│   │   └── FileBrowser/    # Navegador de arquivos
+│   ├── hooks/
+│   ├── locales/            # Traduções (JSON por idioma)
+│   └── utils/
 │
-├── backend/                 # Node.js/Express API
+├── backend/
 │   └── src/
-│       ├── routes/          # API routes
-│       ├── controllers/     # Route controllers
-│       ├── services/        # Business logic
-│       ├── middleware/      # Express middleware
-│       └── utils/           # Utilities
+│       ├── routes/
+│       ├── controllers/
+│       ├── services/
+│       ├── middleware/
+│       └── utils/
 │
-├── docker/                  # Docker configurations
+├── docker/
 │   ├── Dockerfile.frontend
 │   └── Dockerfile.backend
 │
-├── dictionaries/            # Spellcheck dictionaries (TODO)
-│
-├── docker-compose.yml       # Container orchestration
-├── .env.example            # Environment variables template
-└── README.md               # This file
+└── docs/
+    ├── about/              # README traduzido para outros idiomas
+    └── install/            # Guia de instalação e docker-compose
 ```
 
-## Environment Variables
+---
 
-### Backend (.env)
-```env
-PORT=3001
-NODE_ENV=development
-FRONTEND_URL=http://localhost:3000
-WORKSPACE_ROOT=/workspace
-```
+## Licença
 
-## Development Roadmap
-
-### Phase 1 - MVP (Current)
-- [x] Project setup
-- [X] Basic split editor
-- [X] Markdown rendering
-- [X] File save/open
-- [X] Basic toolbar
-- [X] Tab system
-
-### Phase 2 - Essential Features
-- [X] Assets sidebar
-- [X] File browser
-- [X] MD & HTML export
-- [X] i18n (pt-BR & en-US)
-
-### Phase 3 - Polish
-- [X] Full spellchecking
-- [X] All 5 languages
-- [X] Complete assets tracking
-- [ ] PDF & DOCX export
-- [ ] Performance optimizations
-
-### Phase 4 - Desktop (Future)
-- [ ] Electron/Tauri adaptation
-- [ ] Windows/Linux packages
-
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
-- Adding new translations
-- Code style
-- Pull request process
-
-## License
-
-Private project for personal use.
-
-## Support
-
-For issues and questions, check the project documentation in `/design` and `REQUISITOS.md`.
+[AGPL-3.0](LICENSE)

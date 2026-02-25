@@ -44,7 +44,8 @@
     "alertWarning": "Avertissement",
     "alertCaution": "Attention",
     "details": "Dépliable",
-    "specialChars": "Caractères spéciaux"
+    "specialChars": "Caractères spéciaux",
+    "imageTooLarge": "L'image est trop grande. La taille maximale autorisée est de 20MB."
   },
   "sidebar": {
     "title": "Éléments",

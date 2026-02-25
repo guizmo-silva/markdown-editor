@@ -9,6 +9,7 @@ import remarkGemoji from 'remark-gemoji';
 import remarkMath from 'remark-math';
 import { remarkAlert } from 'remark-github-blockquote-alert';
 import remarkFrontmatter from 'remark-frontmatter';
+import remarkSupersub from 'remark-supersub';
 import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
@@ -19,6 +20,37 @@ import './preview.css';
 import './prism-theme.css';
 import 'remark-github-blockquote-alert/alert.css';
 import 'katex/dist/katex.min.css';
+
+// Rehype plugin: converts ==text== to <mark>text</mark> in the hast tree,
+// skipping code/pre blocks to avoid affecting code content.
+import { visit } from 'unist-util-visit';
+import type { Root as HastRoot, Text as HastText, Element, Parents } from 'hast';
+
+function rehypeMark() {
+  return (tree: HastRoot) => {
+    visit(tree, 'text', (node: HastText, index: number | undefined, parent: Parents | undefined) => {
+      if (index == null || !parent) return;
+      if ('tagName' in parent && (parent.tagName === 'code' || parent.tagName === 'pre')) return;
+      const pattern = /==(.+?)==/g;
+      if (!pattern.test(node.value)) return;
+      pattern.lastIndex = 0;
+      const parts: (HastText | Element)[] = [];
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(node.value)) !== null) {
+        if (match.index > lastIndex) {
+          parts.push({ type: 'text', value: node.value.slice(lastIndex, match.index) });
+        }
+        parts.push({ type: 'element', tagName: 'mark', properties: {}, children: [{ type: 'text', value: match[1] }] });
+        lastIndex = match.index + match[0].length;
+      }
+      if (lastIndex < node.value.length) {
+        parts.push({ type: 'text', value: node.value.slice(lastIndex) });
+      }
+      (parent.children as (HastText | Element)[]).splice(index, 1, ...parts);
+    });
+  };
+}
 
 // Remark plugin that adds data-source-line attributes to block-level elements
 // and data-source-offset / data-source-end-offset to block + inline elements.
@@ -69,10 +101,12 @@ const sanitizeSchema = {
   clobberPrefix: '', // Remove prefix to allow footnote navigation
   tagNames: [
     ...(defaultSchema.tagNames || []),
+    'mark',
     'svg',
     'path',
     'section',
-    'sup', // For footnote references
+    'sup', // For footnote references and superscript
+    'sub', // For subscript
     // KaTeX math elements
     'math',
     'semantics',
@@ -329,8 +363,8 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
           onClick={handlePreviewClick}
         >
           <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkGemoji, remarkMath, remarkAlert, remarkFrontmatter, remarkSourceLines]}
-            rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeKatex]}
+            remarkPlugins={[remarkGfm, remarkGemoji, remarkMath, remarkAlert, remarkFrontmatter, remarkSupersub, remarkSourceLines]}
+            rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeMark, rehypeKatex]}
             components={markdownComponents}
           >
             {content}

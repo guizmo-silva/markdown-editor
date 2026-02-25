@@ -1,6 +1,6 @@
 {
   "name": "markdown-editor-frontend",
-  "version": "0.1.0",
+  "version": "0.9.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -33,7 +33,8 @@
     "remark-gemoji": "^8.0.0",
     "remark-gfm": "^4.0.1",
     "remark-github-blockquote-alert": "^2.0.1",
-    "remark-math": "^6.0.0"
+    "remark-math": "^6.0.0",
+    "remark-supersub": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^22",

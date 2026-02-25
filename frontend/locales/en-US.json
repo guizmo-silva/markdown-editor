@@ -44,7 +44,8 @@
     "alertWarning": "Warning",
     "alertCaution": "Caution",
     "details": "Collapsible",
-    "specialChars": "Special characters"
+    "specialChars": "Special characters",
+    "imageTooLarge": "The image is too large. Maximum allowed size is 20MB."
   },
   "sidebar": {
     "title": "Assets",

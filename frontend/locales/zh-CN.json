@@ -44,7 +44,8 @@
     "alertWarning": "警告",
     "alertCaution": "注意",
     "details": "可折叠",
-    "specialChars": "特殊字符"
+    "specialChars": "特殊字符",
+    "imageTooLarge": "图片太大，最大允许大小为 20MB。"
   },
   "sidebar": {
     "title": "元素",

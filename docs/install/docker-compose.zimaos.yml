@@ -1,7 +1,7 @@
-# Docker Compose for ZimaOS / Production deployment
-# The app will create its data folder at /DATA/AppData/mkd/workspace
+# Docker Compose para ZimaOS
+# Caminho padrão de dados: /DATA/AppData/mkd/workspace
 #
-# Usage: docker-compose -f docker-compose.prod.yml up -d
+# Uso: docker-compose -f docker-compose.zimaos.yml up -d
 
 services:
   frontend:
@@ -36,15 +36,13 @@ services:
       - PUID=1000
       - PGID=1000
       - WORKSPACE_ROOT=/workspace
-      # Extra volumes: add additional directories beyond the main workspace
-      # Format: name1:/path1,name2:/path2
-      # Example:
-      # - EXTRA_VOLUMES=sda1:/md,docs:/docs
+      # Volumes adicionais além do workspace principal
+      # Formato: nome1:/caminho1,nome2:/caminho2
+      # Exemplo: EXTRA_VOLUMES=sda1:/md,docs:/docs
     volumes:
-      # ZimaOS standard path: /DATA/AppData/<app-name>
-      # This creates /DATA/AppData/mkd/workspace for storing markdown files
+      # Caminho padrão ZimaOS: /DATA/AppData/<nome-do-app>
       - /DATA/AppData/mkd/workspace:/workspace
-      # Additional volumes (must match EXTRA_VOLUMES paths):
+      # Volumes adicionais (devem coincidir com EXTRA_VOLUMES):
       # - /media/sda1/md:/md
     restart: unless-stopped
     networks:

@@ -178,6 +178,7 @@ const lightTheme = EditorView.theme({
   '.cm-fm-number': { color: '#005cc5' },
   '.cm-fm-comment': { color: '#6a737d', fontStyle: 'italic' },
   '.cm-foldGutter .cm-gutterElement': { padding: '0 4px 0 1px', cursor: 'pointer', color: '#999999' },
+  '.cm-foldGutter .cm-gutterElement.cm-activeLineGutter': { color: '#555555' },
   '.cm-foldPlaceholder': { marginLeft: '6px' },
 });
 
@@ -270,7 +271,8 @@ const darkTheme = EditorView.theme({
   '.cm-fm-bool': { color: '#ffab70' },
   '.cm-fm-number': { color: '#79b8ff' },
   '.cm-fm-comment': { color: '#6a737d', fontStyle: 'italic' },
-  '.cm-foldGutter .cm-gutterElement': { padding: '0 4px 0 1px', cursor: 'pointer', color: '#666666' },
+  '.cm-foldGutter .cm-gutterElement': { padding: '0 4px 0 1px', cursor: 'pointer', color: '#aaaaaa' },
+  '.cm-foldGutter .cm-gutterElement.cm-activeLineGutter': { color: '#dddddd' },
   '.cm-foldPlaceholder': { marginLeft: '6px' },
 });
 

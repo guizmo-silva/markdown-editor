@@ -7,7 +7,10 @@ import { getVolumes } from '../services/volume.service.js';
 import { validateVolumePath } from '../utils/security.js';
 import { SUPPORTED_IMAGE_EXTENSIONS, MIME_MAP } from '../utils/imageFormats.js';
 
-export const upload = multer({ storage: multer.memoryStorage() });
+export const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+});
 
 export const listFiles = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -129,7 +132,7 @@ export const renameFile = async (req: Request, res: Response): Promise<void> => 
 export const listVolumes = async (_req: Request, res: Response): Promise<void> => {
   try {
     const volumes = getVolumes();
-    res.json({ volumes: volumes.map(v => ({ name: v.name, path: v.mountPath })) });
+    res.json({ volumes: volumes.map(v => ({ name: v.name })) });
   } catch (error) {
     console.error('Error listing volumes:', error);
     res.status(500).json({ error: 'Failed to list volumes' });

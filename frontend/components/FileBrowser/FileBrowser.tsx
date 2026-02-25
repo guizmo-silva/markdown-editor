@@ -19,13 +19,45 @@ interface DragState {
   initialY: number;
 }
 
-function DeleteConfirmModal({ fileName, onConfirm, onCancel }: { fileName: string; onConfirm: () => void; onCancel: () => void }) {
+function DeleteConfirmModal({ isOpen, fileName, onConfirm, onCancel }: { isOpen: boolean; fileName: string; onConfirm: () => void; onCancel: () => void }) {
   const { t } = useTranslation();
+  const [shouldRender, setShouldRender] = useState(false);
+  const [animateIn, setAnimateIn] = useState(false);
+  const [exitDirection, setExitDirection] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      setExitDirection(false);
+      const timeout = setTimeout(() => setAnimateIn(true), 20);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen && shouldRender) {
+      setAnimateIn(false);
+      setExitDirection(true);
+      const timeout = setTimeout(() => {
+        setShouldRender(false);
+        setExitDirection(false);
+      }, 150);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen, shouldRender]);
+
+  if (!shouldRender) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onCancel}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-150 ease-out
+        ${animateIn ? 'bg-black/50' : 'bg-black/0'}`}
+      onClick={onCancel}
+    >
       <div
-        className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl"
+        className={`bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl
+          transition-all duration-150 ease-out
+          ${animateIn ? 'opacity-100 translate-y-0' : exitDirection ? 'opacity-0 translate-y-2' : 'opacity-0 -translate-y-2'}`}
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-[13px] text-[var(--text-primary)] mb-6 text-center" style={{ fontFamily: 'Roboto Mono, monospace' }}>
@@ -371,13 +403,12 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
       </div>
 
       {/* Delete confirmation modal */}
-      {showDeleteModal && (
-        <DeleteConfirmModal
-          fileName={item.name}
-          onConfirm={handleConfirmDelete}
-          onCancel={() => setShowDeleteModal(false)}
-        />
-      )}
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        fileName={item.name}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteModal(false)}
+      />
 
       {/* Children: for folders AND document files with images */}
       {(item.type === 'folder' || isDocumentFile) && (

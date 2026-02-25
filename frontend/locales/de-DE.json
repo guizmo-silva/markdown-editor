@@ -44,7 +44,8 @@
     "alertWarning": "Warnung",
     "alertCaution": "Vorsicht",
     "details": "Einklappbar",
-    "specialChars": "Sonderzeichen"
+    "specialChars": "Sonderzeichen",
+    "imageTooLarge": "Das Bild ist zu groß. Die maximale erlaubte Größe beträgt 20MB."
   },
   "sidebar": {
     "title": "Elemente",

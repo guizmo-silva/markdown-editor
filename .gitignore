@@ -44,6 +44,7 @@ next-env.d.ts
 
 # Docker
 docker-compose.override.yml
+docker-compose.dev.yml
 
 # Workspace (user data)
 workspace/
