@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CodeMirrorEditor, type CodeMirrorHandle } from './Editor';
 import { MarkdownPreview, type PreviewClickInfo } from './Preview';
 import { AssetsSidebar } from './Sidebar';
@@ -35,6 +36,7 @@ interface TabData {
 export default function EditorLayout() {
   const { getIconPath } = useThemedIcon();
   const { theme: globalTheme } = useTheme();
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -87,6 +89,8 @@ export default function EditorLayout() {
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const AUTOSAVE_DELAY = 1000; // 1 second debounce
+  const [showDividerTooltip, setShowDividerTooltip] = useState(false);
+  const dividerTooltipTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Get active tab data
   const activeTab = tabs.find(t => t.id === activeTabId);
@@ -1130,6 +1134,15 @@ export default function EditorLayout() {
     setIsResizingSplit(false);
   }, []);
 
+  const handleDividerMouseEnter = useCallback(() => {
+    dividerTooltipTimerRef.current = setTimeout(() => setShowDividerTooltip(true), 600);
+  }, []);
+
+  const handleDividerMouseLeave = useCallback(() => {
+    clearTimeout(dividerTooltipTimerRef.current);
+    setShowDividerTooltip(false);
+  }, []);
+
   useEffect(() => {
     if (isResizingSplit) {
       document.addEventListener('mousemove', handleSplitResizeMove);
@@ -1292,13 +1305,20 @@ export default function EditorLayout() {
           {/* Split Resize Handle */}
           {viewMode === 'split' && (
             <div
-              className="w-[5px] bg-[var(--split-line)] cursor-col-resize hover:bg-[var(--text-secondary)] active:bg-[var(--text-secondary)] transition-colors flex-shrink-0 flex flex-col items-center justify-center gap-[3px]"
+              className="relative w-[5px] bg-[var(--split-line)] cursor-col-resize hover:bg-[var(--text-secondary)] active:bg-[var(--text-secondary)] transition-colors flex-shrink-0 flex flex-col items-center justify-center gap-[3px]"
               onMouseDown={handleSplitResizeStart}
               onDoubleClick={() => setSplitPosition(50)}
+              onMouseEnter={handleDividerMouseEnter}
+              onMouseLeave={handleDividerMouseLeave}
             >
               <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
               <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
               <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
+              {showDividerTooltip && (
+                <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+8px)] z-50 whitespace-nowrap bg-[var(--bg-secondary)] text-[var(--text-secondary)] text-xs px-2 py-1 rounded shadow-md pointer-events-none border border-[var(--split-line)]">
+                  {t('tooltips.splitResizer')}
+                </div>
+              )}
             </div>
           )}
 

@@ -108,7 +108,8 @@
     "menu": "Menü",
     "doubleClickRename": "Doppelklick zum Umbenennen",
     "hideSidebar": "Seitenleiste ausblenden",
-    "unfold": "Ausklappen"
+    "unfold": "Ausklappen",
+    "splitResizer": "(Doppelklick zum Zentrieren)"
   },
   "welcomeModal": {
     "newDocument": "Neues Dokument",

@@ -108,7 +108,8 @@
     "menu": "Menú",
     "doubleClickRename": "Doble clic para renombrar",
     "hideSidebar": "Ocultar barra lateral",
-    "unfold": "Expandir"
+    "unfold": "Expandir",
+    "splitResizer": "(Doble clic para centrar)"
   },
   "welcomeModal": {
     "newDocument": "Nuevo Documento",

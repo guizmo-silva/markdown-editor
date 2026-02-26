@@ -108,7 +108,8 @@
     "menu": "Меню",
     "doubleClickRename": "Двойной клик для переименования",
     "hideSidebar": "Скрыть боковую панель",
-    "unfold": "Развернуть"
+    "unfold": "Развернуть",
+    "splitResizer": "(Двойной клик для центрирования)"
   },
   "welcomeModal": {
     "newDocument": "Новый документ",

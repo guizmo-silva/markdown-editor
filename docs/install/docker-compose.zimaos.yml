@@ -57,3 +57,6 @@ services:
 networks:
   markdown-editor:
     driver: bridge
+
+x-casaos:
+  icon: https://raw.githubusercontent.com/guizmo-silva/markdown-editor/refs/heads/main/docs/logo/mkd-zimaos-icon.png
