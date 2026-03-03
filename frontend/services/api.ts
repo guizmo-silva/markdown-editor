@@ -203,6 +203,25 @@ export async function exportToHtml(content: string, title?: string): Promise<Blo
 }
 
 /**
+ * Export rendered HTML to PDF
+ */
+export async function exportToPdf(
+  renderedHtml: string,
+  title?: string,
+): Promise<Blob> {
+  const response = await fetch(`${getApiBaseUrl()}/export/pdf`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ renderedHtml, title }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to export PDF' }));
+    throw new Error(error.error || 'Failed to export PDF');
+  }
+  return response.blob();
+}
+
+/**
  * Import an image into a document folder.
  * Returns the new document path (after folder creation) and the final image name.
  */

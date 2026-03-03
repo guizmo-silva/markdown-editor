@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onExport: (format: 'html' | 'md' | 'txt') => void;
+  onExport: (format: 'html' | 'md' | 'txt' | 'pdf') => void;
   filename: string;
   hasImages?: boolean;
 }
@@ -62,7 +62,7 @@ export default function ExportModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const handleFormatClick = (format: 'html' | 'md' | 'txt') => {
+  const handleFormatClick = (format: 'html' | 'md' | 'txt' | 'pdf') => {
     onExport(format);
   };
 
@@ -99,6 +99,18 @@ export default function ExportModal({
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      )
+    },
+    {
+      id: 'pdf' as const,
+      name: 'PDF',
+      extension: '.pdf',
+      description: t('exportModal.pdfDescription', 'Documento para impressão'),
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h1.5a1.5 1.5 0 000-3H9v6m4-6h1a2 2 0 010 4h-1V13" />
         </svg>
       )
     }
@@ -138,17 +150,17 @@ export default function ExportModal({
             className="text-[11px] text-[var(--text-secondary)] mb-4 px-3 py-2 bg-[var(--bg-secondary)] rounded border border-[var(--border-primary)]"
             style={{ fontFamily: 'Roboto Mono, monospace' }}
           >
-            {t('exportModal.hasImages', 'Este documento possui imagens. Será exportado como arquivo .zip contendo o documento e as imagens.')}
+            {t('exportModal.hasImages', 'Este documento possui imagens. HTML/MD/TXT serão exportados como .zip. Para PDF, as imagens serão incorporadas ao arquivo.')}
           </p>
         )}
 
         {/* Format cards */}
-        <div className="flex gap-3 mb-5">
+        <div className="grid grid-cols-2 gap-3 mb-5">
           {formats.map((format) => (
             <button
               key={format.id}
               onClick={() => handleFormatClick(format.id)}
-              className="flex-1 p-4 border border-[var(--border-primary)] rounded-lg
+              className="p-4 border border-[var(--border-primary)] rounded-lg
                          flex flex-col items-center gap-2
                          hover:border-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]
                          transition-all cursor-pointer group"

@@ -3,9 +3,11 @@ import { markedEmoji } from 'marked-emoji';
 import archiver from 'archiver';
 import fs from 'fs/promises';
 import path from 'path';
+import puppeteer from 'puppeteer-core';
 import { resolveVolumePath } from './volume.service.js';
 import { validatePath } from '../utils/security.js';
 import { SUPPORTED_IMAGE_EXTENSIONS } from '../utils/imageFormats.js';
+import { PDF_CSS_VARS, PREVIEW_CSS, PRISM_CSS } from '../utils/pdfStyles.js';
 
 // Emoji map for common GitHub-style emoji shortcodes
 import { emojis } from './emojis.js';
@@ -199,4 +201,64 @@ export const exportWithImages = async (
   });
 
   return Buffer.concat(chunks);
+};
+
+function buildPDFHtml(renderedHtml: string, title: string): string {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHTML(title)}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  <style>
+    :root { ${PDF_CSS_VARS} }
+    @page { size: A4; margin: 2cm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px; line-height: 1.6; color: #24292e; background: #fff;
+    }
+    ${PREVIEW_CSS}
+    ${PRISM_CSS}
+    @media print {
+      pre { page-break-inside: avoid; }
+      h1, h2, h3 { page-break-after: avoid; }
+      table { page-break-inside: avoid; }
+      .markdown-alert { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="markdown-preview">
+    ${renderedHtml}
+  </div>
+</body>
+</html>`;
+}
+
+export const convertToPDF = async (
+  renderedHtml: string,
+  title: string,
+): Promise<Buffer> => {
+  const html = buildPDFHtml(renderedHtml, title);
+
+  const chromiumPath = process.env.CHROMIUM_PATH || '/usr/bin/chromium-browser';
+  const browser = await puppeteer.launch({
+    executablePath: chromiumPath,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    headless: true,
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '2cm', right: '2cm', bottom: '2cm', left: '2cm' },
+    });
+    return Buffer.from(pdfBuffer);
+  } finally {
+    await browser.close();
+  }
 };

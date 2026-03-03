@@ -14,7 +14,7 @@ import { ExportModal } from './ExportModal';
 import { ImportModal } from './ImportModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
-import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, getVolumes, listFiles } from '@/services/api';
+import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, exportToPdf, getVolumes, listFiles } from '@/services/api';
 
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
@@ -498,7 +498,7 @@ export default function EditorLayout() {
     setFileRefreshTrigger(t => t + 1);
   }, [activeTabId, updateTabId]);
 
-  const handleExport = async (format: 'html' | 'md' | 'txt') => {
+  const handleExport = async (format: 'html' | 'md' | 'txt' | 'pdf') => {
     const baseName = currentFilePath?.replace(/\.md$/, '').split('/').pop() || 'documento';
     const now = new Date();
     const timestamp = now.getFullYear().toString()
@@ -511,6 +511,49 @@ export default function EditorLayout() {
     const filename = `${baseName}_${timestamp}`;
 
     try {
+      if (format === 'pdf') {
+        const previewEl = document.querySelector('.markdown-preview') as HTMLElement | null;
+        if (!previewEl) {
+          alert('Alterne para o modo Split ou Preview para exportar em PDF.');
+          return;
+        }
+
+        // Clonar para não modificar o DOM original
+        const clone = previewEl.cloneNode(true) as HTMLElement;
+
+        // Converter imagens para base64 (inline data URIs)
+        const imgs = Array.from(clone.querySelectorAll('img'));
+        await Promise.all(imgs.map(async (img) => {
+          const src = img.getAttribute('src');
+          if (!src || src.startsWith('data:')) return;
+          try {
+            const resp = await fetch(src);
+            const blob = await resp.blob();
+            const b64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+            img.setAttribute('src', b64);
+          } catch {
+            // Manter src original se falhar
+          }
+        }));
+
+        const blob = await exportToPdf(clone.innerHTML, filename);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setShowExportModal(false);
+        return;
+      }
+
       const hasImages = currentFilePath ? tabsWithImages.has(currentFilePath) : false;
 
       if (hasImages && currentFilePath) {

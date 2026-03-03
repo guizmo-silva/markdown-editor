@@ -24,8 +24,17 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install su-exec for dropping privileges at runtime
-RUN apk add --no-cache su-exec
+# Install su-exec and Chromium for PDF export
+RUN apk add --no-cache \
+    su-exec \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+ENV CHROMIUM_PATH=/usr/bin/chromium-browser
 
 # Create workspace directory with proper permissions
 RUN mkdir -p /workspace && chown node:node /workspace
