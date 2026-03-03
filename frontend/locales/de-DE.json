@@ -45,7 +45,18 @@
     "alertCaution": "Vorsicht",
     "details": "Einklappbar",
     "specialChars": "Sonderzeichen",
-    "imageTooLarge": "Das Bild ist zu groß. Die maximale erlaubte Größe beträgt 20MB."
+    "imageTooLarge": "Das Bild ist zu groß. Die maximale erlaubte Größe beträgt 20MB.",
+    "snippets": "Gespeicherte Texte",
+    "snippetsEmpty": "Noch keine gespeicherten Snippets.",
+    "snippetsDelete": "Snippet löschen",
+    "snippetsAdd": "Code-Snippet hinzufügen",
+    "snippetsName": "Name",
+    "snippetsNamePlaceholder": "Bsp.: Hugo Frontmatter",
+    "snippetsContent": "Inhalt",
+    "snippetsErrorName": "Name ist erforderlich.",
+    "snippetsErrorContent": "Inhalt ist erforderlich.",
+    "snippetsErrorMaxLength": "Max. {{max}} Zeichen.",
+    "snippetsErrorMaxCount": "Max. {{max}} Snippets."
   },
   "sidebar": {
     "title": "Elemente",
@@ -109,7 +120,8 @@
     "doubleClickRename": "Doppelklick zum Umbenennen",
     "hideSidebar": "Seitenleiste ausblenden",
     "unfold": "Ausklappen",
-    "splitResizer": "(Doppelklick zum Zentrieren)"
+    "splitResizer": "(Doppelklick zum Zentrieren)",
+    "collapseAll": "Klicken zum Alles einklappen"
   },
   "welcomeModal": {
     "newDocument": "Neues Dokument",
@@ -117,5 +129,14 @@
     "noFiles": "Keine Dateien gefunden",
     "loading": "Laden...",
     "folder": "Ordner:"
+  },
+  "exportModal": {
+    "title": "Dokument exportieren",
+    "htmlDescription": "Vollständiges Webdokument",
+    "mdDescription": "Originale Markdown-Datei",
+    "text": "Text",
+    "txtDescription": "Nur-Text ohne Formatierung",
+    "pdfDescription": "Dokument zum Drucken",
+    "hasImages": "Dieses Dokument enthält Bilder. HTML/MD/TXT werden als .zip exportiert. Für PDF werden die Bilder in die Datei eingebettet."
   }
 }

@@ -87,7 +87,14 @@ export default function ExportModal({
       description: t('exportModal.mdDescription', 'Arquivo markdown original'),
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          {/* Rounded rect border — official markdown mark shape */}
+          <rect strokeWidth={1.5} x="1.5" y="5.5" width="21" height="13" rx="2"/>
+          {/* M shape */}
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+            d="M4.5 15V9l3.5 3.5 3.5-3.5v6"/>
+          {/* Down arrow */}
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+            d="M17 9v4.5M14.5 12l2.5 2.5 2.5-2.5"/>
         </svg>
       )
     },
@@ -109,8 +116,11 @@ export default function ExportModal({
       description: t('exportModal.pdfDescription', 'Documento para impressão'),
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h1.5a1.5 1.5 0 000-3H9v6m4-6h1a2 2 0 010 4h-1V13" />
+          {/* Back page */}
+          <rect strokeWidth={1.5} x="7" y="2" width="13" height="17" rx="2"/>
+          {/* Front page — fill cobre o back page na área de sobreposição */}
+          <rect strokeWidth={1.5} x="3" y="5" width="13" height="17" rx="2"
+            className="fill-[var(--dropdown-bg)] group-hover:fill-[var(--bg-secondary)] transition-colors"/>
         </svg>
       )
     }

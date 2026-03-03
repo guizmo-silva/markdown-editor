@@ -45,7 +45,18 @@
     "alertCaution": "Attention",
     "details": "Dépliable",
     "specialChars": "Caractères spéciaux",
-    "imageTooLarge": "L'image est trop grande. La taille maximale autorisée est de 20MB."
+    "imageTooLarge": "L'image est trop grande. La taille maximale autorisée est de 20MB.",
+    "snippets": "Extraits sauvegardés",
+    "snippetsEmpty": "Aucun extrait sauvegardé pour l'instant.",
+    "snippetsDelete": "Supprimer l'extrait",
+    "snippetsAdd": "Ajouter un extrait de code",
+    "snippetsName": "Nom",
+    "snippetsNamePlaceholder": "Ex : Frontmatter Hugo",
+    "snippetsContent": "Contenu",
+    "snippetsErrorName": "Le nom est obligatoire.",
+    "snippetsErrorContent": "Le contenu est obligatoire.",
+    "snippetsErrorMaxLength": "Max. {{max}} caractères.",
+    "snippetsErrorMaxCount": "Max. {{max}} extraits."
   },
   "sidebar": {
     "title": "Éléments",
@@ -109,7 +120,8 @@
     "doubleClickRename": "Double-cliquez pour renommer",
     "hideSidebar": "Masquer la barre latérale",
     "unfold": "Déplier",
-    "splitResizer": "(Double-clic pour centrer)"
+    "splitResizer": "(Double-clic pour centrer)",
+    "collapseAll": "Cliquer pour tout réduire"
   },
   "welcomeModal": {
     "newDocument": "Nouveau Document",
@@ -117,5 +129,14 @@
     "noFiles": "Aucun fichier trouvé",
     "loading": "Chargement...",
     "folder": "Dossier:"
+  },
+  "exportModal": {
+    "title": "Exporter le document",
+    "htmlDescription": "Document web complet",
+    "mdDescription": "Fichier markdown original",
+    "text": "Texte",
+    "txtDescription": "Texte brut sans formatage",
+    "pdfDescription": "Document pour impression",
+    "hasImages": "Ce document contient des images. HTML/MD/TXT seront exportés en .zip. Pour PDF, les images seront intégrées au fichier."
   }
 }

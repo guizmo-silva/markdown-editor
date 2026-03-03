@@ -26,6 +26,43 @@ interface ToolbarProps {
   onImageImported?: (newDocPath: string, imageName: string) => void;
 }
 
+interface Snippet {
+  id: string;
+  name: string;
+  content: string;
+  createdAt: number;
+}
+
+const SNIPPETS_KEY = 'mkd_snippets';
+const MAX_SNIPPETS = 50;
+const MAX_CONTENT_LENGTH = 10000;
+const MAX_NAME_LENGTH = 60;
+
+function loadSnippets(): Snippet[] {
+  try {
+    const raw = localStorage.getItem(SNIPPETS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (s): s is Snippet =>
+        typeof s.id === 'string' &&
+        typeof s.name === 'string' &&
+        typeof s.content === 'string'
+    );
+  } catch {
+    return [];
+  }
+}
+
+function persistSnippets(snippets: Snippet[]): void {
+  try {
+    localStorage.setItem(SNIPPETS_KEY, JSON.stringify(snippets));
+  } catch {
+    // QuotaExceededError silenciado — não travar o app
+  }
+}
+
 export default function Toolbar({
   textareaRef,
   value,
@@ -71,6 +108,13 @@ export default function Toolbar({
   const [tableMenuPos, setTableMenuPos] = useState({ top: 0, left: 0 });
   const [alertMenuPos, setAlertMenuPos] = useState({ top: 0, left: 0 });
   const [charMenuPos, setCharMenuPos] = useState({ top: 0, left: 0 });
+  const [snippets, setSnippets] = useState<Snippet[]>(() => loadSnippets());
+  const [showSnippetsMenu, setShowSnippetsMenu] = useState(false);
+  const [snippetsMenuPos, setSnippetsMenuPos] = useState({ top: 0, left: 0 });
+  const [showAddSnippetModal, setShowAddSnippetModal] = useState(false);
+  const [newSnippetName, setNewSnippetName] = useState('');
+  const [newSnippetContent, setNewSnippetContent] = useState('');
+  const [addSnippetError, setAddSnippetError] = useState('');
   const headingButtonRef = useRef<HTMLDivElement>(null);
   const alertButtonRef = useRef<HTMLDivElement>(null);
   const charButtonRef = useRef<HTMLDivElement>(null);
@@ -90,6 +134,8 @@ export default function Toolbar({
   const linkMenuRef = useRef<HTMLDivElement>(null);
   const imageMenuRef = useRef<HTMLDivElement>(null);
   const tableMenuRef = useRef<HTMLDivElement>(null);
+  const snippetsButtonRef = useRef<HTMLDivElement>(null);
+  const snippetsMenuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown menus when clicking outside
   useEffect(() => {
@@ -146,16 +192,23 @@ export default function Toolbar({
           setShowCharMenu(false);
         }
       }
+      if (showSnippetsMenu) {
+        const isInsideButton = snippetsButtonRef.current?.contains(target);
+        const isInsideMenu = snippetsMenuRef.current?.contains(target);
+        if (!isInsideButton && !isInsideMenu) {
+          setShowSnippetsMenu(false);
+        }
+      }
     };
 
-    if (showHeadingMenu || showAlertMenu || showQuoteMenu || showLinkMenu || showImageMenu || showTableMenu || showCharMenu) {
+    if (showHeadingMenu || showAlertMenu || showQuoteMenu || showLinkMenu || showImageMenu || showTableMenu || showCharMenu || showSnippetsMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showHeadingMenu, showAlertMenu, showQuoteMenu, showLinkMenu, showImageMenu, showTableMenu, showCharMenu]);
+  }, [showHeadingMenu, showAlertMenu, showQuoteMenu, showLinkMenu, showImageMenu, showTableMenu, showCharMenu, showSnippetsMenu]);
 
   // Helper function to wrap selected text or insert at cursor
   const wrapText = (prefix: string, suffix: string, placeholder: string = '') => {
@@ -1805,6 +1858,66 @@ export default function Toolbar({
     setShowCharMenu(!showCharMenu);
   };
 
+  // Snippets handlers
+  const handleOpenSnippetsMenu = () => {
+    if (snippetsButtonRef.current) {
+      const rect = snippetsButtonRef.current.getBoundingClientRect();
+      setSnippetsMenuPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setShowSnippetsMenu(prev => !prev);
+  };
+
+  const handleInsertSnippet = (content: string) => {
+    insertText(content);
+    setShowSnippetsMenu(false);
+  };
+
+  const handleDeleteSnippet = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = snippets.filter(s => s.id !== id);
+    setSnippets(updated);
+    persistSnippets(updated);
+  };
+
+  const handleSaveSnippet = () => {
+    const name = newSnippetName.trim();
+    const content = newSnippetContent;
+    if (!name) { setAddSnippetError(t('toolbar.snippetsErrorName')); return; }
+    if (!content.trim()) { setAddSnippetError(t('toolbar.snippetsErrorContent')); return; }
+    if (content.length > MAX_CONTENT_LENGTH) { setAddSnippetError(t('toolbar.snippetsErrorMaxLength', { max: MAX_CONTENT_LENGTH })); return; }
+    if (snippets.length >= MAX_SNIPPETS) { setAddSnippetError(t('toolbar.snippetsErrorMaxCount', { max: MAX_SNIPPETS })); return; }
+
+    const newSnippet: Snippet = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name,
+      content,
+      createdAt: Date.now(),
+    };
+    const updated = [...snippets, newSnippet];
+    setSnippets(updated);
+    persistSnippets(updated);
+    setNewSnippetName('');
+    setNewSnippetContent('');
+    setAddSnippetError('');
+    setShowAddSnippetModal(false);
+  };
+
+  // ESC key closes snippets modal/dropdown
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showAddSnippetModal) {
+          setShowAddSnippetModal(false);
+          setAddSnippetError('');
+        } else if (showSnippetsMenu) {
+          setShowSnippetsMenu(false);
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showAddSnippetModal, showSnippetsMenu]);
+
   // Simple formatting buttons (don't create sidebar elements)
   const simpleFormattingButtons = [
     { icon: getIconPath('Bold_icon.svg'), translationKey: 'toolbar.bold', onClick: handleBold, shortcut: 'Ctrl+B' },
@@ -2078,6 +2191,70 @@ export default function Toolbar({
         {/* Other sidebar element buttons */}
         {otherSidebarButtons.map((button, index) => renderButton(button, index + 200))}
 
+        {/* Snippets button with dropdown */}
+        <div ref={snippetsButtonRef} className="flex-shrink-0">
+          <button
+            onClick={handleOpenSnippetsMenu}
+            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors text-[var(--text-secondary)]"
+            aria-label={t('toolbar.snippets')}
+            title={t('toolbar.snippets')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-6 h-6">
+              <path d="M6 2h12v19l-6-3-6 3V2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"/>
+            </svg>
+          </button>
+        </div>
+
+        {showSnippetsMenu && isMounted && createPortal(
+          <div
+            ref={snippetsMenuRef}
+            className="fixed z-[9999] w-72 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-xl overflow-hidden"
+            style={{ top: snippetsMenuPos.top, left: snippetsMenuPos.left }}
+          >
+            <div className="max-h-[260px] overflow-y-auto">
+              {snippets.length === 0 ? (
+                <p className="text-xs text-[var(--text-secondary)] px-3 py-3 text-center">
+                  {t('toolbar.snippetsEmpty')}
+                </p>
+              ) : (
+                snippets.map(snippet => (
+                  <div
+                    key={snippet.id}
+                    className="flex items-center gap-1 px-3 py-2 hover:bg-[var(--bg-secondary)] cursor-pointer group border-b border-[var(--border-primary)] last:border-0"
+                    onClick={() => handleInsertSnippet(snippet.content)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-[var(--text-primary)] truncate">{snippet.name}</p>
+                      <p className="text-[10px] text-[var(--text-secondary)] truncate">
+                        {snippet.content.split('\n')[0].slice(0, 40)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => handleDeleteSnippet(snippet.id, e)}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 hover:text-red-500 text-[var(--text-secondary)] transition-opacity flex-shrink-0"
+                      title={t('toolbar.snippetsDelete')}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3.5 h-3.5">
+                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+            <button
+              onClick={() => { setShowSnippetsMenu(false); setNewSnippetName(''); setNewSnippetContent(''); setAddSnippetError(''); setShowAddSnippetModal(true); }}
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] border-t border-[var(--border-primary)] transition-colors"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3.5 h-3.5 flex-shrink-0">
+                <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeWidth="1.5"/>
+              </svg>
+              {t('toolbar.snippetsAdd')}
+            </button>
+          </div>,
+          document.body
+        )}
+
         {/* Special characters button with dropdown */}
         <div className="relative flex-shrink-0" ref={charButtonRef}>
           <button
@@ -2201,6 +2378,64 @@ export default function Toolbar({
             </div>
           </div>
         </div>
+      )}
+      {/* Add snippet modal */}
+      {showAddSnippetModal && isMounted && createPortal(
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]"
+          onClick={() => { setShowAddSnippetModal(false); setAddSnippetError(''); }}
+        >
+          <div
+            className="bg-[var(--dropdown-bg)] rounded-lg shadow-xl p-5 w-[480px] max-w-[90vw]"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">
+              {t('toolbar.snippetsAdd')}
+            </h3>
+
+            <label className="block text-xs text-[var(--text-secondary)] mb-1">{t('toolbar.snippetsName')}</label>
+            <input
+              value={newSnippetName}
+              onChange={e => setNewSnippetName(e.target.value.slice(0, MAX_NAME_LENGTH))}
+              maxLength={MAX_NAME_LENGTH}
+              placeholder={t('toolbar.snippetsNamePlaceholder')}
+              autoFocus
+              className="w-full px-3 py-2 text-sm rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] mb-3 outline-none focus:border-[var(--text-secondary)]"
+            />
+
+            <label className="block text-xs text-[var(--text-secondary)] mb-1">{t('toolbar.snippetsContent')}</label>
+            <textarea
+              value={newSnippetContent}
+              onChange={e => setNewSnippetContent(e.target.value.slice(0, MAX_CONTENT_LENGTH))}
+              rows={8}
+              placeholder={"---\ntitle: Meu Post\ndate: 2026-01-01\n---"}
+              className="w-full px-3 py-2 text-sm rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] font-mono resize-y outline-none focus:border-[var(--text-secondary)]"
+            />
+            <p className="text-[10px] text-[var(--text-secondary)] text-right mb-3">
+              {newSnippetContent.length}/{MAX_CONTENT_LENGTH}
+            </p>
+
+            {addSnippetError && (
+              <p className="text-xs text-red-500 mb-3">{addSnippetError}</p>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => { setShowAddSnippetModal(false); setAddSnippetError(''); }}
+                className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] rounded transition-colors"
+              >
+                {t('buttons.cancel')}
+              </button>
+              <button
+                onClick={handleSaveSnippet}
+                className="px-4 py-2 text-sm bg-[var(--button-bg)] text-[var(--text-button)] rounded hover:bg-[var(--button-hover)] transition-colors"
+              >
+                {t('buttons.save')}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
       {/* Image size error modal */}
       {imageSizeError && isMounted && createPortal(

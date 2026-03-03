@@ -194,7 +194,7 @@ export default function AssetsSidebar({
               className="text-[20px] font-bold text-[var(--text-primary)] cursor-pointer hover:text-[var(--text-secondary)] transition-colors"
               style={{ fontFamily: 'Roboto Mono, monospace' }}
               onClick={handleCollapseAllContent}
-              title="Click to collapse all"
+              title={t('tooltips.collapseAll')}
             >
               {t('sidebar.content')}
             </h2>
@@ -563,7 +563,7 @@ export default function AssetsSidebar({
               className="text-[20px] font-bold text-[var(--text-primary)] cursor-pointer hover:text-[var(--text-secondary)] transition-colors"
               style={{ fontFamily: 'Roboto Mono, monospace' }}
               onClick={handleCollapseAllFiles}
-              title="Click to collapse all"
+              title={t('tooltips.collapseAll')}
             >
               {t('fileBrowser.title')}
             </h2>

@@ -45,7 +45,18 @@
     "alertCaution": "Осторожно",
     "details": "Сворачиваемый",
     "specialChars": "Спецсимволы",
-    "imageTooLarge": "Изображение слишком большое. Максимально допустимый размер — 20МБ."
+    "imageTooLarge": "Изображение слишком большое. Максимально допустимый размер — 20МБ.",
+    "snippets": "Сохранённые тексты",
+    "snippetsEmpty": "Пока нет сохранённых фрагментов.",
+    "snippetsDelete": "Удалить фрагмент",
+    "snippetsAdd": "Добавить фрагмент кода",
+    "snippetsName": "Название",
+    "snippetsNamePlaceholder": "Напр.: Hugo Frontmatter",
+    "snippetsContent": "Содержимое",
+    "snippetsErrorName": "Название обязательно.",
+    "snippetsErrorContent": "Содержимое обязательно.",
+    "snippetsErrorMaxLength": "Макс. {{max}} символов.",
+    "snippetsErrorMaxCount": "Макс. {{max}} фрагментов."
   },
   "sidebar": {
     "title": "Элементы",
@@ -109,7 +120,8 @@
     "doubleClickRename": "Двойной клик для переименования",
     "hideSidebar": "Скрыть боковую панель",
     "unfold": "Развернуть",
-    "splitResizer": "(Двойной клик для центрирования)"
+    "splitResizer": "(Двойной клик для центрирования)",
+    "collapseAll": "Нажмите, чтобы свернуть всё"
   },
   "welcomeModal": {
     "newDocument": "Новый документ",
@@ -117,5 +129,14 @@
     "noFiles": "Файлы не найдены",
     "loading": "Загрузка...",
     "folder": "Папка:"
+  },
+  "exportModal": {
+    "title": "Экспорт документа",
+    "htmlDescription": "Полный веб-документ",
+    "mdDescription": "Исходный markdown-файл",
+    "text": "Текст",
+    "txtDescription": "Простой текст без форматирования",
+    "pdfDescription": "Документ для печати",
+    "hasImages": "Этот документ содержит изображения. HTML/MD/TXT будут экспортированы как .zip. Для PDF изображения будут встроены в файл."
   }
 }

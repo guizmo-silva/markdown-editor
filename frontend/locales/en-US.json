@@ -45,7 +45,18 @@
     "alertCaution": "Caution",
     "details": "Collapsible",
     "specialChars": "Special characters",
-    "imageTooLarge": "The image is too large. Maximum allowed size is 20MB."
+    "imageTooLarge": "The image is too large. Maximum allowed size is 20MB.",
+    "snippets": "Saved snippets",
+    "snippetsEmpty": "No saved snippets yet.",
+    "snippetsDelete": "Delete snippet",
+    "snippetsAdd": "Add code snippet",
+    "snippetsName": "Name",
+    "snippetsNamePlaceholder": "E.g.: Hugo Frontmatter",
+    "snippetsContent": "Content",
+    "snippetsErrorName": "Name is required.",
+    "snippetsErrorContent": "Content is required.",
+    "snippetsErrorMaxLength": "Max. {{max}} characters.",
+    "snippetsErrorMaxCount": "Max. {{max}} snippets."
   },
   "sidebar": {
     "title": "Assets",
@@ -109,7 +120,8 @@
     "doubleClickRename": "Double-click to rename",
     "hideSidebar": "Hide sidebar",
     "unfold": "Expand",
-    "splitResizer": "(Double-click to center)"
+    "splitResizer": "(Double-click to center)",
+    "collapseAll": "Click to collapse all"
   },
   "welcomeModal": {
     "newDocument": "New Document",
@@ -117,5 +129,14 @@
     "noFiles": "No files found",
     "loading": "Loading...",
     "folder": "Folder:"
+  },
+  "exportModal": {
+    "title": "Export document",
+    "htmlDescription": "Complete web document",
+    "mdDescription": "Original markdown file",
+    "text": "Text",
+    "txtDescription": "Plain text without formatting",
+    "pdfDescription": "Document for printing",
+    "hasImages": "This document has images. HTML/MD/TXT will be exported as .zip. For PDF, images will be embedded in the file."
   }
 }
