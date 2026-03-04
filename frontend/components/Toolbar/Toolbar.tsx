@@ -1798,6 +1798,12 @@ export default function Toolbar({
       { char: '\u00B7', title: 'Middle dot' },
       { char: '\u2022', title: 'Bullet' },
       { char: '\u203D', title: 'Interrobang' },
+      { char: '\u201C', title: 'Left double quote' },
+      { char: '\u201D', title: 'Right double quote' },
+      { char: '\u2018', title: 'Left single quote' },
+      { char: '\u2019', title: 'Right single quote' },
+      { char: '\u00AB', title: 'Left guillemet' },
+      { char: '\u00BB', title: 'Right guillemet' },
     ]},
     { label: '\u2192', chars: [
       { char: '\u2190', title: 'Left arrow' },
@@ -1806,6 +1812,12 @@ export default function Toolbar({
       { char: '\u2193', title: 'Down arrow' },
       { char: '\u2194', title: 'Left right arrow' },
       { char: '\u21D2', title: 'Right double arrow' },
+      { char: '\u21D0', title: 'Left double arrow' },
+      { char: '\u21D4', title: 'Left right double arrow' },
+      { char: '\u21B5', title: 'Return arrow' },
+      { char: '\u21AA', title: 'Right hook arrow' },
+      { char: '\u2197', title: 'Up-right arrow' },
+      { char: '\u2198', title: 'Down-right arrow' },
     ]},
     { label: '\u00D7', chars: [
       { char: '\u00D7', title: 'Multiplication' },
@@ -1816,6 +1828,10 @@ export default function Toolbar({
       { char: '\u2264', title: 'Less or equal' },
       { char: '\u2265', title: 'Greater or equal' },
       { char: '\u221E', title: 'Infinity' },
+      { char: '\u2211', title: 'Summation' },
+      { char: '\u220F', title: 'Product' },
+      { char: '\u221A', title: 'Square root' },
+      { char: '\u222B', title: 'Integral' },
     ]},
     { label: '\u00A9', chars: [
       { char: '\u00A9', title: 'Copyright' },
@@ -1824,6 +1840,20 @@ export default function Toolbar({
       { char: '\u00B0', title: 'Degree' },
       { char: '\u00A7', title: 'Section' },
       { char: '\u2020', title: 'Dagger' },
+    ]},
+    { label: '\u2318', chars: [
+      { char: '\u2318', title: 'Place of interest (X com bolinhas)' },
+      { char: '\u2295', title: 'Circled plus' },
+      { char: '\u2297', title: 'Circled times' },
+      { char: '\u2296', title: 'Circled minus' },
+      { char: '\u2299', title: 'Circled dot' },
+      { char: '\u2715', title: 'Multiplication X' },
+      { char: '\u2726', title: 'Black four pointed star' },
+      { char: '\u2727', title: 'White four pointed star' },
+      { char: '\u2736', title: 'Six pointed star' },
+      { char: '\u2756', title: 'Diamond minus white X' },
+      { char: '\u2042', title: 'Asterism' },
+      { char: '\u2731', title: 'Heavy asterisk' },
     ]},
   ];
 
@@ -2199,8 +2229,8 @@ export default function Toolbar({
             aria-label={t('toolbar.snippets')}
             title={t('toolbar.snippets')}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-6 h-6">
-              <path d="M6 2h12v19l-6-3-6 3V2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"/>
+            <svg viewBox="-5 -2 24 24" fill="currentColor" className="w-6 h-6">
+              <path d="M3 2a1 1 0 0 0-1 1v15l2.978-2.717a3 3 0 0 1 4.044 0L12 18V3a1 1 0 0 0-1-1H3zm0-2h8a3 3 0 0 1 3 3v15a2 2 0 0 1-3.348 1.477L7.674 16.76a1 1 0 0 0-1.348 0l-2.978 2.717A2 2 0 0 1 0 18V3a3 3 0 0 1 3-3zm5 8h2a1 1 0 0 1 0 2H8v2a1 1 0 0 1-2 0v-2H4a1 1 0 1 1 0-2h2V6a1 1 0 1 1 2 0v2z"/>
             </svg>
           </button>
         </div>

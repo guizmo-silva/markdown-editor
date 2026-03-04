@@ -297,11 +297,11 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         ) : item.type === 'folder' ? (
-          <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
             {isExpanded ? (
-              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
+              <><path strokeLinecap="round" d="M14.5 18.5H5.9c-.84 0-1.26 0-1.581-.163a1.5 1.5 0 0 1-.656-.656c-.163-.32-.163-.74-.163-1.58V6.9c0-.84 0-1.26.163-1.581a1.5 1.5 0 0 1 .656-.656c.32-.163.74-.163 1.581-.163h2.572c.376 0 .564 0 .734.052a1.2 1.2 0 0 1 .414.221c.137.113.242.27.45.582l.86 1.29c.208.313.313.47.45.582c.122.1.263.176.413.222c.171.051.359.051.735.051H16.5c.465 0 .697 0 .888.051a1.5 1.5 0 0 1 1.061 1.061c.051.191.051.423.051.888v0m-9 4h7"/><path d="M5.953 11.141c.197-.59.295-.885.477-1.103a1.5 1.5 0 0 1 .602-.434C7.297 9.5 7.608 9.5 8.23 9.5h9.94c1.124 0 1.687 0 2.055.236a1.5 1.5 0 0 1 .649.899c.106.425-.072.958-.427 2.024l-1.4 4.2c-.197.59-.295.885-.477 1.104a1.5 1.5 0 0 1-.602.433c-.265.104-.576.104-1.198.104H6.83c-1.124 0-1.687 0-2.056-.235a1.5 1.5 0 0 1-.648-.9c-.106-.424.071-.957.427-2.023z"/></>
             ) : (
-              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+              <path d="M4.5 6.9c0-.84 0-1.26.163-1.581a1.5 1.5 0 0 1 .656-.656c.32-.163.74-.163 1.581-.163h2.572c.376 0 .564 0 .735.051a1.2 1.2 0 0 1 .413.222c.137.113.242.269.45.582l.86 1.29c.208.313.313.469.45.582c.122.1.263.175.413.221c.171.052.359.052.735.052H17.1c.84 0 1.26 0 1.581.163a1.5 1.5 0 0 1 .656.656c.163.32.163.74.163 1.581v6.2c0 .84 0 1.26-.163 1.581a1.5 1.5 0 0 1-.656.656c-.32.163-.74.163-1.581.163H6.9c-.84 0-1.26 0-1.581-.163a1.5 1.5 0 0 1-.656-.656c-.163-.32-.163-.74-.163-1.581z"/>
             )}
           </svg>
         ) : (
@@ -455,8 +455,8 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
                 <div className="relative tree-last-item">
                   <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
                   <div className="flex items-center gap-1 py-1 pr-2" style={{ paddingLeft: '8px' }}>
-                    <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                    <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                      <path d="M4.5 6.9c0-.84 0-1.26.163-1.581a1.5 1.5 0 0 1 .656-.656c.32-.163.74-.163 1.581-.163h2.572c.376 0 .564 0 .735.051a1.2 1.2 0 0 1 .413.222c.137.113.242.269.45.582l.86 1.29c.208.313.313.469.45.582c.122.1.263.175.413.221c.171.052.359.052.735.052H17.1c.84 0 1.26 0 1.581.163a1.5 1.5 0 0 1 .656.656c.163.32.163.74.163 1.581v6.2c0 .84 0 1.26-.163 1.581a1.5 1.5 0 0 1-.656.656c-.32.163-.74.163-1.581.163H6.9c-.84 0-1.26 0-1.581-.163a1.5 1.5 0 0 1-.656-.656c-.163-.32-.163-.74-.163-1.581z"/>
                     </svg>
                     <input
                       autoFocus
@@ -880,8 +880,8 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
         <div className="relative tree-last-item">
           <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
           <div className="flex items-center gap-1 py-1 pr-2" style={{ paddingLeft: '8px' }}>
-            <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+            <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path d="M4.5 6.9c0-.84 0-1.26.163-1.581a1.5 1.5 0 0 1 .656-.656c.32-.163.74-.163 1.581-.163h2.572c.376 0 .564 0 .735.051a1.2 1.2 0 0 1 .413.222c.137.113.242.269.45.582l.86 1.29c.208.313.313.469.45.582c.122.1.263.175.413.221c.171.052.359.052.735.052H17.1c.84 0 1.26 0 1.581.163a1.5 1.5 0 0 1 .656.656c.163.32.163.74.163 1.581v6.2c0 .84 0 1.26-.163 1.581a1.5 1.5 0 0 1-.656.656c-.32.163-.74.163-1.581.163H6.9c-.84 0-1.26 0-1.581-.163a1.5 1.5 0 0 1-.656-.656c-.163-.32-.163-.74-.163-1.581z"/>
             </svg>
             <input
               autoFocus
@@ -913,11 +913,11 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
           }`}
         >
           <div className="flex items-center gap-2">
-            <svg className="w-[17px] h-[17px] flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-[17px] h-[17px] flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
               {isExpanded ? (
-                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v1H4a2 2 0 00-2 2v4a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-1V6z" />
+                <><path strokeLinecap="round" d="M14.5 18.5H5.9c-.84 0-1.26 0-1.581-.163a1.5 1.5 0 0 1-.656-.656c-.163-.32-.163-.74-.163-1.58V6.9c0-.84 0-1.26.163-1.581a1.5 1.5 0 0 1 .656-.656c.32-.163.74-.163 1.581-.163h2.572c.376 0 .564 0 .734.052a1.2 1.2 0 0 1 .414.221c.137.113.242.27.45.582l.86 1.29c.208.313.313.47.45.582c.122.1.263.176.413.222c.171.051.359.051.735.051H16.5c.465 0 .697 0 .888.051a1.5 1.5 0 0 1 1.061 1.061c.051.191.051.423.051.888v0m-9 4h7"/><path d="M5.953 11.141c.197-.59.295-.885.477-1.103a1.5 1.5 0 0 1 .602-.434C7.297 9.5 7.608 9.5 8.23 9.5h9.94c1.124 0 1.687 0 2.055.236a1.5 1.5 0 0 1 .649.899c.106.425-.072.958-.427 2.024l-1.4 4.2c-.197.59-.295.885-.477 1.104a1.5 1.5 0 0 1-.602.433c-.265.104-.576.104-1.198.104H6.83c-1.124 0-1.687 0-2.056-.235a1.5 1.5 0 0 1-.648-.9c-.106-.424.071-.957.427-2.023z"/></>
               ) : (
-                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                <path d="M4.5 6.9c0-.84 0-1.26.163-1.581a1.5 1.5 0 0 1 .656-.656c.32-.163.74-.163 1.581-.163h2.572c.376 0 .564 0 .735.051a1.2 1.2 0 0 1 .413.222c.137.113.242.269.45.582l.86 1.29c.208.313.313.469.45.582c.122.1.263.175.413.221c.171.052.359.052.735.052H17.1c.84 0 1.26 0 1.581.163a1.5 1.5 0 0 1 .656.656c.163.32.163.74.163 1.581v6.2c0 .84 0 1.26-.163 1.581a1.5 1.5 0 0 1-.656.656c-.32.163-.74.163-1.581.163H6.9c-.84 0-1.26 0-1.581-.163a1.5 1.5 0 0 1-.656-.656c-.163-.32-.163-.74-.163-1.581z"/>
               )}
             </svg>
             <span className="text-[12px] font-bold text-[var(--text-primary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
