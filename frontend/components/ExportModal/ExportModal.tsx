@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onExport: (format: 'html' | 'md' | 'txt' | 'pdf') => void;
+  onExport: (format: 'html' | 'md' | 'txt' | 'pdf' | 'docx') => void;
   filename: string;
   hasImages?: boolean;
 }
@@ -62,7 +62,7 @@ export default function ExportModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const handleFormatClick = (format: 'html' | 'md' | 'txt' | 'pdf') => {
+  const handleFormatClick = (format: 'html' | 'md' | 'txt' | 'pdf' | 'docx') => {
     onExport(format);
   };
 
@@ -121,6 +121,24 @@ export default function ExportModal({
           {/* Front page — fill cobre o back page na área de sobreposição */}
           <rect strokeWidth={1.5} x="3" y="5" width="13" height="17" rx="2"
             className="fill-[var(--dropdown-bg)] group-hover:fill-[var(--bg-secondary)] transition-colors"/>
+        </svg>
+      )
+    },
+    {
+      id: 'docx' as const,
+      name: 'Word',
+      extension: '.docx',
+      description: t('exportModal.docxDescription', 'Documento Word editável'),
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Document body */}
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+            d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          {/* Folded corner */}
+          <polyline strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} points="14 2 14 8 20 8"/>
+          {/* W letter */}
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+            d="M8 13l1.5 4 1.5-3 1.5 3 1.5-4"/>
         </svg>
       )
     }

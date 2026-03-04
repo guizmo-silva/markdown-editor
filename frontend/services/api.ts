@@ -254,6 +254,28 @@ export function getImageUrl(imagePath: string): string {
 }
 
 /**
+ * Export markdown to DOCX (Word). Sends documentPath so the backend can embed images.
+ */
+export async function exportToDocx(
+  content: string,
+  title?: string,
+  documentPath?: string,
+): Promise<Blob> {
+  const response = await fetch(`${getApiBaseUrl()}/export/docx`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, title, documentPath }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to export DOCX' }));
+    throw new Error(error.error || 'Failed to export DOCX');
+  }
+
+  return response.blob();
+}
+
+/**
  * Export a document with images as a zip archive.
  */
 export async function exportWithImages(

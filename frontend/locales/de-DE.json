@@ -137,6 +137,7 @@
     "text": "Text",
     "txtDescription": "Nur-Text ohne Formatierung",
     "pdfDescription": "Dokument zum Drucken",
+    "docxDescription": "Bearbeitbares Word-Dokument",
     "hasImages": "Dieses Dokument enthält Bilder. HTML/MD/TXT werden als .zip exportiert. Für PDF werden die Bilder in die Datei eingebettet."
   }
 }

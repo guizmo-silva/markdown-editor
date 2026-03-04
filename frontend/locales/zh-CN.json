@@ -137,6 +137,7 @@
     "text": "文本",
     "txtDescription": "无格式纯文本",
     "pdfDescription": "可打印文档",
+    "docxDescription": "可编辑的Word文档",
     "hasImages": "此文档包含图片。HTML/MD/TXT 将导出为 .zip 文件。PDF 格式将把图片嵌入文件中。"
   }
 }

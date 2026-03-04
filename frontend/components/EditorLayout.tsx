@@ -14,7 +14,7 @@ import { ExportModal } from './ExportModal';
 import { ImportModal } from './ImportModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
-import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, exportToPdf, getVolumes, listFiles } from '@/services/api';
+import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, exportToPdf, exportToDocx, getVolumes, listFiles } from '@/services/api';
 
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
@@ -498,7 +498,7 @@ export default function EditorLayout() {
     setFileRefreshTrigger(t => t + 1);
   }, [activeTabId, updateTabId]);
 
-  const handleExport = async (format: 'html' | 'md' | 'txt' | 'pdf') => {
+  const handleExport = async (format: 'html' | 'md' | 'txt' | 'pdf' | 'docx') => {
     const baseName = currentFilePath?.replace(/\.md$/, '').split('/').pop() || 'documento';
     const now = new Date();
     const timestamp = now.getFullYear().toString()
@@ -511,6 +511,20 @@ export default function EditorLayout() {
     const filename = `${baseName}_${timestamp}`;
 
     try {
+      if (format === 'docx') {
+        const blob = await exportToDocx(markdown, filename, currentFilePath ?? undefined);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setShowExportModal(false);
+        return;
+      }
+
       if (format === 'pdf') {
         const previewEl = document.querySelector('.markdown-preview') as HTMLElement | null;
         if (!previewEl) {

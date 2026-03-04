@@ -137,6 +137,7 @@
     "text": "Text",
     "txtDescription": "Plain text without formatting",
     "pdfDescription": "Document for printing",
+    "docxDescription": "Editable Word document",
     "hasImages": "This document has images. HTML/MD/TXT will be exported as .zip. For PDF, images will be embedded in the file."
   }
 }

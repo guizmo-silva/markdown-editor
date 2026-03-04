@@ -137,6 +137,7 @@
     "text": "Texte",
     "txtDescription": "Texte brut sans formatage",
     "pdfDescription": "Document pour impression",
+    "docxDescription": "Document Word modifiable",
     "hasImages": "Ce document contient des images. HTML/MD/TXT seront exportés en .zip. Pour PDF, les images seront intégrées au fichier."
   }
 }

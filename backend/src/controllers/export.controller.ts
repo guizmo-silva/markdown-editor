@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as exportService from '../services/export.service.js';
+import { markdownToDocx } from '../services/docxExport.service.js';
 
 export const exportToHTML = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -33,6 +34,24 @@ export const exportToPDF = async (req: Request, res: Response): Promise<void> =>
   } catch (error) {
     console.error('Error exporting to PDF:', error);
     res.status(500).json({ error: 'Failed to export to PDF' });
+  }
+};
+
+export const exportToDocx = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { content, documentPath, title = 'document' } = req.body;
+    if (!content) {
+      res.status(400).json({ error: 'Markdown content is required' });
+      return;
+    }
+
+    const buffer = await markdownToDocx(content, title, documentPath);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${title}.docx"`);
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error exporting to DOCX:', error);
+    res.status(500).json({ error: 'Failed to export to DOCX' });
   }
 };
 
