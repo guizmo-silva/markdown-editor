@@ -139,5 +139,18 @@
     "pdfDescription": "可打印文档",
     "docxDescription": "可编辑的Word文档",
     "hasImages": "此文档包含图片。HTML/MD/TXT 将导出为 .zip 文件。PDF 格式将把图片嵌入文件中。"
+  },
+  "trash": {
+    "title": "回收站",
+    "empty": "回收站为空",
+    "deletedOn": "删除于",
+    "daysLeft": "剩余{{days}}天",
+    "restore": "恢复",
+    "deleteForever": "永久删除",
+    "emptyTrash": "清空回收站",
+    "restoreTo": "恢复到...",
+    "originalPath": "原始位置",
+    "confirmEmpty": "永久清空回收站?",
+    "expiresIn": "{{days}}天后过期"
   }
 }

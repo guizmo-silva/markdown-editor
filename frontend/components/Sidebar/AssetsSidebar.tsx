@@ -45,6 +45,8 @@ interface AssetsSidebarProps {
   onToggleCollapse?: () => void;
   width?: number;
   fileRefreshTrigger?: number;
+  trashCount?: number;
+  onOpenTrash?: () => void;
 }
 
 export default function AssetsSidebar({
@@ -60,7 +62,9 @@ export default function AssetsSidebar({
   isCollapsed = false,
   onToggleCollapse,
   width = 230,
-  fileRefreshTrigger
+  fileRefreshTrigger,
+  trashCount = 0,
+  onOpenTrash,
 }: AssetsSidebarProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
@@ -580,33 +584,55 @@ export default function AssetsSidebar({
         </div>
       </div>
 
-      {/* Bottom Section - Export and Collapse buttons */}
-      <div className="flex-shrink-0 px-4 py-4 flex items-center justify-between">
-        {/* Export Button */}
-        <button
-          onClick={onExport}
-          className="px-4 py-2 bg-[var(--button-bg)] text-[var(--text-button)] text-[12px] font-medium rounded hover:bg-[var(--button-hover)] transition-colors"
-          style={{ fontFamily: 'Roboto Mono, monospace' }}
-          title={t('tooltips.export')}
-        >
-          {t('buttons.export')}
-        </button>
-
-        {/* Collapse Button */}
-        {onToggleCollapse && (
+      {/* Bottom Section - Trash + Export and Collapse buttons */}
+      <div className="flex-shrink-0 px-4 pt-2 pb-4 flex flex-col gap-1">
+        {/* Trash button (only visible when trash has items) */}
+        {trashCount > 0 && onOpenTrash && (
           <button
-            onClick={onToggleCollapse}
-            className="p-2 hover:ring-1 hover:ring-[var(--border-primary)] rounded transition-all"
-            aria-label={t('tooltips.hideSidebar')}
-            title={t('tooltips.hideSidebar')}
+            onClick={onOpenTrash}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[var(--hover-bg)] transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            title={t('trash.title', 'Lixeira')}
           >
-            <img
-              src={getIconPath('hide_side_bar_icon.svg')}
-              alt={t('tooltips.hideSidebar')}
-              className="h-4 w-4"
-            />
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+            <span className="text-[12px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+              {t('trash.title', 'Lixeira')}
+            </span>
+            <span className="ml-auto text-[11px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+              {trashCount}
+            </span>
           </button>
         )}
+
+        <div className="flex items-center justify-between">
+          {/* Export Button */}
+          <button
+            onClick={onExport}
+            className="px-4 py-2 bg-[var(--button-bg)] text-[var(--text-button)] text-[12px] font-medium rounded hover:bg-[var(--button-hover)] transition-colors"
+            style={{ fontFamily: 'Roboto Mono, monospace' }}
+            title={t('tooltips.export')}
+          >
+            {t('buttons.export')}
+          </button>
+
+          {/* Collapse Button */}
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="p-2 hover:ring-1 hover:ring-[var(--border-primary)] rounded transition-all"
+              aria-label={t('tooltips.hideSidebar')}
+              title={t('tooltips.hideSidebar')}
+            >
+              <img
+                src={getIconPath('hide_side_bar_icon.svg')}
+                alt={t('tooltips.hideSidebar')}
+                className="h-4 w-4"
+              />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

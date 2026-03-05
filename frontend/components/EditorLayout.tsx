@@ -12,9 +12,10 @@ import { Toolbar } from './Toolbar';
 import { WelcomeModal } from './WelcomeModal';
 import { ExportModal } from './ExportModal';
 import { ImportModal } from './ImportModal';
+import { TrashModal } from './TrashModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
-import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, exportToPdf, exportToDocx, getVolumes, listFiles } from '@/services/api';
+import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, exportToPdf, exportToDocx, getVolumes, listFiles, getTrashCount } from '@/services/api';
 
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
@@ -85,6 +86,9 @@ export default function EditorLayout() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showTrashModal, setShowTrashModal] = useState(false);
+  const [trashCount, setTrashCount] = useState(0);
+  const [imageRevision, setImageRevision] = useState(0);
   const importDestFolderRef = useRef<string>('/');
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -125,6 +129,11 @@ export default function EditorLayout() {
       setActiveTabId(newId);
     }
   }, [activeTabId]);
+
+  // Load trash count on mount
+  useEffect(() => {
+    getTrashCount().then(setTrashCount).catch(() => {});
+  }, []);
 
   // Update browser tab title with active document name
   useEffect(() => {
@@ -210,20 +219,49 @@ export default function EditorLayout() {
     });
   }, []);
 
-  // Extract first heading from markdown
+  // Extract a document title from markdown content.
+  // First tries any heading level; falls back to the first meaningful text line,
+  // skipping pure image lines and stripping all inline markdown formatting.
   const extractFirstHeading = useCallback((content: string): string | null => {
-    const match = content.match(/^#\s+(.+)$/m);
-    if (match && match[1]) {
-      // Clean the heading: remove special characters, trim, limit length
-      let heading = match[1].trim();
-      // Remove markdown formatting like **bold** or *italic*
-      heading = heading.replace(/\*+/g, '').replace(/_+/g, '');
-      // Remove invalid filename characters
-      heading = heading.replace(/[<>:"/\\|?*]/g, '');
-      // Limit length
-      heading = heading.substring(0, 50).trim();
-      return heading || null;
+    const MAX_LENGTH = 50;
+
+    const clean = (text: string): string =>
+      text
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, '')       // remove images
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')    // links → text only
+        .replace(/\*{1,3}([^*\n]*)\*{1,3}/g, '$1') // bold/italic (asterisks)
+        .replace(/_{1,3}([^_\n]*)_{1,3}/g, '$1')   // bold/italic (underscores)
+        .replace(/`[^`\n]+`/g, '')                  // inline code
+        .replace(/[<>:"/\\|?*]/g, '')               // invalid filename chars
+        .trim();
+
+    // Try any heading level first (# to ######)
+    const headingMatch = content.match(/^#{1,6}\s+(.+)$/m);
+    if (headingMatch) {
+      const title = clean(headingMatch[1]).substring(0, MAX_LENGTH).trim();
+      return title || null;
     }
+
+    // Fallback: find first non-empty, non-image text line
+    for (const rawLine of content.split('\n')) {
+      let line = rawLine.trim();
+      if (!line) continue;
+      if (/^!\[/.test(line)) continue;        // pure image line
+      if (/^(```|~~~)/.test(line)) continue;  // code fence
+      if (/^<!--/.test(line)) continue;       // HTML comment
+      if (/^---+$/.test(line)) continue;      // hr / frontmatter separator
+
+      // Strip block-level markers before cleaning
+      line = line
+        .replace(/^#{1,6}\s+/, '')
+        .replace(/^>\s*/, '')
+        .replace(/^[-*+]\s+/, '')
+        .replace(/^\d+\.\s+/, '');
+
+      const title = clean(line).substring(0, MAX_LENGTH).trim();
+      if (title) return title;
+    }
+
     return null;
   }, []);
 
@@ -246,6 +284,11 @@ export default function EditorLayout() {
   };
 
   const handleFileSelect = async (filePath: string) => {
+    // Skip image files — they're not editable in the text editor
+    const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.tiff', '.tif', '.avif']);
+    const ext = filePath.includes('.') ? '.' + filePath.split('.').pop()!.toLowerCase() : '';
+    if (imageExtensions.has(ext)) return;
+
     console.log('Selected file:', filePath);
 
     // Check if tab already exists
@@ -336,8 +379,16 @@ export default function EditorLayout() {
     try {
       await deleteFile(filePath);
       setFileRefreshTrigger(prev => prev + 1);
+      // If an image was deleted, bust the preview cache so it disappears immediately
+      const imageExts = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.tiff', '.tif', '.avif']);
+      const ext = filePath.includes('.') ? '.' + filePath.split('.').pop()!.toLowerCase() : '';
+      if (imageExts.has(ext)) {
+        setImageRevision(prev => prev + 1);
+      }
       // Close tab if we deleted its file
       closeTab(filePath);
+      // Refresh trash count
+      getTrashCount().then(setTrashCount).catch(() => {});
     } catch (err) {
       console.error('Failed to delete file:', err);
       alert(err instanceof Error ? err.message : 'Failed to delete file');
@@ -348,6 +399,12 @@ export default function EditorLayout() {
     try {
       await renameFile(oldPath, newPath);
       setFileRefreshTrigger(prev => prev + 1);
+      // If an image was moved, bust the preview cache so linked images reload
+      const imageExts = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.tiff', '.tif', '.avif']);
+      const ext = oldPath.includes('.') ? '.' + oldPath.split('.').pop()!.toLowerCase() : '';
+      if (imageExts.has(ext)) {
+        setImageRevision(prev => prev + 1);
+      }
       // Update tab ID if we renamed its file
       updateTabId(oldPath, newPath);
     } catch (err) {
@@ -1262,6 +1319,8 @@ export default function EditorLayout() {
             onToggleCollapse={handleToggleSidebar}
             width={sidebarWidth}
             fileRefreshTrigger={fileRefreshTrigger}
+            trashCount={trashCount}
+            onOpenTrash={() => setShowTrashModal(true)}
           />
           {/* Resize Handle */}
           <div
@@ -1287,6 +1346,22 @@ export default function EditorLayout() {
           <div className="py-3 flex-1">
             <ViewToggle currentMode={viewMode} onModeChange={handleViewModeChange} vertical={true} />
           </div>
+
+          {/* Trash button (collapsed, only when trash has items) */}
+          {trashCount > 0 && (
+            <div className="pb-2">
+              <button
+                onClick={() => setShowTrashModal(true)}
+                className="p-2 hover:ring-1 hover:ring-[var(--border-primary)] rounded transition-all text-[var(--text-secondary)]"
+                title={`Lixeira (${trashCount})`}
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round"
+                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+              </button>
+            </div>
+          )}
 
           {/* Expand Button - Fixed at bottom */}
           <div className="py-4">
@@ -1399,6 +1474,7 @@ export default function EditorLayout() {
                 columnWidth={viewMode !== 'split' ? columnWidth : undefined}
                 onColumnWidthChange={viewMode !== 'split' ? setColumnWidth : undefined}
                 filePath={currentFilePath ?? undefined}
+                imageRevision={imageRevision}
               />
             </div>
           )}
@@ -1437,6 +1513,16 @@ export default function EditorLayout() {
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         onConfirm={handleImportConfirm}
+      />
+
+      {/* Trash Modal */}
+      <TrashModal
+        isOpen={showTrashModal}
+        onClose={() => setShowTrashModal(false)}
+        onChanged={() => {
+          getTrashCount().then(setTrashCount).catch(() => {});
+          setFileRefreshTrigger(prev => prev + 1);
+        }}
       />
     </div>
   );

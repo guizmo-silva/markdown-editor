@@ -139,5 +139,18 @@
     "pdfDescription": "Dokument zum Drucken",
     "docxDescription": "Bearbeitbares Word-Dokument",
     "hasImages": "Dieses Dokument enthält Bilder. HTML/MD/TXT werden als .zip exportiert. Für PDF werden die Bilder in die Datei eingebettet."
+  },
+  "trash": {
+    "title": "Papierkorb",
+    "empty": "Papierkorb leer",
+    "deletedOn": "Gelöscht am",
+    "daysLeft": "noch {{days}} Tage",
+    "restore": "Wiederherstellen",
+    "deleteForever": "Endgültig löschen",
+    "emptyTrash": "Papierkorb leeren",
+    "restoreTo": "Wiederherstellen in...",
+    "originalPath": "Ursprünglicher Speicherort",
+    "confirmEmpty": "Papierkorb endgültig leeren?",
+    "expiresIn": "Läuft in {{days}} Tagen ab"
   }
 }

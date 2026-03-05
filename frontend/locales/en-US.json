@@ -139,5 +139,18 @@
     "pdfDescription": "Document for printing",
     "docxDescription": "Editable Word document",
     "hasImages": "This document has images. HTML/MD/TXT will be exported as .zip. For PDF, images will be embedded in the file."
+  },
+  "trash": {
+    "title": "Trash",
+    "empty": "Trash is empty",
+    "deletedOn": "Deleted on",
+    "daysLeft": "{{days}} days left",
+    "restore": "Restore",
+    "deleteForever": "Delete forever",
+    "emptyTrash": "Empty trash",
+    "restoreTo": "Restore to...",
+    "originalPath": "Original location",
+    "confirmEmpty": "Empty trash permanently?",
+    "expiresIn": "Expires in {{days}} days"
   }
 }

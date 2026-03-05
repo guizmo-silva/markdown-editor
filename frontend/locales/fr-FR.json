@@ -139,5 +139,18 @@
     "pdfDescription": "Document pour impression",
     "docxDescription": "Document Word modifiable",
     "hasImages": "Ce document contient des images. HTML/MD/TXT seront exportés en .zip. Pour PDF, les images seront intégrées au fichier."
+  },
+  "trash": {
+    "title": "Corbeille",
+    "empty": "Corbeille vide",
+    "deletedOn": "Supprimé le",
+    "daysLeft": "{{days}} jours restants",
+    "restore": "Restaurer",
+    "deleteForever": "Supprimer définitivement",
+    "emptyTrash": "Vider la corbeille",
+    "restoreTo": "Restaurer dans...",
+    "originalPath": "Emplacement original",
+    "confirmEmpty": "Vider la corbeille définitivement?",
+    "expiresIn": "Expire dans {{days}} jours"
   }
 }

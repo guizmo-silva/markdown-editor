@@ -182,6 +182,69 @@ export async function getVolumes(): Promise<VolumeInfo[]> {
   return data.volumes;
 }
 
+// ─── Trash ────────────────────────────────────────────────────────────────────
+
+export interface TrashItem {
+  id: string;
+  originalPath: string;
+  originalName: string;
+  deletedAt: string;
+  expiresAt: string;
+}
+
+export async function getTrashItems(): Promise<TrashItem[]> {
+  const response = await fetch(`${getApiBaseUrl()}/trash`);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to list trash' }));
+    throw new Error(error.error || 'Failed to list trash');
+  }
+  const data = await response.json();
+  return data.items;
+}
+
+export async function getTrashCount(): Promise<number> {
+  try {
+    const items = await getTrashItems();
+    return items.length;
+  } catch {
+    return 0;
+  }
+}
+
+export async function restoreTrashItem(id: string, destinationPath: string): Promise<void> {
+  const response = await fetch(`${getApiBaseUrl()}/trash/${encodeURIComponent(id)}/restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ destinationPath }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to restore item' }));
+    throw new Error(error.error || 'Failed to restore item');
+  }
+}
+
+export async function permanentlyDeleteTrashItem(id: string): Promise<void> {
+  const response = await fetch(`${getApiBaseUrl()}/trash/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to delete item' }));
+    throw new Error(error.error || 'Failed to delete item');
+  }
+}
+
+export async function emptyTrash(): Promise<void> {
+  const response = await fetch(`${getApiBaseUrl()}/trash`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to empty trash' }));
+    throw new Error(error.error || 'Failed to empty trash');
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+
 /**
  * Export markdown to HTML
  */

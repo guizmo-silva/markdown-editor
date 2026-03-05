@@ -1,9 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
-import trash from 'trash';
 import { validatePath, validateFileName } from '../utils/security.js';
 import { getVolumes, resolveVolumePath } from './volume.service.js';
 import { SUPPORTED_IMAGE_EXTENSIONS, slugify } from '../utils/imageFormats.js';
+import { moveToTrash } from './trash.service.js';
 
 export interface FileInfo {
   name: string;
@@ -123,8 +123,17 @@ const listVolumeDirectory = async (
         size: stats.size,
         modifiedAt: stats.mtime.toISOString(),
       });
+    } else if (SUPPORTED_IMAGE_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
+      fileInfos.push({
+        name: entry.name,
+        path: entryPath,
+        type: 'image',
+        extension: path.extname(entry.name).toLowerCase(),
+        size: stats.size,
+        modifiedAt: stats.mtime.toISOString(),
+      });
     }
-    // Non-.md, non-image files are ignored at root listing
+    // Other files are ignored at root listing
   }
 
   // Sort: folders first (alphabetically), then files (alphabetically)
@@ -237,8 +246,15 @@ export const deleteFileOrDirectory = async (relativePath: string): Promise<void>
   const { volume, relativePath: volRelativePath } = resolveVolumePath(relativePath);
   const safePath = await validatePath(volRelativePath, volume.mountPath);
 
-  // If deleting a .md file that is alone inside its document folder,
-  // trash the entire parent folder so no empty folder is left behind.
+  // Directories are permanently deleted — folders never go to the trash.
+  const stat = await fs.stat(safePath);
+  if (stat.isDirectory()) {
+    await fs.rm(safePath, { recursive: true, force: true });
+    return;
+  }
+
+  // If deleting a .md file inside its document folder, move the entire
+  // parent folder to trash so images are preserved and restorable together.
   if (path.extname(safePath).toLowerCase() === '.md') {
     const parentDir = path.dirname(safePath);
     const parentName = path.basename(parentDir);
@@ -246,20 +262,20 @@ export const deleteFileOrDirectory = async (relativePath: string): Promise<void>
 
     if (slugify(parentName) === slugify(mdBaseName)) {
       try {
-        const siblings = await fs.readdir(parentDir, { withFileTypes: true });
-        const nonHidden = siblings.filter(e => !e.name.startsWith('.'));
-        if (nonHidden.length === 1 && nonHidden[0].name === path.basename(safePath)) {
-          // File is alone in its document folder — trash the whole folder
-          await trash(parentDir);
-          return;
-        }
+        await fs.access(parentDir);
+        // Move the whole document folder to trash (preserves images)
+        const parentRelativeToVolume = path.relative(volume.mountPath, parentDir);
+        const parentRelativePath = `${volume.name}/${parentRelativeToVolume}`;
+        await moveToTrash(parentDir, parentRelativePath);
+        return;
       } catch {
-        // Fall through to normal deletion
+        // Parent dir inaccessible — fall through to file-only deletion
       }
     }
   }
 
-  await trash(safePath);
+  // Regular file: move only the file to trash
+  await moveToTrash(safePath, relativePath);
 };
 
 export const renameFileOrDirectory = async (
@@ -270,15 +286,33 @@ export const renameFileOrDirectory = async (
   const oldResolved = resolveVolumePath(oldRelativePath);
   const newResolved = resolveVolumePath(newRelativePath);
 
-  // Reject cross-volume moves
-  if (oldResolved.volume.name !== newResolved.volume.name) {
-    throw new Error('Cannot move files between different volumes');
-  }
-
   const oldSafePath = await validatePath(oldResolved.relativePath, oldResolved.volume.mountPath);
   const newSafePath = await validatePath(newResolved.relativePath, newResolved.volume.mountPath);
 
-  await fs.rename(oldSafePath, newSafePath);
+  // If moving a .md that lives inside its document folder, move the whole folder
+  let srcPath = oldSafePath;
+  let destPath = newSafePath;
+  if (path.extname(oldSafePath).toLowerCase() === '.md') {
+    const parentDir = path.dirname(oldSafePath);
+    const parentName = path.basename(parentDir);
+    const mdBaseName = path.basename(oldSafePath, '.md');
+    if (slugify(parentName) === slugify(mdBaseName)) {
+      srcPath = parentDir;
+      destPath = path.join(path.dirname(newSafePath), parentName);
+    }
+  }
+
+  // Try rename first (fast, same filesystem); fall back to copy+delete for cross-device/cross-volume
+  try {
+    await fs.rename(srcPath, destPath);
+  } catch (err: any) {
+    if (err.code === 'EXDEV') {
+      await fs.cp(srcPath, destPath, { recursive: true });
+      await fs.rm(srcPath, { recursive: true, force: true });
+    } else {
+      throw err;
+    }
+  }
 };
 
 /**

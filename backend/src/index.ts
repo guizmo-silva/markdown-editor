@@ -5,7 +5,9 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import fileRoutes from './routes/file.routes.js';
 import exportRoutes from './routes/export.routes.js';
+import trashRoutes from './routes/trash.routes.js';
 import { validateVolumes } from './services/volume.service.js';
+import { cleanupExpired } from './services/trash.service.js';
 
 dotenv.config();
 
@@ -35,6 +37,7 @@ app.use('/api/', rateLimit({
 // Routes
 app.use('/api/files', fileRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/trash', trashRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {
@@ -62,4 +65,10 @@ app.listen(PORT, () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('Configured volumes:');
   validateVolumes();
+
+  // Cleanup expired trash items on startup and every 6 hours
+  cleanupExpired().catch(err => console.error('Trash cleanup error:', err));
+  setInterval(() => {
+    cleanupExpired().catch(err => console.error('Trash cleanup error:', err));
+  }, 6 * 60 * 60 * 1000);
 });

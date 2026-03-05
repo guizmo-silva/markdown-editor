@@ -28,8 +28,8 @@
      inkscape:document-units="px"
      showguides="true"
      inkscape:zoom="1.4645623"
-     inkscape:cx="1126.6164"
-     inkscape:cy="275.16753"
+     inkscape:cx="1126.6165"
+     inkscape:cy="520.97476"
      inkscape:window-width="1920"
      inkscape:window-height="1024"
      inkscape:window-x="0"
@@ -44,7 +44,10 @@
        height="210"
        id="page1"
        margin="0"
-       bleed="0" />
+       bleed="0"
+       inkscape:export-filename="../../docs/logo/mkd-logo.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
     <inkscape:page
        x="309.646"
        y="0"

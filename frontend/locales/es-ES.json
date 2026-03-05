@@ -139,5 +139,18 @@
     "pdfDescription": "Documento para impresión",
     "docxDescription": "Documento Word editable",
     "hasImages": "Este documento tiene imágenes. HTML/MD/TXT se exportarán como .zip. Para PDF, las imágenes se incorporarán al archivo."
+  },
+  "trash": {
+    "title": "Papelera",
+    "empty": "Papelera vacía",
+    "deletedOn": "Eliminado el",
+    "daysLeft": "{{days}} días restantes",
+    "restore": "Restaurar",
+    "deleteForever": "Eliminar definitivamente",
+    "emptyTrash": "Vaciar papelera",
+    "restoreTo": "Restaurar en...",
+    "originalPath": "Ubicación original",
+    "confirmEmpty": "¿Vaciar papelera permanentemente?",
+    "expiresIn": "Expira en {{days}} días"
   }
 }

@@ -198,12 +198,13 @@ interface MarkdownPreviewProps {
   columnWidth?: number;
   onColumnWidthChange?: (value: number) => void;
   filePath?: string;
+  imageRevision?: number;
 }
 
 // Inline tag names that correspond to inlineTypes in the remark plugin
 const inlineTagNames = new Set(['EM', 'STRONG', 'A', 'CODE', 'DEL']);
 
-function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange, filePath }: MarkdownPreviewProps) {
+function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange, filePath, imageRevision }: MarkdownPreviewProps) {
   const isDark = viewTheme === 'dark';
 
   // Theme-specific colors
@@ -316,8 +317,7 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
   // Memoize components so their function references are stable across re-renders.
   // Without this, ReactMarkdown treats each new reference as a different component type
   // and unmounts/remounts elements (including <img>), triggering image reload cycles
-  // that cause layout shifts and scroll flicker. Only depends on imageBasePath
-  // (changes only on file/tab switch, not on every keystroke).
+  // that cause layout shifts and scroll flicker. Depends on imageBasePath and imageRevision.
   const markdownComponents = useMemo(() => ({
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     code({ node, className, children, ...props }: React.ComponentPropsWithoutRef<'code'> & { node?: unknown; className?: string }) {
@@ -346,12 +346,13 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
       const srcStr = typeof src === 'string' ? src : undefined;
       let resolvedSrc: string | undefined = srcStr;
       if (srcStr && imageBasePath && !/^https?:\/\//.test(srcStr) && !srcStr.startsWith('/')) {
-        resolvedSrc = getImageUrl(`${imageBasePath}/${srcStr}`);
+        const base = getImageUrl(`${imageBasePath}/${srcStr}`);
+        resolvedSrc = imageRevision ? `${base}&v=${imageRevision}` : base;
       }
       // eslint-disable-next-line @next/next/no-img-element
       return <img src={resolvedSrc} alt={alt || ''} {...props} />;
     },
-  }), [imageBasePath]);
+  }), [imageBasePath, imageRevision]);
 
   return (
     <div className={`h-full w-full flex flex-col preview-container ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>

@@ -109,9 +109,10 @@ interface FileTreeItemProps {
   onDragStart?: (item: FileItem, e: React.MouseEvent) => void;
   onDragOverFolder?: (folderPath: string | null) => void;
   getParentFolder?: (path: string) => string;
+  isDocumentChild?: boolean;
 }
 
-function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, creatingFolderIn, onStartCreateFolder, onConfirmCreateFolder, onCancelCreateFolder, editingItemPath, onStartEditItem, onConfirmEditItem, onCancelEditItem, editItemValue, onEditItemValueChange, sidebarWidth, expandedFolders, onToggleExpand, draggedItem, dragOverTarget, onDragStart, onDragOverFolder, getParentFolder }: FileTreeItemProps) {
+function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, creatingFolderIn, onStartCreateFolder, onConfirmCreateFolder, onCancelCreateFolder, editingItemPath, onStartEditItem, onConfirmEditItem, onCancelEditItem, editItemValue, onEditItemValueChange, sidebarWidth, expandedFolders, onToggleExpand, draggedItem, dragOverTarget, onDragStart, onDragOverFolder, getParentFolder, isDocumentChild }: FileTreeItemProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -185,7 +186,9 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (item.type === 'file' && !isDocumentFile && onDragStart && !isEditingThis) {
+    const isDraggableFile = item.type === 'file' && onDragStart && !isEditingThis;
+    const isDraggableImage = item.type === 'image' && !isDocumentChild && onDragStart && !isEditingThis;
+    if (isDraggableFile || isDraggableImage) {
       onDragStart(item, e);
     }
   };
@@ -284,11 +287,11 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
         onDoubleClick={handleDoubleClick}
         onMouseDown={handleMouseDown}
         onMouseEnter={handleMouseEnter}
-        draggable={item.type === 'image'}
-        onDragStart={item.type === 'image' ? handleImageDragStart : undefined}
+        draggable={item.type === 'image' && !!isDocumentChild}
+        onDragStart={item.type === 'image' && !!isDocumentChild ? handleImageDragStart : undefined}
         className={`relative overflow-hidden group flex items-center gap-1 py-1 pr-2 cursor-pointer transition-colors ${
-          isDragSource ? 'opacity-50' : 'hover:bg-[var(--hover-bg)]'
-        } ${isDragTarget ? 'bg-[var(--accent-color)]/20 ring-1 ring-[var(--accent-color)]' : ''}`}
+          isDragSource ? 'opacity-30' : 'hover:bg-[var(--hover-bg)]'
+        } ${isDragTarget ? 'bg-[var(--accent-color)]/25 ring-2 ring-[var(--accent-color)] ring-inset' : ''}`}
         style={{ paddingLeft: '8px' }}
       >
         {/* File/Folder/Image icon */}
@@ -447,6 +450,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
                   onDragStart={onDragStart}
                   onDragOverFolder={onDragOverFolder}
                   getParentFolder={getParentFolder}
+                  isDocumentChild={isDocumentFile}
                 />
               ))}
 
@@ -509,24 +513,11 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
     return lastSlash > 0 ? filePath.substring(0, lastSlash) : '';
   }, []);
 
-  // Get volume name from a path
-  const getVolumeName = useCallback((filePath: string): string => {
-    const slashIndex = filePath.indexOf('/');
-    return slashIndex === -1 ? filePath : filePath.substring(0, slashIndex);
-  }, []);
-
-  // Check if dropping is valid (not same folder, same volume)
+  // Check if dropping is valid (not same folder; cross-volume allowed via copy+delete)
   const isValidDrop = useCallback((draggedPath: string, targetFolder: string): boolean => {
     const sourceFolder = getParentFolder(draggedPath);
-    if (sourceFolder === targetFolder) return false;
-    // Block cross-volume drops in multi-volume mode
-    if (isMultiVolume) {
-      const sourceVolume = getVolumeName(draggedPath);
-      const targetVolume = getVolumeName(targetFolder);
-      if (sourceVolume !== targetVolume) return false;
-    }
-    return true;
-  }, [getParentFolder, getVolumeName, isMultiVolume]);
+    return sourceFolder !== targetFolder;
+  }, [getParentFolder]);
 
   // Handle drag start
   const handleDragStart = useCallback((item: FileItem, e: React.MouseEvent) => {
@@ -909,7 +900,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
           onMouseEnter={() => handleRootMouseEnter(`__${rootKey}__`)}
           onMouseLeave={() => handleRootMouseLeave(`__${rootKey}__`)}
           className={`relative overflow-hidden group flex items-center justify-between pl-[20px] pr-3 py-2 cursor-pointer transition-colors ${
-            isDragTarget ? 'bg-[var(--accent-color)]/20 ring-1 ring-[var(--accent-color)]' : 'hover:bg-[var(--hover-bg)]'
+            isDragTarget ? 'bg-[var(--accent-color)]/25 ring-2 ring-[var(--accent-color)] ring-inset' : 'hover:bg-[var(--hover-bg)]'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -969,17 +960,26 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
       {/* Ghost element for drag preview */}
       {isDragging && ghostPosition && draggedItem && (
         <div
-          className="fixed pointer-events-none z-50 px-2 py-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded shadow-lg flex items-center gap-1"
+          className="fixed pointer-events-none z-50 px-2.5 py-1.5 rounded-md shadow-xl flex items-center gap-1.5"
           style={{
-            left: ghostPosition.x + 10,
+            left: ghostPosition.x + 14,
             top: ghostPosition.y + 10,
             fontFamily: 'Roboto Mono, monospace',
+            background: 'var(--accent-color)',
+            border: '1.5px solid color-mix(in srgb, var(--accent-color) 60%, white)',
+            opacity: 0.92,
           }}
         >
-          <svg className="w-[14px] h-[14px] flex-shrink-0 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span className="text-[11px] text-[var(--text-primary)]">{draggedItem.name}</span>
+          {draggedItem.type === 'image' ? (
+            <svg className="w-[13px] h-[13px] flex-shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          ) : (
+            <svg className="w-[13px] h-[13px] flex-shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          )}
+          <span className="text-[11px] font-medium text-white max-w-[160px] truncate">{draggedItem.name}</span>
         </div>
       )}
 
