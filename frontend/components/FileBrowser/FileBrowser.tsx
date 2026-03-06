@@ -60,9 +60,14 @@ function DeleteConfirmModal({ isOpen, fileName, onConfirm, onCancel }: { isOpen:
           ${animateIn ? 'opacity-100 translate-y-0' : exitDirection ? 'opacity-0 translate-y-2' : 'opacity-0 -translate-y-2'}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-[13px] text-[var(--text-primary)] mb-6 text-center" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-          {t('fileBrowser.deleteConfirm', 'Tem certeza que deseja apagar')} <strong>{fileName}</strong>?
-        </p>
+        <div className="mb-6 text-center">
+          <p className="text-[13px] text-[var(--text-primary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+            {t('fileBrowser.deleteConfirm', 'Tem certeza que deseja apagar')}
+          </p>
+          <p className="text-[13px] font-bold text-[var(--text-primary)] break-all mt-1" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+            {fileName}
+          </p>
+        </div>
         <div className="flex justify-center gap-3">
           <button
             onClick={onCancel}

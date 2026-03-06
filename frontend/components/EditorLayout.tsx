@@ -15,7 +15,7 @@ import { ImportModal } from './ImportModal';
 import { TrashModal } from './TrashModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
-import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, exportToPdf, exportToDocx, getVolumes, listFiles, getTrashCount } from '@/services/api';
+import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, exportToPdf, exportToDocx, importDocx, importZip, getVolumes, listFiles, getTrashCount } from '@/services/api';
 
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
@@ -311,6 +311,26 @@ export default function EditorLayout() {
         saveStatus: 'saved'
       };
       addOrSwitchToTab(newTab);
+
+      // Check if the file is inside a document folder with local images
+      const pathParts = filePath.split('/');
+      const fileNameWithoutExt = pathParts[pathParts.length - 1].replace(/\.md$/, '');
+      const parentDirName = pathParts.length >= 2 ? pathParts[pathParts.length - 2] : '';
+      if (parentDirName && parentDirName === fileNameWithoutExt) {
+        const parentDirPath = pathParts.slice(0, -1).join('/');
+        try {
+          const siblings = await listFiles(parentDirPath);
+          if (siblings.some(f => f.type === 'image')) {
+            setTabsWithImages(prev => {
+              const next = new Set(prev);
+              next.add(filePath);
+              return next;
+            });
+          }
+        } catch {
+          // non-critical
+        }
+      }
     } catch (err) {
       console.error('Failed to load file:', err);
       alert(err instanceof Error ? err.message : 'Failed to load file');
@@ -495,6 +515,30 @@ export default function EditorLayout() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
+
+    if (file.name.toLowerCase().endsWith('.docx')) {
+      const destFolder = importDestFolderRef.current;
+      try {
+        const { filePath } = await importDocx(file, destFolder);
+        await handleFileSelect(filePath);
+        setFileRefreshTrigger(t => t + 1);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Erro ao importar .docx');
+      }
+      return;
+    }
+
+    if (file.name.toLowerCase().endsWith('.zip')) {
+      const destFolder = importDestFolderRef.current;
+      try {
+        const { filePath } = await importZip(file, destFolder);
+        await handleFileSelect(filePath);
+        setFileRefreshTrigger(t => t + 1);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Erro ao importar .zip');
+      }
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = async (ev) => {
@@ -1503,7 +1547,7 @@ export default function EditorLayout() {
       <input
         ref={importFileInputRef}
         type="file"
-        accept=".md,.txt"
+        accept=".md,.txt,.docx,.zip"
         className="hidden"
         onChange={handleImportFileChange}
       />
@@ -1523,6 +1567,7 @@ export default function EditorLayout() {
           getTrashCount().then(setTrashCount).catch(() => {});
           setFileRefreshTrigger(prev => prev + 1);
         }}
+        onImageRestored={() => setImageRevision(prev => prev + 1)}
       />
     </div>
   );

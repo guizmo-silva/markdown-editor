@@ -20,6 +20,7 @@ interface TrashModalProps {
   isOpen: boolean;
   onClose: () => void;
   onChanged: () => void; // called after any mutation (restore, delete, empty)
+  onImageRestored?: () => void; // called when an image file is restored
 }
 
 // Mirrors backend slugify for document-folder detection
@@ -201,7 +202,9 @@ function buildDestinationPath(folder: string, originalName: string): string {
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
-export default function TrashModal({ isOpen, onClose, onChanged }: TrashModalProps) {
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.tiff', '.tif', '.avif']);
+
+export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored }: TrashModalProps) {
   const { t } = useTranslation();
 
   const [shouldRender, setShouldRender] = useState(false);
@@ -295,6 +298,12 @@ export default function TrashModal({ isOpen, onClose, onChanged }: TrashModalPro
       await restoreTrashItem(item.id, dest);
       setRestoringId(null);
       onChanged();
+      const ext = item.originalName.includes('.')
+        ? '.' + item.originalName.split('.').pop()!.toLowerCase()
+        : '';
+      if (IMAGE_EXTENSIONS.has(ext)) {
+        onImageRestored?.();
+      }
       await loadData();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to restore');

@@ -317,6 +317,56 @@ export function getImageUrl(imagePath: string): string {
 }
 
 /**
+ * Import a .docx file and convert it to Markdown.
+ * Returns the volume-prefixed path of the created .md file.
+ */
+export async function importDocx(
+  file: File,
+  destFolder: string,
+): Promise<{ filePath: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('destFolder', destFolder);
+
+  const response = await fetch(`${getApiBaseUrl()}/files/import-docx`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to import' }));
+    throw new Error(error.error || 'Failed to import docx');
+  }
+
+  return response.json();
+}
+
+/**
+ * Import a .zip file (markdown + images) and recreate a document folder.
+ * Returns the volume-prefixed path of the created .md file.
+ */
+export async function importZip(
+  file: File,
+  destFolder: string,
+): Promise<{ filePath: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('destFolder', destFolder);
+
+  const response = await fetch(`${getApiBaseUrl()}/files/import-zip`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to import' }));
+    throw new Error(error.error || 'Failed to import zip');
+  }
+
+  return response.json();
+}
+
+/**
  * Export markdown to DOCX (Word). Sends documentPath so the backend can embed images.
  */
 export async function exportToDocx(

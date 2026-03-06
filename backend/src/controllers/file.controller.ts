@@ -6,6 +6,8 @@ import * as fileService from '../services/file.service.js';
 import { getVolumes } from '../services/volume.service.js';
 import { validateVolumePath } from '../utils/security.js';
 import { SUPPORTED_IMAGE_EXTENSIONS, MIME_MAP } from '../utils/imageFormats.js';
+import { docxToMarkdown } from '../services/docxImport.service.js';
+import { extractZip } from '../services/zipImport.service.js';
 
 export const upload = multer({
   storage: multer.memoryStorage(),
@@ -164,6 +166,119 @@ export const serveImage = async (req: Request, res: Response): Promise<void> => 
   } catch (error) {
     console.error('Error serving image:', error);
     res.status(404).json({ error: 'Image not found' });
+  }
+};
+
+export const importDocx = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const file = (req as Request & { file?: Express.Multer.File }).file;
+    const { destFolder } = req.body;
+
+    if (!file) {
+      res.status(400).json({ error: 'File is required' });
+      return;
+    }
+    if (!destFolder || typeof destFolder !== 'string') {
+      res.status(400).json({ error: 'destFolder is required' });
+      return;
+    }
+
+    const baseName = path.basename(file.originalname, path.extname(file.originalname));
+    const mdFilename = `${baseName}.md`;
+    const stem = baseName;
+
+    const { markdown, images } = await docxToMarkdown(file.buffer);
+
+    // Find a free path, avoiding conflicts
+    let finalPath = '';
+    let counter = 0;
+    while (true) {
+      const candidateName = counter === 0 ? mdFilename : `${stem} (${counter}).md`;
+      const candidatePath = destFolder === '/' ? candidateName : `${destFolder}/${candidateName}`;
+      try {
+        await fileService.createNewFile(candidatePath, markdown);
+        finalPath = candidatePath;
+        break;
+      } catch (err: any) {
+        if (err.message === 'File already exists') {
+          counter++;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (images.length > 0) {
+      // Create document folder and move .md into it, then add images
+      const newDocPath = await fileService.createDocumentFolder(finalPath);
+      for (const img of images) {
+        await fileService.addImageToDocumentFolder(newDocPath, img.buffer, img.name);
+      }
+      // Rewrite the file at the new location (createDocumentFolder moved it)
+      await fileService.writeFileContent(newDocPath, markdown);
+      res.json({ filePath: newDocPath });
+    } else {
+      res.json({ filePath: finalPath });
+    }
+  } catch (error) {
+    console.error('Error importing docx:', error);
+    res.status(500).json({ error: 'Failed to import docx' });
+  }
+};
+
+export const importZip = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const file = (req as Request & { file?: Express.Multer.File }).file;
+    const { destFolder } = req.body;
+
+    if (!file) { res.status(400).json({ error: 'File is required' }); return; }
+    if (!destFolder || typeof destFolder !== 'string') {
+      res.status(400).json({ error: 'destFolder is required' }); return;
+    }
+
+    const { mdFilename, mdContent, images } = await extractZip(file.buffer);
+
+    const stem = path.basename(mdFilename, '.md');
+
+    let finalPath = '';
+    let counter = 0;
+    while (true) {
+      const candidateStem = counter === 0 ? stem : `${stem} (${counter})`;
+      const candidateName = `${candidateStem}.md`;
+      const candidatePath = destFolder === '/' ? candidateName : `${destFolder}/${candidateName}`;
+      const candidateFolderPath = destFolder === '/' ? candidateStem : `${destFolder}/${candidateStem}`;
+
+      // Check if document folder already exists (a previously imported document occupies that name)
+      try {
+        const folderAbsPath = await validateVolumePath(candidateFolderPath);
+        await fs.access(folderAbsPath);
+        counter++;
+        continue;
+      } catch {
+        // folder doesn't exist — proceed
+      }
+
+      try {
+        await fileService.createNewFile(candidatePath, mdContent);
+        finalPath = candidatePath;
+        break;
+      } catch (err: any) {
+        if (err.message === 'File already exists') { counter++; } else { throw err; }
+      }
+    }
+
+    const newDocPath = await fileService.createDocumentFolder(finalPath);
+    for (const img of images) {
+      await fileService.addImageToDocumentFolder(newDocPath, img.buffer, img.name);
+    }
+    await fileService.writeFileContent(newDocPath, mdContent);
+
+    res.json({ filePath: newDocPath });
+  } catch (error: any) {
+    console.error('Error importing zip:', error);
+    const msg = error?.message || 'Failed to import zip';
+    const status = msg.includes('ZIP') || msg.includes('suportado') || msg.includes('excede') ? 422 : 500;
+    res.status(status).json({ error: msg });
   }
 };
 

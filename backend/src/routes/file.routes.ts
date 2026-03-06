@@ -10,6 +10,8 @@ import {
   listVolumes,
   serveImage,
   importImage,
+  importDocx,
+  importZip,
   upload,
 } from '../controllers/file.controller.js';
 
@@ -38,6 +40,12 @@ router.post('/create-folder', createFolder);
 
 // Import image into document folder
 router.post('/import-image', upload.single('file'), importImage);
+
+// Import .docx and convert to markdown
+router.post('/import-docx', upload.single('file'), importDocx);
+
+// Import .zip (markdown + images)
+router.post('/import-zip', upload.single('file'), importZip);
 
 // Delete file
 router.delete('/delete', deleteFile);
