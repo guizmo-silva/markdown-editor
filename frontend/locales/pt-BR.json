@@ -56,7 +56,11 @@
     "snippetsErrorName": "Nome obrigatório.",
     "snippetsErrorContent": "Conteúdo obrigatório.",
     "snippetsErrorMaxLength": "Máx. {{max}} caracteres.",
-    "snippetsErrorMaxCount": "Máx. {{max}} snippets."
+    "snippetsErrorMaxCount": "Máx. {{max}} snippets.",
+    "caseConvert": "Alternar maiúsculas/minúsculas",
+    "caseSentence": "Primeira maiúscula",
+    "caseLower": "minúsculas",
+    "caseUpper": "MAIÚSCULAS"
   },
   "sidebar": {
     "title": "Elementos",

@@ -433,20 +433,91 @@ const spellcheckCompartment = new Compartment();
 const createFormatCommand = (prefix: string, suffix: string) => {
   return (view: EditorView): boolean => {
     const { from, to } = view.state.selection.main;
+    const doc = view.state.doc.toString();
     const selectedText = view.state.sliceDoc(from, to);
 
-    // Check if text is already formatted by looking at surrounding characters
+    // If no selection: detect formatted span under cursor or auto-format the word
+    if (from === to) {
+      const searchRadius = 200;
+      const searchStart = Math.max(0, from - searchRadius);
+      const searchEnd = Math.min(doc.length, to + searchRadius);
+      const searchArea = doc.substring(searchStart, searchEnd);
+      const relativePos = from - searchStart;
+
+      const escPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escSuffix = suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      const pattern =
+        prefix === '*' && suffix === '*'
+          ? /(?<!\*)\*(?!\*)([\s\S]*?)(?<!\*)\*(?!\*)/g
+          : new RegExp(escPrefix + '([\\s\\S]*?)' + escSuffix, 'g');
+
+      let foundSpan: { inner: string; absoluteStart: number; absoluteEnd: number } | null = null;
+
+      for (const match of searchArea.matchAll(pattern)) {
+        const spanStart = match.index!;
+        const spanEnd = spanStart + match[0].length;
+        if (relativePos >= spanStart && relativePos <= spanEnd) {
+          foundSpan = { inner: match[1], absoluteStart: searchStart + spanStart, absoluteEnd: searchStart + spanEnd };
+          break;
+        }
+      }
+
+      // Special case: combined ***...*** when clicking italic (*)
+      if (!foundSpan && prefix === '*' && suffix === '*') {
+        for (const match of searchArea.matchAll(/\*{3}([\s\S]*?)\*{3}/g)) {
+          const spanStart = match.index!;
+          const spanEnd = spanStart + match[0].length;
+          if (relativePos >= spanStart && relativePos <= spanEnd) {
+            foundSpan = { inner: '**' + match[1] + '**', absoluteStart: searchStart + spanStart, absoluteEnd: searchStart + spanEnd };
+            break;
+          }
+        }
+      }
+
+      if (foundSpan) {
+        const { inner, absoluteStart, absoluteEnd } = foundSpan;
+        const newPos = Math.max(absoluteStart, Math.min(from - prefix.length, absoluteStart + inner.length));
+        view.dispatch({ changes: { from: absoluteStart, to: absoluteEnd, insert: inner }, selection: { anchor: newPos } });
+        return true;
+      }
+
+      // No span found — auto-format the word under cursor
+      let wordStart = from;
+      let wordEnd = from;
+      while (wordStart > 0 && !/\s/.test(doc[wordStart - 1])) wordStart--;
+      while (wordEnd < doc.length && !/\s/.test(doc[wordEnd])) wordEnd++;
+
+      if (wordStart < wordEnd) {
+        const wordText = doc.substring(wordStart, wordEnd);
+        const cursorPos = wordStart + prefix.length + wordText.length;
+        view.dispatch({
+          changes: { from: wordStart, to: wordEnd, insert: prefix + wordText + suffix },
+          selection: { anchor: cursorPos }
+        });
+        return true;
+      }
+    }
+
+    // With selection: check if already formatted and toggle
     const beforeText = view.state.sliceDoc(Math.max(0, from - prefix.length), from);
     const afterText = view.state.sliceDoc(to, to + suffix.length);
 
     if (beforeText === prefix && afterText === suffix) {
-      // Remove formatting
+      // Remove formatting (markers are outside the selection)
       view.dispatch({
         changes: [
           { from: from - prefix.length, to: from, insert: '' },
           { from: to, to: to + suffix.length, insert: '' }
         ],
         selection: { anchor: from - prefix.length, head: to - prefix.length }
+      });
+    } else if (selectedText.startsWith(prefix) && selectedText.endsWith(suffix) && selectedText.length > prefix.length + suffix.length) {
+      // Remove formatting (markers are inside the selection)
+      const unwrapped = selectedText.slice(prefix.length, -suffix.length);
+      view.dispatch({
+        changes: { from, to, insert: unwrapped },
+        selection: { anchor: from, head: from + unwrapped.length }
       });
     } else {
       // Add formatting

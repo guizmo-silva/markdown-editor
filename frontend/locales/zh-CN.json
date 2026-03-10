@@ -56,7 +56,11 @@
     "snippetsErrorName": "名称为必填项。",
     "snippetsErrorContent": "内容为必填项。",
     "snippetsErrorMaxLength": "最多 {{max}} 个字符。",
-    "snippetsErrorMaxCount": "最多 {{max}} 个片段。"
+    "snippetsErrorMaxCount": "最多 {{max}} 个片段。",
+    "caseConvert": "大小写转换",
+    "caseSentence": "首字母大写",
+    "caseLower": "全部小写",
+    "caseUpper": "全部大写"
   },
   "sidebar": {
     "title": "元素",

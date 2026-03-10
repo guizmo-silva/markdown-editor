@@ -56,7 +56,11 @@
     "snippetsErrorName": "Name is required.",
     "snippetsErrorContent": "Content is required.",
     "snippetsErrorMaxLength": "Max. {{max}} characters.",
-    "snippetsErrorMaxCount": "Max. {{max}} snippets."
+    "snippetsErrorMaxCount": "Max. {{max}} snippets.",
+    "caseConvert": "Case conversion",
+    "caseSentence": "Sentence case",
+    "caseLower": "lowercase",
+    "caseUpper": "UPPERCASE"
   },
   "sidebar": {
     "title": "Assets",

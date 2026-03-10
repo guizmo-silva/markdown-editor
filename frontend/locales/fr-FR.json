@@ -56,7 +56,11 @@
     "snippetsErrorName": "Le nom est obligatoire.",
     "snippetsErrorContent": "Le contenu est obligatoire.",
     "snippetsErrorMaxLength": "Max. {{max}} caractères.",
-    "snippetsErrorMaxCount": "Max. {{max}} extraits."
+    "snippetsErrorMaxCount": "Max. {{max}} extraits.",
+    "caseConvert": "Casse du texte",
+    "caseSentence": "Première en majuscule",
+    "caseLower": "minuscules",
+    "caseUpper": "MAJUSCULES"
   },
   "sidebar": {
     "title": "Éléments",

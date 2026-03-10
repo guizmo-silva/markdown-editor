@@ -1,0 +1,65 @@
+# Compose para desenvolvimento com hot reload
+# Uso: docker compose -f docker-compose.watch.yml up
+#
+# Primeira vez ou ao mudar package.json:
+#   docker compose -f docker-compose.watch.yml up --build
+#
+# Se trocar pacotes e o hot reload parar de funcionar:
+#   docker compose -f docker-compose.watch.yml down -v  (apaga os volumes de node_modules)
+#   docker compose -f docker-compose.watch.yml up --build
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend.dev
+    container_name: mkd-frontend-watch
+    ports:
+      - "3010:3000"
+    environment:
+      - NODE_ENV=development
+      - API_PORT=3011
+      # Necessário em alguns ambientes (macOS/WSL) para o Next.js detectar mudanças via polling
+      # No Linux nativo pode deixar comentado
+      # - WATCHPACK_POLLING=true
+    volumes:
+      - ./frontend:/app:z        # código-fonte do host (:z necessário para SELinux/Fedora)
+      - /app/node_modules        # preserva node_modules da imagem (não sobrescreve)
+      - /app/.next               # preserva cache de build do Next.js
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - mkd-watch
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend.dev
+    container_name: mkd-backend-watch
+    ports:
+      - "3011:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - PUID=1000
+      - PGID=1000
+      - WORKSPACE_ROOT=/workspace
+      - EXTRA_VOLUMES=teste:/teste
+    volumes:
+      - ./backend:/app:z          # código-fonte do host (:z necessário para SELinux/Fedora)
+      - /app/node_modules        # preserva node_modules da imagem
+      - ./workspace:/workspace:z
+      - /home/guizmo/Teste:/teste:z
+    networks:
+      - mkd-watch
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  mkd-watch:
+    driver: bridge

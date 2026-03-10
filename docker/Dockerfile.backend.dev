@@ -1,0 +1,27 @@
+# Backend — imagem de desenvolvimento (hot reload via tsx watch)
+# Só instala dependências; o código-fonte vem via volume no compose
+FROM node:22-alpine
+WORKDIR /app
+
+RUN apk add --no-cache \
+    su-exec \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+ENV CHROMIUM_PATH=/usr/bin/chromium-browser
+
+RUN mkdir -p /workspace && chown node:node /workspace
+
+COPY docker/entrypoint-backend-dev.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+COPY backend/package.json ./
+RUN npm install
+
+EXPOSE 3001
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["npm", "run", "dev"]

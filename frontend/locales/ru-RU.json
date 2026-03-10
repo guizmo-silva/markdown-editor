@@ -56,7 +56,11 @@
     "snippetsErrorName": "Название обязательно.",
     "snippetsErrorContent": "Содержимое обязательно.",
     "snippetsErrorMaxLength": "Макс. {{max}} символов.",
-    "snippetsErrorMaxCount": "Макс. {{max}} фрагментов."
+    "snippetsErrorMaxCount": "Макс. {{max}} фрагментов.",
+    "caseConvert": "Регистр",
+    "caseSentence": "Первая заглавная",
+    "caseLower": "строчные",
+    "caseUpper": "ПРОПИСНЫЕ"
   },
   "sidebar": {
     "title": "Элементы",

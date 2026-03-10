@@ -111,6 +111,8 @@ export default function Toolbar({
   const [snippets, setSnippets] = useState<Snippet[]>(() => loadSnippets());
   const [showSnippetsMenu, setShowSnippetsMenu] = useState(false);
   const [snippetsMenuPos, setSnippetsMenuPos] = useState({ top: 0, left: 0 });
+  const [showCaseMenu, setShowCaseMenu] = useState(false);
+  const [caseMenuPos, setCaseMenuPos] = useState({ top: 0, left: 0 });
   const [showAddSnippetModal, setShowAddSnippetModal] = useState(false);
   const [newSnippetName, setNewSnippetName] = useState('');
   const [newSnippetContent, setNewSnippetContent] = useState('');
@@ -136,6 +138,8 @@ export default function Toolbar({
   const tableMenuRef = useRef<HTMLDivElement>(null);
   const snippetsButtonRef = useRef<HTMLDivElement>(null);
   const snippetsMenuRef = useRef<HTMLDivElement>(null);
+  const caseButtonRef = useRef<HTMLDivElement>(null);
+  const caseMenuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown menus when clicking outside
   useEffect(() => {
@@ -199,16 +203,23 @@ export default function Toolbar({
           setShowSnippetsMenu(false);
         }
       }
+      if (showCaseMenu) {
+        const isInsideButton = caseButtonRef.current?.contains(target);
+        const isInsideMenu = caseMenuRef.current?.contains(target);
+        if (!isInsideButton && !isInsideMenu) {
+          setShowCaseMenu(false);
+        }
+      }
     };
 
-    if (showHeadingMenu || showAlertMenu || showQuoteMenu || showLinkMenu || showImageMenu || showTableMenu || showCharMenu || showSnippetsMenu) {
+    if (showHeadingMenu || showAlertMenu || showQuoteMenu || showLinkMenu || showImageMenu || showTableMenu || showCharMenu || showSnippetsMenu || showCaseMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showHeadingMenu, showAlertMenu, showQuoteMenu, showLinkMenu, showImageMenu, showTableMenu, showCharMenu, showSnippetsMenu]);
+  }, [showHeadingMenu, showAlertMenu, showQuoteMenu, showLinkMenu, showImageMenu, showTableMenu, showCharMenu, showSnippetsMenu, showCaseMenu]);
 
   // Helper function to wrap selected text or insert at cursor
   const wrapText = (prefix: string, suffix: string, placeholder: string = '') => {
@@ -261,6 +272,89 @@ export default function Toolbar({
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
     const selectedText = currentValue.substring(start, end);
+
+    // If cursor is placed with no selection: detect formatted span or auto-format the word under cursor
+    if (start === end) {
+      const searchRadius = 200;
+      const searchStart = Math.max(0, start - searchRadius);
+      const searchEnd = Math.min(currentValue.length, end + searchRadius);
+      const searchArea = currentValue.substring(searchStart, searchEnd);
+      const relativePos = start - searchStart;
+
+      const escPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escSuffix = suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      // For single * (italic), avoid accidentally matching ** (bold)
+      const pattern =
+        prefix === '*' && suffix === '*'
+          ? /(?<!\*)\*(?!\*)([\s\S]*?)(?<!\*)\*(?!\*)/g
+          : new RegExp(escPrefix + '([\\s\\S]*?)' + escSuffix, 'g');
+
+      let foundSpan: { inner: string; absoluteStart: number; absoluteEnd: number } | null = null;
+
+      for (const match of searchArea.matchAll(pattern)) {
+        const spanStart = match.index!;
+        const spanEnd = spanStart + match[0].length;
+        if (relativePos >= spanStart && relativePos <= spanEnd) {
+          foundSpan = {
+            inner: match[1],
+            absoluteStart: searchStart + spanStart,
+            absoluteEnd: searchStart + spanEnd,
+          };
+          break;
+        }
+      }
+
+      // Special case: combined bold+italic ***...*** when clicking italic (*)
+      // Bold (**) already matches correctly via the main pattern above
+      if (!foundSpan && prefix === '*' && suffix === '*') {
+        for (const match of searchArea.matchAll(/\*{3}([\s\S]*?)\*{3}/g)) {
+          const spanStart = match.index!;
+          const spanEnd = spanStart + match[0].length;
+          if (relativePos >= spanStart && relativePos <= spanEnd) {
+            // Remove italic: ***inner*** → **inner**
+            foundSpan = {
+              inner: '**' + match[1] + '**',
+              absoluteStart: searchStart + spanStart,
+              absoluteEnd: searchStart + spanEnd,
+            };
+            break;
+          }
+        }
+      }
+
+      const applyChange = (absStart: number, absEnd: number, replacement: string, cursorPos: number) => {
+        if (editor.replaceRange) {
+          editor.replaceRange(absStart, absEnd, replacement);
+          setTimeout(() => { editor.setSelectionRange(cursorPos, cursorPos); editor.focus(); }, 0);
+        } else {
+          const newText = currentValue.substring(0, absStart) + replacement + currentValue.substring(absEnd);
+          onChange(newText);
+          setTimeout(() => { editor.setSelectionRange(cursorPos, cursorPos); editor.focus(); }, 0);
+        }
+      };
+
+      if (foundSpan) {
+        const { inner, absoluteStart, absoluteEnd } = foundSpan;
+        const newPos = Math.max(absoluteStart, Math.min(start - prefix.length, absoluteStart + inner.length));
+        applyChange(absoluteStart, absoluteEnd, inner, newPos);
+        return;
+      }
+
+      // No formatted span found — auto-format the word under the cursor
+      let wordStart = start;
+      let wordEnd = start;
+      while (wordStart > 0 && !/\s/.test(currentValue[wordStart - 1])) wordStart--;
+      while (wordEnd < currentValue.length && !/\s/.test(currentValue[wordEnd])) wordEnd++;
+
+      if (wordStart < wordEnd) {
+        const wordText = currentValue.substring(wordStart, wordEnd);
+        const replacement = prefix + wordText + suffix;
+        const cursorPos = wordStart + prefix.length + wordText.length;
+        applyChange(wordStart, wordEnd, replacement, cursorPos);
+        return;
+      }
+    }
 
     // Check if the selected text is already wrapped with the format
     const beforeSelection = currentValue.substring(Math.max(0, start - prefix.length), start);
@@ -1880,6 +1974,49 @@ export default function Toolbar({
     setShowCharMenu(false);
   };
 
+  const handleCaseConversion = (type: 'sentence' | 'lower' | 'upper') => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const currentValue = editor.getValue ? editor.getValue() : value;
+    let start = editor.selectionStart;
+    let end = editor.selectionEnd;
+
+    if (start === end) {
+      let wordStart = start;
+      let wordEnd = start;
+      while (wordStart > 0 && !/\s/.test(currentValue[wordStart - 1])) wordStart--;
+      while (wordEnd < currentValue.length && !/\s/.test(currentValue[wordEnd])) wordEnd++;
+      if (wordStart === wordEnd) { setShowCaseMenu(false); return; }
+      start = wordStart;
+      end = wordEnd;
+    }
+
+    const text = currentValue.substring(start, end);
+    let converted: string;
+    if (type === 'upper') converted = text.toUpperCase();
+    else if (type === 'lower') converted = text.toLowerCase();
+    else converted = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+
+    if (editor.replaceRange) {
+      editor.replaceRange(start, end, converted);
+      setTimeout(() => { editor.setSelectionRange(start, start + converted.length); editor.focus(); }, 0);
+    } else {
+      const newText = currentValue.substring(0, start) + converted + currentValue.substring(end);
+      onChange(newText);
+      setTimeout(() => { editor.setSelectionRange(start, start + converted.length); editor.focus(); }, 0);
+    }
+    setShowCaseMenu(false);
+  };
+
+  const handleCaseClick = () => {
+    if (caseButtonRef.current) {
+      const rect = caseButtonRef.current.getBoundingClientRect();
+      setCaseMenuPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setShowCaseMenu(!showCaseMenu);
+  };
+
   const handleCharClick = () => {
     if (charButtonRef.current) {
       const rect = charButtonRef.current.getBoundingClientRect();
@@ -2318,6 +2455,42 @@ export default function Toolbar({
                     ))}
                   </div>
                 </div>
+              ))}
+            </div>,
+            document.body
+          )}
+        </div>
+
+        {/* Case conversion button with dropdown */}
+        <div className="relative flex-shrink-0" ref={caseButtonRef}>
+          <button
+            onClick={handleCaseClick}
+            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
+            aria-label={t('toolbar.caseConvert')}
+            title={t('toolbar.caseConvert')}
+          >
+            <img src={getIconPath('CaseConvert_icon.svg')} alt={t('toolbar.caseConvert')} className="w-6 h-6" />
+          </button>
+
+          {showCaseMenu && isMounted && createPortal(
+            <div
+              ref={caseMenuRef}
+              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] min-w-[160px] overflow-hidden"
+              style={{ top: caseMenuPos.top, left: caseMenuPos.left }}
+            >
+              {[
+                { type: 'sentence', label: t('toolbar.caseSentence'), preview: 'Aa' },
+                { type: 'lower',    label: t('toolbar.caseLower'),    preview: 'aa' },
+                { type: 'upper',    label: t('toolbar.caseUpper'),    preview: 'AA' },
+              ].map(({ type, label, preview }) => (
+                <button
+                  key={type}
+                  onClick={() => handleCaseConversion(type as 'sentence' | 'lower' | 'upper')}
+                  className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
+                >
+                  <span className="font-mono text-[var(--text-secondary)] w-6">{preview}</span>
+                  <span className="text-[var(--text-primary)]">{label}</span>
+                </button>
               ))}
             </div>,
             document.body

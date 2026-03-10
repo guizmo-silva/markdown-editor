@@ -56,7 +56,11 @@
     "snippetsErrorName": "Name ist erforderlich.",
     "snippetsErrorContent": "Inhalt ist erforderlich.",
     "snippetsErrorMaxLength": "Max. {{max}} Zeichen.",
-    "snippetsErrorMaxCount": "Max. {{max}} Snippets."
+    "snippetsErrorMaxCount": "Max. {{max}} Snippets.",
+    "caseConvert": "Groß-/Kleinschr.",
+    "caseSentence": "Ersten Buchstaben groß",
+    "caseLower": "kleinbuchstaben",
+    "caseUpper": "GROSSBUCHSTABEN"
   },
   "sidebar": {
     "title": "Elemente",
