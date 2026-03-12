@@ -106,7 +106,10 @@ const lightTheme = EditorView.theme({
   '.cm-gutters': {
     backgroundColor: '#E9E9E9',
     color: '#999999',
-    border: 'none',
+    borderLeft: '1px solid var(--border-editor)',
+    borderRight: 'none',
+    borderTop: 'none',
+    borderBottom: 'none',
     fontFamily: 'Roboto Mono, monospace',
   },
   '.cm-lineNumbers .cm-gutterElement': {
@@ -196,7 +199,10 @@ const darkTheme = EditorView.theme({
   '.cm-gutters': {
     backgroundColor: '#676767',
     color: '#E5E5E5',
-    border: 'none',
+    borderLeft: '1px solid var(--border-editor)',
+    borderRight: 'none',
+    borderTop: 'none',
+    borderBottom: 'none',
     fontFamily: 'Roboto Mono, monospace',
   },
   '.cm-lineNumbers .cm-gutterElement': {

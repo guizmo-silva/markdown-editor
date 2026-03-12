@@ -50,6 +50,8 @@ export default function EditorLayout() {
   const [isResizingSplit, setIsResizingSplit] = useState(false);
   const [columnWidth, setColumnWidth] = useState(100); // Column width percentage (50-100) for single-view modes
   const splitContainerRef = useRef<HTMLDivElement>(null);
+  const toolbarWrapperRef = useRef<HTMLDivElement>(null);
+  const [sidebarBorderTop, setSidebarBorderTop] = useState(75);
   const editorRef = useRef<CodeMirrorHandle>(null);
   const tabKeyCounter = useRef(0);
 
@@ -1335,8 +1337,33 @@ export default function EditorLayout() {
     };
   }, [isResizing, handleResizeMove, handleResizeEnd]);
 
+  // Measure toolbar bottom position to align sidebar border dynamically.
+  // Re-runs when viewMode changes (toolbar appears/disappears) and on window resize (browser zoom).
+  useEffect(() => {
+    const update = () => {
+      const toolbar = toolbarWrapperRef.current;
+      if (toolbar) {
+        setSidebarBorderTop(toolbar.getBoundingClientRect().bottom - 1);
+      } else {
+        const content = splitContainerRef.current;
+        if (content) setSidebarBorderTop(content.getBoundingClientRect().top);
+      }
+    };
+    update();
+    window.addEventListener('resize', update);
+    const el = toolbarWrapperRef.current;
+    const observer = el ? new ResizeObserver(update) : null;
+    observer?.observe(el!);
+    return () => {
+      window.removeEventListener('resize', update);
+      observer?.disconnect();
+    };
+  }, [viewMode]);
+
   return (
-    <div className="h-screen w-screen flex flex-row bg-[var(--bg-primary)]">
+    <div className="h-screen w-screen flex flex-row bg-[var(--bg-primary)]"
+      style={{ '--sidebar-border-top': `${sidebarBorderTop}px` } as React.CSSProperties}
+    >
       {/* Sidebar Container - Animated width (only when not resizing) */}
       <div
         className={`relative flex-shrink-0 ${isResizing ? '' : 'transition-[width] duration-300 ease-in-out'}`}
@@ -1377,7 +1404,7 @@ export default function EditorLayout() {
 
         {/* Collapsed Sidebar */}
         <div
-          className={`absolute inset-0 w-[60px] bg-[var(--bg-primary)] border-r border-[var(--border-primary)] flex flex-col items-center transition-opacity duration-300 ease-in-out ${
+          className={`absolute inset-0 w-[60px] bg-[var(--bg-primary)] flex flex-col items-center transition-opacity duration-300 ease-in-out ${
             isSidebarCollapsed ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
         >
@@ -1453,13 +1480,15 @@ export default function EditorLayout() {
                 ...(viewMode === 'code' ? { maxWidth: `${columnWidth}%`, margin: '0 auto' } : {})
               }}
             >
-              <Toolbar
-                textareaRef={editorRef}
-                value={markdown}
-                onChange={setMarkdown}
-                currentFilePath={currentFilePath ?? undefined}
-                onImageImported={handleImageImported}
-              />
+              <div ref={toolbarWrapperRef}>
+                <Toolbar
+                  textareaRef={editorRef}
+                  value={markdown}
+                  onChange={setMarkdown}
+                  currentFilePath={currentFilePath ?? undefined}
+                  onImageImported={handleImageImported}
+                />
+              </div>
               <div className={`flex-1 ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}>
                 <CodeMirrorEditor
                   ref={editorRef}

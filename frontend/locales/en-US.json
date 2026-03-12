@@ -119,7 +119,8 @@
     "zoom": "Zoom",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "zoomReset": "Reset zoom"
+    "zoomReset": "Reset zoom",
+    "options": "Options"
   },
   "tooltips": {
     "newTab": "New tab",

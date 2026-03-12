@@ -119,7 +119,8 @@
     "zoom": "Zoom",
     "zoomIn": "Zoom avant",
     "zoomOut": "Zoom arrière",
-    "zoomReset": "Réinitialiser le zoom"
+    "zoomReset": "Réinitialiser le zoom",
+    "options": "Options"
   },
   "tooltips": {
     "newTab": "Nouvel onglet",

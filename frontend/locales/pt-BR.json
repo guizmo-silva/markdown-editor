@@ -119,7 +119,8 @@
     "zoom": "Zoom",
     "zoomIn": "Aumentar zoom",
     "zoomOut": "Diminuir zoom",
-    "zoomReset": "Redefinir zoom"
+    "zoomReset": "Redefinir zoom",
+    "options": "Opções"
   },
   "tooltips": {
     "newTab": "Nova aba",

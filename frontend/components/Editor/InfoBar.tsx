@@ -34,7 +34,7 @@ interface InfoBarProps {
   onEditorZoomReset?: () => void;
 }
 
-const COMPACT_THRESHOLD = 500;
+const COMPACT_THRESHOLD = 650;
 
 export default function InfoBar({
   line,
@@ -57,15 +57,19 @@ export default function InfoBar({
   const { t, i18n } = useTranslation();
   const [showSpellcheckMenu, setShowSpellcheckMenu] = useState(false);
   const [showStatsMenu, setShowStatsMenu] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
   const [spellcheckMenuPos, setSpellcheckMenuPos] = useState({ top: 0, left: 0 });
   const [statsMenuPos, setStatsMenuPos] = useState({ top: 0, left: 0 });
+  const [optionsMenuPos, setOptionsMenuPos] = useState({ top: 0, left: 0 });
   const [isMounted, setIsMounted] = useState(false);
 
   const spellcheckButtonRef = useRef<HTMLButtonElement>(null);
   const statsButtonRef = useRef<HTMLButtonElement>(null);
+  const optionsButtonRef = useRef<HTMLButtonElement>(null);
   const spellcheckMenuRef = useRef<HTMLDivElement>(null);
   const statsMenuRef = useRef<HTMLDivElement>(null);
+  const optionsMenuRef = useRef<HTMLDivElement>(null);
   const infoBarRef = useRef<HTMLDivElement>(null);
 
   // Check if component is mounted (for portal)
@@ -114,6 +118,17 @@ export default function InfoBar({
     }
   }, [showStatsMenu]);
 
+  // Calculate dropdown position when showing options menu
+  useEffect(() => {
+    if (showOptionsMenu && optionsButtonRef.current) {
+      const rect = optionsButtonRef.current.getBoundingClientRect();
+      setOptionsMenuPos({
+        top: rect.top - 8,
+        left: rect.left + rect.width / 2
+      });
+    }
+  }, [showOptionsMenu]);
+
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -134,16 +149,24 @@ export default function InfoBar({
           setShowStatsMenu(false);
         }
       }
+
+      if (showOptionsMenu) {
+        const isInsideButton = optionsButtonRef.current?.contains(target);
+        const isInsideMenu = optionsMenuRef.current?.contains(target);
+        if (!isInsideButton && !isInsideMenu) {
+          setShowOptionsMenu(false);
+        }
+      }
     };
 
-    if (showSpellcheckMenu || showStatsMenu) {
+    if (showSpellcheckMenu || showStatsMenu || showOptionsMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSpellcheckMenu, showStatsMenu]);
+  }, [showSpellcheckMenu, showStatsMenu, showOptionsMenu]);
 
   const handleSelectLanguage = (langCode: string) => {
     onSpellcheckLanguageChange(langCode);
@@ -298,6 +321,110 @@ export default function InfoBar({
     document.body
   );
 
+  // Options dropdown menu (compact mode: zoom + spellcheck)
+  const optionsDropdown = showOptionsMenu && isMounted && createPortal(
+    <div
+      ref={optionsMenuRef}
+      className="fixed rounded-lg shadow-lg min-w-[200px] overflow-hidden"
+      style={{
+        top: optionsMenuPos.top,
+        left: optionsMenuPos.left,
+        transform: 'translate(-50%, -100%)',
+        backgroundColor: dropdownBg,
+        border: `1px solid ${borderColor}`,
+        zIndex: 99999
+      }}
+    >
+      {/* Zoom control row */}
+      {editorZoom !== undefined && (
+        <div
+          className="px-3 py-2 flex items-center justify-center gap-2"
+          style={{ borderBottom: `1px solid ${borderColor}` }}
+        >
+          <span className="text-[10px]" style={{ fontFamily: 'Roboto Mono, monospace', color: textMuted }}>
+            {t('infobar.zoom')}
+          </span>
+          <div className="flex items-center">
+            <button
+              onClick={onEditorZoomOut}
+              className="w-5 h-5 flex items-center justify-center rounded transition-colors text-[11px]"
+              style={{ color: editorZoom <= 70 ? textMuted : textColor, opacity: editorZoom <= 70 ? 0.4 : 1 }}
+              onMouseEnter={(e) => { if (editorZoom > 70) e.currentTarget.style.backgroundColor = hoverBg; }}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              disabled={editorZoom <= 70}
+            >−</button>
+            <button
+              onClick={onEditorZoomReset}
+              className="px-1 h-5 flex items-center justify-center rounded transition-colors text-[10px] min-w-[38px] text-center"
+              style={{ fontFamily: 'Roboto Mono, monospace', color: textColor }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >{editorZoom}%</button>
+            <button
+              onClick={onEditorZoomIn}
+              className="w-5 h-5 flex items-center justify-center rounded transition-colors text-[11px]"
+              style={{ color: editorZoom >= 150 ? textMuted : textColor, opacity: editorZoom >= 150 ? 0.4 : 1 }}
+              onMouseEnter={(e) => { if (editorZoom < 150) e.currentTarget.style.backgroundColor = hoverBg; }}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              disabled={editorZoom >= 150}
+            >+</button>
+          </div>
+        </div>
+      )}
+      {/* Spellcheck toggle */}
+      <button
+        onClick={() => { onSpellcheckToggle(!spellcheckEnabled); }}
+        className="w-full px-3 py-2 text-left flex items-center gap-2 text-sm"
+        style={{ borderBottom: `1px solid ${borderColor}` }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+      >
+        <span
+          className="w-4 h-4 flex items-center justify-center rounded border"
+          style={{
+            backgroundColor: spellcheckEnabled ? textPrimary : 'transparent',
+            borderColor: spellcheckEnabled ? textPrimary : textMuted
+          }}
+        >
+          {spellcheckEnabled && (
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke={bgPrimary}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </span>
+        <span style={{ color: textColor }}>{t('infobar.enableSpellcheck')}</span>
+      </button>
+      {/* Language selection */}
+      <div className="py-1">
+        <div className="px-3 py-1 text-xs" style={{ color: textMuted }}>{t('infobar.selectLanguage')}</div>
+        {Object.entries(SPELLCHECK_LANGUAGES).map(([code, lang]) => (
+          <button
+            key={code}
+            onClick={() => handleSelectLanguage(code)}
+            disabled={!spellcheckEnabled}
+            className={`w-full px-3 py-1.5 text-left flex items-center gap-2 text-sm ${!spellcheckEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onMouseEnter={(e) => { if (spellcheckEnabled) e.currentTarget.style.backgroundColor = hoverBg; }}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <span
+              className="w-4 h-4 flex items-center justify-center rounded-full border"
+              style={{ borderColor: spellcheckLanguage === code ? textPrimary : textMuted }}
+            >
+              {spellcheckLanguage === code && (
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: textPrimary }} />
+              )}
+            </span>
+            <span style={{ color: textColor }}>{lang.name}</span>
+            {code === i18n.language && (
+              <span className="text-[10px] ml-auto" style={{ color: textMuted }}>({t('infobar.current')})</span>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>,
+    document.body
+  );
+
   // Stats dropdown menu (rendered via portal)
   const statsDropdown = showStatsMenu && isMounted && createPortal(
     <div
@@ -340,9 +467,13 @@ export default function InfoBar({
       className="infobar-fullbleed h-[24px] flex items-center justify-between px-4"
       style={{
         backgroundColor: bgColor,
-        borderTop: `1px solid ${borderColor}`
+        borderTop: '1px solid var(--border-editor)',
       }}
     >
+      {/* Left border — uses a child element instead of border-left because
+          infobar-fullbleed::before (z-index:-1 within isolation:isolate) is painted
+          after the element's own borders, covering border-left visually */}
+      <div className="absolute left-0 top-0 bottom-0 w-px bg-[var(--border-editor)]" />
       {/* Left side - Save status and cursor position (when not compact) */}
       <div
         className="flex items-center gap-4 text-[10px]"
@@ -436,22 +567,41 @@ export default function InfoBar({
           </button>
         )}
 
-        {/* Spellcheck indicator */}
-        <div className="relative">
+        {/* Spellcheck indicator — only in non-compact mode */}
+        {!isCompact && (
+          <div className="relative">
+            <button
+              ref={spellcheckButtonRef}
+              onClick={() => setShowSpellcheckMenu(!showSpellcheckMenu)}
+              className="text-[10px] px-2 py-0.5 rounded transition-colors"
+              style={{
+                fontFamily: 'Roboto Mono, monospace',
+                color: spellcheckEnabled ? textColor : textMuted
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              {getSpellcheckLabel()}
+            </button>
+          </div>
+        )}
+
+        {/* Options button — only in compact mode (contains zoom + spellcheck) */}
+        {isCompact && (
           <button
-            ref={spellcheckButtonRef}
-            onClick={() => setShowSpellcheckMenu(!showSpellcheckMenu)}
-            className="text-[10px] px-2 py-0.5 rounded transition-colors"
-            style={{
-              fontFamily: 'Roboto Mono, monospace',
-              color: spellcheckEnabled ? textColor : textMuted
-            }}
+            ref={optionsButtonRef}
+            onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+            className="text-[10px] px-2 py-0.5 rounded transition-colors flex items-center gap-1"
+            style={{ fontFamily: 'Roboto Mono, monospace', color: textColor }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
-            {getSpellcheckLabel()}
+            <span>{t('infobar.options', 'Opções')}</span>
+            <svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
-        </div>
+        )}
       </div>
 
       {/* Right side - Zoom control + Character count (hidden in compact mode) */}
@@ -501,6 +651,7 @@ export default function InfoBar({
       {/* Dropdowns rendered via portal */}
       {spellcheckDropdown}
       {statsDropdown}
+      {optionsDropdown}
     </div>
   );
 }

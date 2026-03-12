@@ -176,7 +176,7 @@ export default function AssetsSidebar({
   }, [isResizingSection, handleSectionResizeMove, handleSectionResizeEnd]);
 
   return (
-    <div className="h-full bg-[var(--bg-primary)] border-r border-[var(--border-primary)] flex flex-col relative" style={{ width }}>
+    <div className="h-full bg-[var(--bg-primary)] flex flex-col relative" style={{ width }}>
       {/* Top Section: Logo and View Toggle */}
       <div className="pl-[20px] pr-4 pt-[20px] pb-3 flex items-center justify-between gap-3">
         {/* Logo with Menu */}

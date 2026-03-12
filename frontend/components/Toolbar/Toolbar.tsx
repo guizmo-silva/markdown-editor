@@ -2131,7 +2131,7 @@ export default function Toolbar({
 
   return (
     <>
-      <div className="min-h-[40px] bg-[var(--bg-secondary)] flex items-center justify-center flex-wrap px-3 py-2 gap-[5px] border-b border-[var(--border-primary)]">
+      <div className="min-h-[40px] bg-[var(--bg-secondary)] flex items-center justify-center flex-wrap px-3 py-2 gap-[5px] border-b border-[var(--border-editor)]">
         {/* Simple formatting buttons */}
         {simpleFormattingButtons.map(renderButton)}
 
@@ -2362,7 +2362,7 @@ export default function Toolbar({
         <div ref={snippetsButtonRef} className="flex-shrink-0">
           <button
             onClick={handleOpenSnippetsMenu}
-            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors text-[var(--text-secondary)]"
+            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.snippets')}
             title={t('toolbar.snippets')}
           >
