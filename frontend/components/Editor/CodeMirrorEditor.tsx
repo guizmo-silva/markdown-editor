@@ -96,8 +96,6 @@ const lightTheme = EditorView.theme({
   },
   '.cm-content': {
     fontFamily: 'Roboto Mono, monospace',
-    fontSize: '12px',
-    lineHeight: '20px',
     padding: '8px 0',
     caretColor: '#333',
     color: '#404040',
@@ -110,8 +108,6 @@ const lightTheme = EditorView.theme({
     color: '#999999',
     border: 'none',
     fontFamily: 'Roboto Mono, monospace',
-    fontSize: '12px',
-    lineHeight: '20px',
   },
   '.cm-lineNumbers .cm-gutterElement': {
     padding: '0 8px 0 4px',
@@ -190,8 +186,6 @@ const darkTheme = EditorView.theme({
   },
   '.cm-content': {
     fontFamily: 'Roboto Mono, monospace',
-    fontSize: '12px',
-    lineHeight: '20px',
     padding: '8px 0',
     caretColor: '#FFFFFF',
     color: '#BEBEBE',
@@ -204,8 +198,6 @@ const darkTheme = EditorView.theme({
     color: '#E5E5E5',
     border: 'none',
     fontFamily: 'Roboto Mono, monospace',
-    fontSize: '12px',
-    lineHeight: '20px',
   },
   '.cm-lineNumbers .cm-gutterElement': {
     padding: '0 8px 0 4px',
@@ -428,6 +420,21 @@ const themeCompartment = new Compartment();
 
 // Compartment for dynamic spellcheck configuration
 const spellcheckCompartment = new Compartment();
+
+// Compartment for dynamic font size (zoom)
+const fontSizeCompartment = new Compartment();
+
+const EDITOR_ZOOM_LEVELS = [70, 80, 90, 100, 110, 120, 130, 140, 150];
+const EDITOR_DEFAULT_ZOOM = 100;
+
+function getFontSizeExtension(zoom: number) {
+  const fontSize = `${(12 * zoom) / 100}px`;
+  const lineHeight = `${(20 * zoom) / 100}px`;
+  return EditorView.theme({
+    '.cm-content': { fontSize, lineHeight },
+    '.cm-gutters': { fontSize, lineHeight },
+  });
+}
 
 // Helper function to create format toggle commands for keyboard shortcuts
 const createFormatCommand = (prefix: string, suffix: string) => {
@@ -721,6 +728,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   const [characterCount, setCharacterCount] = useState(0);
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
   const [spellcheckLanguage, setSpellcheckLanguage] = useState(i18n.language);
+  const [editorZoom, setEditorZoom] = useState(EDITOR_DEFAULT_ZOOM);
+  const editorZoomRef = useRef(EDITOR_DEFAULT_ZOOM);
+  editorZoomRef.current = editorZoom;
   const previousDocumentIdRef = useRef<string | null | undefined>(documentId);
   // Always holds the current translation for the fold placeholder tooltip.
   // Updated every render so placeholderDOM always reads the latest language.
@@ -797,7 +807,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       view.dispatch({
         selection: { anchor: clampedOffset },
         effects: [
-          EditorView.scrollIntoView(clampedOffset, { y: 'center' }),
+          EditorView.scrollIntoView(clampedOffset, { y: 'start', yMargin: view.scrollDOM.clientHeight * 0.3 }),
           flashLineEffect.of({ from: line.from, to: line.to }),
         ],
       });
@@ -887,6 +897,24 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     });
   }, [spellcheckEnabled, spellcheckLanguage]);
 
+  const handleEditorZoomIn = useCallback(() => {
+    setEditorZoom(prev => {
+      const idx = EDITOR_ZOOM_LEVELS.indexOf(prev);
+      return idx < EDITOR_ZOOM_LEVELS.length - 1 ? EDITOR_ZOOM_LEVELS[idx + 1] : prev;
+    });
+  }, []);
+
+  const handleEditorZoomOut = useCallback(() => {
+    setEditorZoom(prev => {
+      const idx = EDITOR_ZOOM_LEVELS.indexOf(prev);
+      return idx > 0 ? EDITOR_ZOOM_LEVELS[idx - 1] : prev;
+    });
+  }, []);
+
+  const handleEditorZoomReset = useCallback(() => {
+    setEditorZoom(EDITOR_DEFAULT_ZOOM);
+  }, []);
+
   // Initialize editor
   useEffect(() => {
     // Only run on client
@@ -933,6 +961,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           codeLanguages: languages,
         }),
         themeCompartment.of(getThemeExtensions(isDark)),
+        fontSizeCompartment.of(getFontSizeExtension(editorZoomRef.current)),
         updateListener,
         EditorView.lineWrapping,
         placeholder ? EditorView.contentAttributes.of({ 'data-placeholder': placeholder }) : [],
@@ -1053,6 +1082,13 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     });
   }, [theme, getThemeExtensions]);
 
+  // Update font size when zoom changes
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({ effects: fontSizeCompartment.reconfigure(getFontSizeExtension(editorZoom)) });
+  }, [editorZoom]);
+
   // Sync external value changes (e.g., when switching tabs or loading a file)
   // Use Transaction.addToHistory.of(false) to prevent this from being undoable
   // Skip round-trip updates (CM6 → onChange → React state → value prop → here)
@@ -1160,6 +1196,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
             codeLanguages: languages,
           }),
           themeCompartment.of(getThemeExtensions(isDark)),
+          fontSizeCompartment.of(getFontSizeExtension(editorZoomRef.current)),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               const newContent = update.state.doc.toString();
@@ -1228,7 +1265,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     view.dispatch({
       selection: { anchor: line.from },
       effects: [
-        EditorView.scrollIntoView(line.from, { y: 'center' }),
+        EditorView.scrollIntoView(line.from, { y: 'start', yMargin: view.scrollDOM.clientHeight * 0.3 }),
         flashLineEffect.of({ from: line.from, to: line.to }),
       ],
     });
@@ -1266,6 +1303,10 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         saveStatus={saveStatus}
         columnWidth={columnWidth}
         onColumnWidthChange={onColumnWidthChange}
+        editorZoom={editorZoom}
+        onEditorZoomIn={handleEditorZoomIn}
+        onEditorZoomOut={handleEditorZoomOut}
+        onEditorZoomReset={handleEditorZoomReset}
       />
     </div>
   );

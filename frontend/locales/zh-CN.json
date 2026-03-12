@@ -115,7 +115,11 @@
     "current": "当前",
     "statistics": "统计",
     "scrollSyncOn": "滚动同步：开",
-    "scrollSyncOff": "滚动同步：关"
+    "scrollSyncOff": "滚动同步：关",
+    "zoom": "缩放",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "zoomReset": "重置缩放"
   },
   "tooltips": {
     "newTab": "新标签页",

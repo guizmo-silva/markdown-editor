@@ -115,7 +115,11 @@
     "current": "aktuell",
     "statistics": "Statistiken",
     "scrollSyncOn": "Scroll-Synchronisierung: An",
-    "scrollSyncOff": "Scroll-Synchronisierung: Aus"
+    "scrollSyncOff": "Scroll-Synchronisierung: Aus",
+    "zoom": "Zoom",
+    "zoomIn": "Vergrößern",
+    "zoomOut": "Verkleinern",
+    "zoomReset": "Zoom zurücksetzen"
   },
   "tooltips": {
     "newTab": "Neuer Tab",

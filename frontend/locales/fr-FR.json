@@ -115,7 +115,11 @@
     "current": "actuel",
     "statistics": "Statistiques",
     "scrollSyncOn": "Synchroniser le défilement : Activé",
-    "scrollSyncOff": "Synchroniser le défilement : Désactivé"
+    "scrollSyncOff": "Synchroniser le défilement : Désactivé",
+    "zoom": "Zoom",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "zoomReset": "Réinitialiser le zoom"
   },
   "tooltips": {
     "newTab": "Nouvel onglet",

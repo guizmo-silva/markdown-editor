@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import type { RefObject, MouseEvent } from 'react';
 import type { Root, RootContent } from 'mdast';
 import ReactMarkdown from 'react-markdown';
@@ -204,11 +204,34 @@ interface MarkdownPreviewProps {
 // Inline tag names that correspond to inlineTypes in the remark plugin
 const inlineTagNames = new Set(['EM', 'STRONG', 'A', 'CODE', 'DEL']);
 
+const PREVIEW_ZOOM_LEVELS = [70, 80, 90, 100, 110, 120, 130, 140, 150];
+const PREVIEW_DEFAULT_ZOOM = 100;
+
 function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange, filePath, imageRevision }: MarkdownPreviewProps) {
   const isDark = viewTheme === 'dark';
 
   // Theme-specific colors
   const textColor = isDark ? '#BEBEBE' : '#333333';
+
+  const [previewZoom, setPreviewZoom] = useState(PREVIEW_DEFAULT_ZOOM);
+
+  const handlePreviewZoomIn = useCallback(() => {
+    setPreviewZoom(prev => {
+      const idx = PREVIEW_ZOOM_LEVELS.indexOf(prev);
+      return idx < PREVIEW_ZOOM_LEVELS.length - 1 ? PREVIEW_ZOOM_LEVELS[idx + 1] : prev;
+    });
+  }, []);
+
+  const handlePreviewZoomOut = useCallback(() => {
+    setPreviewZoom(prev => {
+      const idx = PREVIEW_ZOOM_LEVELS.indexOf(prev);
+      return idx > 0 ? PREVIEW_ZOOM_LEVELS[idx - 1] : prev;
+    });
+  }, []);
+
+  const handlePreviewZoomReset = useCallback(() => {
+    setPreviewZoom(PREVIEW_DEFAULT_ZOOM);
+  }, []);
 
   // Compute the base path for resolving relative image srcs
   const imageBasePath = filePath ? filePath.substring(0, filePath.lastIndexOf('/')) : null;
@@ -360,7 +383,7 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
       <div ref={previewScrollRef} className="flex-1 overflow-auto p-8 pb-[calc(100vh-8rem)]">
         <div
           className={`markdown-preview${onClickSourcePosition ? ' clickable-source' : ''}`}
-          style={{ fontFamily: 'var(--font-roboto-flex), sans-serif', color: textColor }}
+          style={{ fontFamily: 'var(--font-roboto-flex), sans-serif', color: textColor, fontSize: `${previewZoom}%` }}
           onClick={handlePreviewClick}
         >
           <ReactMarkdown
@@ -382,6 +405,10 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
         onToggleScrollSync={onToggleScrollSync}
         columnWidth={columnWidth}
         onColumnWidthChange={onColumnWidthChange}
+        previewZoom={previewZoom}
+        onPreviewZoomIn={handlePreviewZoomIn}
+        onPreviewZoomOut={handlePreviewZoomOut}
+        onPreviewZoomReset={handlePreviewZoomReset}
       />
     </div>
   );

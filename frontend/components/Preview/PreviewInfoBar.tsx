@@ -11,9 +11,13 @@ interface PreviewInfoBarProps {
   onToggleScrollSync?: () => void;
   columnWidth?: number;
   onColumnWidthChange?: (value: number) => void;
+  previewZoom?: number;
+  onPreviewZoomIn?: () => void;
+  onPreviewZoomOut?: () => void;
+  onPreviewZoomReset?: () => void;
 }
 
-export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isScrollSynced, onToggleScrollSync, columnWidth, onColumnWidthChange }: PreviewInfoBarProps) {
+export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isScrollSynced, onToggleScrollSync, columnWidth, onColumnWidthChange, previewZoom, onPreviewZoomIn, onPreviewZoomOut, onPreviewZoomReset }: PreviewInfoBarProps) {
   const { t } = useTranslation();
 
   // Calculate statistics
@@ -41,6 +45,7 @@ export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isSc
   const bgColor = isDark ? '#676767' : '#E9E9E9';
   const borderColor = isDark ? '#CDCDCD' : '#999999';
   const textColor = isDark ? '#E5E5E5' : '#666666';
+  const textMuted = isDark ? '#AAAAAA' : '#999999';
   const hoverBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
 
   return (
@@ -133,12 +138,44 @@ export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isSc
         )}
       </div>
 
-      {/* Right side - Character count */}
-      <div
-        className="text-[10px]"
-        style={{ fontFamily: 'Roboto Mono, monospace', color: textColor }}
-      >
-        {t('infobar.characters')}: {stats.characters}
+      {/* Right side - Zoom control + Character count */}
+      <div className="flex items-center gap-3">
+        {previewZoom !== undefined && (
+          <div className="flex items-center">
+            <button
+              onClick={onPreviewZoomOut}
+              className="w-5 h-5 flex items-center justify-center rounded transition-colors text-[11px]"
+              style={{ color: previewZoom <= 70 ? textMuted : textColor, opacity: previewZoom <= 70 ? 0.4 : 1 }}
+              onMouseEnter={(e) => { if (previewZoom > 70) e.currentTarget.style.backgroundColor = hoverBg; }}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              disabled={previewZoom <= 70}
+              aria-label={t('infobar.zoomOut')}
+            >−</button>
+            <button
+              onClick={onPreviewZoomReset}
+              className="px-1 h-5 flex items-center justify-center rounded transition-colors text-[10px] min-w-[38px] text-center"
+              style={{ fontFamily: 'Roboto Mono, monospace', color: textColor }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              title={t('infobar.zoomReset')}
+            >{previewZoom}%</button>
+            <button
+              onClick={onPreviewZoomIn}
+              className="w-5 h-5 flex items-center justify-center rounded transition-colors text-[11px]"
+              style={{ color: previewZoom >= 150 ? textMuted : textColor, opacity: previewZoom >= 150 ? 0.4 : 1 }}
+              onMouseEnter={(e) => { if (previewZoom < 150) e.currentTarget.style.backgroundColor = hoverBg; }}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              disabled={previewZoom >= 150}
+              aria-label={t('infobar.zoomIn')}
+            >+</button>
+          </div>
+        )}
+        <div
+          className="text-[10px]"
+          style={{ fontFamily: 'Roboto Mono, monospace', color: textColor }}
+        >
+          {t('infobar.characters')}: {stats.characters}
+        </div>
       </div>
     </div>
   );

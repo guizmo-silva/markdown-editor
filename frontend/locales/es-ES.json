@@ -115,7 +115,11 @@
     "current": "actual",
     "statistics": "Estadísticas",
     "scrollSyncOn": "Sincronizar desplazamiento: Activado",
-    "scrollSyncOff": "Sincronizar desplazamiento: Desactivado"
+    "scrollSyncOff": "Sincronizar desplazamiento: Desactivado",
+    "zoom": "Zoom",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "zoomReset": "Restablecer zoom"
   },
   "tooltips": {
     "newTab": "Nueva pestaña",

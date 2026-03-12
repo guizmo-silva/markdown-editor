@@ -28,6 +28,10 @@ interface InfoBarProps {
   saveStatus?: 'saved' | 'saving' | 'unsaved' | 'error';
   columnWidth?: number;
   onColumnWidthChange?: (value: number) => void;
+  editorZoom?: number;
+  onEditorZoomIn?: () => void;
+  onEditorZoomOut?: () => void;
+  onEditorZoomReset?: () => void;
 }
 
 const COMPACT_THRESHOLD = 500;
@@ -45,6 +49,10 @@ export default function InfoBar({
   saveStatus,
   columnWidth,
   onColumnWidthChange,
+  editorZoom,
+  onEditorZoomIn,
+  onEditorZoomOut,
+  onEditorZoomReset,
 }: InfoBarProps) {
   const { t, i18n } = useTranslation();
   const [showSpellcheckMenu, setShowSpellcheckMenu] = useState(false);
@@ -446,13 +454,45 @@ export default function InfoBar({
         </div>
       </div>
 
-      {/* Right side - Character count (hidden in compact mode) */}
+      {/* Right side - Zoom control + Character count (hidden in compact mode) */}
       {!isCompact ? (
-        <div
-          className="text-[10px]"
-          style={{ fontFamily: 'Roboto Mono, monospace', color: textColor }}
-        >
-          {t('infobar.characters')}: {characters}
+        <div className="flex items-center gap-3">
+          {editorZoom !== undefined && (
+            <div className="flex items-center">
+              <button
+                onClick={onEditorZoomOut}
+                className="w-5 h-5 flex items-center justify-center rounded transition-colors text-[11px]"
+                style={{ color: editorZoom <= 70 ? textMuted : textColor, opacity: editorZoom <= 70 ? 0.4 : 1 }}
+                onMouseEnter={(e) => { if (editorZoom > 70) e.currentTarget.style.backgroundColor = hoverBg; }}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                disabled={editorZoom <= 70}
+                aria-label={t('infobar.zoomOut')}
+              >−</button>
+              <button
+                onClick={onEditorZoomReset}
+                className="px-1 h-5 flex items-center justify-center rounded transition-colors text-[10px] min-w-[38px] text-center"
+                style={{ fontFamily: 'Roboto Mono, monospace', color: textColor }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                title={t('infobar.zoomReset')}
+              >{editorZoom}%</button>
+              <button
+                onClick={onEditorZoomIn}
+                className="w-5 h-5 flex items-center justify-center rounded transition-colors text-[11px]"
+                style={{ color: editorZoom >= 150 ? textMuted : textColor, opacity: editorZoom >= 150 ? 0.4 : 1 }}
+                onMouseEnter={(e) => { if (editorZoom < 150) e.currentTarget.style.backgroundColor = hoverBg; }}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                disabled={editorZoom >= 150}
+                aria-label={t('infobar.zoomIn')}
+              >+</button>
+            </div>
+          )}
+          <div
+            className="text-[10px]"
+            style={{ fontFamily: 'Roboto Mono, monospace', color: textColor }}
+          >
+            {t('infobar.characters')}: {characters}
+          </div>
         </div>
       ) : (
         <div className="w-0" />

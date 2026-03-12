@@ -115,7 +115,11 @@
     "current": "atual",
     "statistics": "Estatísticas",
     "scrollSyncOn": "Sincronizar rolagem: Ligado",
-    "scrollSyncOff": "Sincronizar rolagem: Desligado"
+    "scrollSyncOff": "Sincronizar rolagem: Desligado",
+    "zoom": "Zoom",
+    "zoomIn": "Aumentar zoom",
+    "zoomOut": "Diminuir zoom",
+    "zoomReset": "Redefinir zoom"
   },
   "tooltips": {
     "newTab": "Nova aba",
