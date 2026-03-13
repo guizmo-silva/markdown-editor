@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useThemedIcon } from '@/utils/useThemedIcon';
+import { useToast } from '@/components/Toast/Toast';
 import {
   getTrashItems,
   restoreTrashItem,
@@ -206,6 +207,7 @@ const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.sv
 
 export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored }: TrashModalProps) {
   const { t } = useTranslation();
+  const { showError } = useToast();
 
   const [shouldRender, setShouldRender] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
@@ -277,6 +279,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
       }
     } catch (err) {
       console.error('Failed to load trash:', err);
+      showError(err instanceof Error ? err.message : 'Failed to load trash');
     } finally {
       setIsLoading(false);
     }
@@ -306,7 +309,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
       }
       await loadData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to restore');
+      showError(err instanceof Error ? err.message : 'Failed to restore');
     } finally {
       setBusyId(null);
     }
@@ -320,7 +323,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
       onChanged();
       await loadData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete');
+      showError(err instanceof Error ? err.message : 'Failed to delete');
     } finally {
       setBusyId(null);
     }
@@ -334,7 +337,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
       setItems([]);
       onChanged();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to empty trash');
+      showError(err instanceof Error ? err.message : 'Failed to empty trash');
     } finally {
       setBusyId(null);
     }

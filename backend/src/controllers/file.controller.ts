@@ -193,6 +193,7 @@ export const importDocx = async (req: Request, res: Response): Promise<void> => 
     let finalPath = '';
     let counter = 0;
     while (true) {
+      if (counter > 999) throw new Error('Too many files with similar name');
       const candidateName = counter === 0 ? mdFilename : `${stem} (${counter}).md`;
       const candidatePath = destFolder === '/' ? candidateName : `${destFolder}/${candidateName}`;
       try {
@@ -243,6 +244,7 @@ export const importZip = async (req: Request, res: Response): Promise<void> => {
     let finalPath = '';
     let counter = 0;
     while (true) {
+      if (counter > 999) throw new Error('Too many files with similar name');
       const candidateStem = counter === 0 ? stem : `${stem} (${counter})`;
       const candidateName = `${candidateStem}.md`;
       const candidatePath = destFolder === '/' ? candidateName : `${destFolder}/${candidateName}`;

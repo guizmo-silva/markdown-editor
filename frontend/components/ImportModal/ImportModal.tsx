@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemedIcon } from '@/utils/useThemedIcon';
+import { useToast } from '@/components/Toast/Toast';
 import { listFiles, getVolumes, type FileItem, type VolumeInfo } from '@/services/api';
 
 interface ImportModalProps {
@@ -13,6 +14,7 @@ interface ImportModalProps {
 
 export default function ImportModal({ isOpen, onClose, onConfirm }: ImportModalProps) {
   const { t } = useTranslation();
+  const { showError } = useToast();
   const { getIconPath } = useThemedIcon();
 
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -74,6 +76,7 @@ export default function ImportModal({ isOpen, onClose, onConfirm }: ImportModalP
       }
     } catch (error) {
       console.error('Failed to load folders:', error);
+      showError(error instanceof Error ? error.message : 'Failed to load folders');
     }
   }, []);
 

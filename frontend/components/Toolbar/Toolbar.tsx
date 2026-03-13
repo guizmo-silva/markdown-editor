@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { CodeMirrorHandle } from '@/components/Editor';
 import { useThemedIcon } from '@/utils/useThemedIcon';
+import { useToast } from '@/components/Toast/Toast';
 import { importImage } from '@/services/api';
 
 // Unified interface for textarea-like editors
@@ -72,6 +73,7 @@ export default function Toolbar({
 }: ToolbarProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
+  const { showError, showWarning } = useToast();
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const [showAlertMenu, setShowAlertMenu] = useState(false);
   const [showCharMenu, setShowCharMenu] = useState(false);
@@ -88,9 +90,6 @@ export default function Toolbar({
   const [tableHover, setTableHover] = useState({ rows: 0, cols: 0 });
   const [imageUrl, setImageUrl] = useState('');
   const [imageAlt, setImageAlt] = useState('');
-
-  // Image size error modal
-  const [imageSizeError, setImageSizeError] = useState(false);
 
   // Portal mounting state (SSR safety)
   const [isMounted, setIsMounted] = useState(false);
@@ -1585,7 +1584,7 @@ export default function Toolbar({
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 20 * 1024 * 1024) {
-        setImageSizeError(true);
+        showWarning(t('toolbar.imageTooLarge'));
         event.target.value = '';
         return;
       }
@@ -1596,7 +1595,7 @@ export default function Toolbar({
           onImageImported?.(newDocumentPath, imageName);
         } catch (err) {
           console.error('Failed to import image:', err);
-          alert(err instanceof Error ? err.message : 'Erro ao importar imagem');
+          showError(err instanceof Error ? err.message : 'Erro ao importar imagem');
         }
       } else {
         // Fallback when no file is open: just insert the reference
@@ -2634,32 +2633,6 @@ export default function Toolbar({
                 className="px-4 py-2 text-sm bg-[var(--button-bg)] text-[var(--text-button)] rounded hover:bg-[var(--button-hover)] transition-colors"
               >
                 {t('buttons.save')}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      {/* Image size error modal */}
-      {imageSizeError && isMounted && createPortal(
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
-          onClick={() => setImageSizeError(false)}
-        >
-          <div
-            className="bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl"
-            style={{ fontFamily: 'Roboto Mono, monospace' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-[13px] text-[var(--text-primary)] mb-6 text-center">
-              {t('toolbar.imageTooLarge')}
-            </p>
-            <div className="flex justify-center">
-              <button
-                onClick={() => setImageSizeError(false)}
-                className="px-6 py-2 text-[12px] bg-[var(--button-bg)] text-[var(--text-button)] rounded hover:bg-[var(--button-hover)] transition-colors"
-              >
-                OK
               </button>
             </div>
           </div>

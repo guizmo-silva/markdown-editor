@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemedIcon } from '@/utils/useThemedIcon';
+import { useToast } from '@/components/Toast/Toast';
 import { listFiles, createFolder, getVolumes, type FileItem, type VolumeInfo } from '@/services/api';
 
 interface FileBrowserProps {
@@ -490,6 +491,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
 export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder, collapseAllTrigger, refreshTrigger }: FileBrowserProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
+  const { showError } = useToast();
   const [files, setFiles] = useState<FileItem[]>([]);
   const [volumes, setVolumes] = useState<VolumeInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -577,6 +579,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
           setInternalRefresh(prev => prev + 1);
         } catch (err) {
           console.error('Failed to move file:', err);
+          showError(err instanceof Error ? err.message : 'Failed to move file');
         }
       }
     }
@@ -689,6 +692,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
       setInternalRefresh((prev) => prev + 1);
     } catch (err) {
       console.error('Failed to create folder:', err);
+      showError(err instanceof Error ? err.message : 'Failed to create folder');
     }
   };
 
@@ -746,6 +750,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
       setInternalRefresh((prev) => prev + 1);
     } catch (err) {
       console.error('Failed to rename item:', err);
+      showError(err instanceof Error ? err.message : 'Failed to rename item');
     } finally {
       setEditingItemPath(null);
       setEditItemValue('');

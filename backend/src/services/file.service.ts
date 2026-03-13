@@ -286,6 +286,10 @@ export const renameFileOrDirectory = async (
   const oldResolved = resolveVolumePath(oldRelativePath);
   const newResolved = resolveVolumePath(newRelativePath);
 
+  if (oldResolved.volume.name !== newResolved.volume.name) {
+    throw new Error('Cannot move files between different volumes');
+  }
+
   const oldSafePath = await validatePath(oldResolved.relativePath, oldResolved.volume.mountPath);
   const newSafePath = await validatePath(newResolved.relativePath, newResolved.volume.mountPath);
 
@@ -396,6 +400,7 @@ export const addImageToDocumentFolder = async (
   let finalName = safeName;
   let counter = 1;
   while (true) {
+    if (counter > 1000) throw new Error('Too many image files with similar name');
     const candidate = path.join(docFolder, finalName);
     try {
       await fs.access(candidate);

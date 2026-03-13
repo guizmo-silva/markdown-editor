@@ -204,7 +204,7 @@ export default function AssetsSidebar({
             </h2>
           </div>
           <div className="flex-1 relative overflow-hidden">
-            <div className="absolute inset-0 overflow-y-auto sidebar-scroll">
+            <div className="absolute inset-0 overflow-y-auto sidebar-scroll pb-8">
 
           {/* Headings Section */}
           {assets.headings.length > 0 && (
@@ -573,7 +573,7 @@ export default function AssetsSidebar({
             </h2>
           </div>
           <div className="flex-1 relative overflow-hidden">
-            <div className="absolute inset-0 overflow-y-auto sidebar-scroll">
+            <div className="absolute inset-0 overflow-y-auto sidebar-scroll pb-8">
               <FileBrowser onFileSelect={onFileSelect} onDeleteFile={onDeleteFile} onRenameFolder={onRenameFolder} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
             </div>
             <div

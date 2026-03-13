@@ -236,21 +236,31 @@ function buildPDFHtml(renderedHtml: string, title: string): string {
 </html>`;
 }
 
+// Singleton browser instance — reused across PDF exports to avoid spawning
+// a new Chromium process on every request. Automatically recreated on disconnect.
+let _browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+
+async function getBrowser() {
+  if (_browser && _browser.connected) return _browser;
+  const chromiumPath = process.env.CHROMIUM_PATH || '/usr/bin/chromium-browser';
+  _browser = await puppeteer.launch({
+    executablePath: chromiumPath,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    headless: true,
+  });
+  _browser.on('disconnected', () => { _browser = null; });
+  return _browser;
+}
+
 export const convertToPDF = async (
   renderedHtml: string,
   title: string,
 ): Promise<Buffer> => {
   const html = buildPDFHtml(renderedHtml, title);
 
-  const chromiumPath = process.env.CHROMIUM_PATH || '/usr/bin/chromium-browser';
-  const browser = await puppeteer.launch({
-    executablePath: chromiumPath,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
-    headless: true,
-  });
-
+  const browser = await getBrowser();
+  const page = await browser.newPage();
   try {
-    const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
     const pdfBuffer = await page.pdf({
       format: 'A4',
@@ -259,6 +269,6 @@ export const convertToPDF = async (
     });
     return Buffer.from(pdfBuffer);
   } finally {
-    await browser.close();
+    await page.close();
   }
 };

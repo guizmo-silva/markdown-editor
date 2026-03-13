@@ -46,8 +46,11 @@ export const validatePath = async (
   // Resolve to absolute path within workspace
   const absolutePath = path.resolve(workspaceRoot, normalizedPath);
 
-  // Ensure the resolved path is still within workspace root
-  if (!absolutePath.startsWith(path.resolve(workspaceRoot))) {
+  // Ensure the resolved path is still within workspace root.
+  // Must add path.sep to the resolved root to avoid matching sibling directories
+  // that share the same prefix (e.g. /workspace matching /workspace-extra/).
+  const resolvedRoot = path.resolve(workspaceRoot);
+  if (absolutePath !== resolvedRoot && !absolutePath.startsWith(resolvedRoot + path.sep)) {
     throw new Error('Invalid path: Path outside workspace');
   }
 

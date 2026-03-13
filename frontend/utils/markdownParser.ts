@@ -69,8 +69,8 @@ export interface CodeBlockElement {
   raw: string;
 }
 
-export function parseHeadings(markdown: string): HeadingElement[] {
-  const lines = markdown.split('\n');
+export function parseHeadings(markdown: string, _lines?: string[]): HeadingElement[] {
+  const lines = _lines ?? markdown.split('\n');
   const headings: HeadingElement[] = [];
 
   lines.forEach((line, index) => {
@@ -122,8 +122,8 @@ export function parseHeadings(markdown: string): HeadingElement[] {
   return headings;
 }
 
-export function parseImages(markdown: string): ImageElement[] {
-  const lines = markdown.split('\n');
+export function parseImages(markdown: string, _lines?: string[]): ImageElement[] {
+  const lines = _lines ?? markdown.split('\n');
   const images: ImageElement[] = [];
 
   lines.forEach((line, index) => {
@@ -143,8 +143,8 @@ export function parseImages(markdown: string): ImageElement[] {
   return images;
 }
 
-export function parseLinks(markdown: string): LinkElement[] {
-  const lines = markdown.split('\n');
+export function parseLinks(markdown: string, _lines?: string[]): LinkElement[] {
+  const lines = _lines ?? markdown.split('\n');
   const links: LinkElement[] = [];
 
   lines.forEach((line, index) => {
@@ -169,8 +169,8 @@ export function parseLinks(markdown: string): LinkElement[] {
   return links;
 }
 
-export function parseAlerts(markdown: string): AlertElement[] {
-  const lines = markdown.split('\n');
+export function parseAlerts(markdown: string, _lines?: string[]): AlertElement[] {
+  const lines = _lines ?? markdown.split('\n');
   const alerts: AlertElement[] = [];
   const alertTypes = ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'];
 
@@ -213,8 +213,8 @@ export function parseAlerts(markdown: string): AlertElement[] {
   return alerts;
 }
 
-export function parseFootnotes(markdown: string): FootnoteElement[] {
-  const lines = markdown.split('\n');
+export function parseFootnotes(markdown: string, _lines?: string[]): FootnoteElement[] {
+  const lines = _lines ?? markdown.split('\n');
   const footnoteMap = new Map<string, FootnoteElement>();
 
   // First pass: find all footnote references and definitions
@@ -255,8 +255,8 @@ export function parseFootnotes(markdown: string): FootnoteElement[] {
   return Array.from(footnoteMap.values());
 }
 
-export function parseTables(markdown: string): TableElement[] {
-  const lines = markdown.split('\n');
+export function parseTables(markdown: string, _lines?: string[]): TableElement[] {
+  const lines = _lines ?? markdown.split('\n');
   const tables: TableElement[] = [];
   let inTable = false;
   let tableStart = -1;
@@ -306,8 +306,8 @@ export function parseTables(markdown: string): TableElement[] {
   return tables;
 }
 
-export function parseQuotes(markdown: string): QuoteElement[] {
-  const lines = markdown.split('\n');
+export function parseQuotes(markdown: string, _lines?: string[]): QuoteElement[] {
+  const lines = _lines ?? markdown.split('\n');
   const quotes: QuoteElement[] = [];
   const alertTypes = ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'];
 
@@ -365,8 +365,8 @@ export function parseQuotes(markdown: string): QuoteElement[] {
   return quotes;
 }
 
-export function parseOrderedLists(markdown: string): OrderedListElement[] {
-  const lines = markdown.split('\n');
+export function parseOrderedLists(markdown: string, _lines?: string[]): OrderedListElement[] {
+  const lines = _lines ?? markdown.split('\n');
   const lists: OrderedListElement[] = [];
 
   let i = 0;
@@ -401,8 +401,8 @@ export function parseOrderedLists(markdown: string): OrderedListElement[] {
   return lists;
 }
 
-export function parseUnorderedLists(markdown: string): UnorderedListElement[] {
-  const lines = markdown.split('\n');
+export function parseUnorderedLists(markdown: string, _lines?: string[]): UnorderedListElement[] {
+  const lines = _lines ?? markdown.split('\n');
   const lists: UnorderedListElement[] = [];
 
   let i = 0;
@@ -437,8 +437,8 @@ export function parseUnorderedLists(markdown: string): UnorderedListElement[] {
   return lists;
 }
 
-export function parseCodeBlocks(markdown: string): CodeBlockElement[] {
-  const lines = markdown.split('\n');
+export function parseCodeBlocks(markdown: string, _lines?: string[]): CodeBlockElement[] {
+  const lines = _lines ?? markdown.split('\n');
   const codeBlocks: CodeBlockElement[] = [];
 
   let i = 0;
@@ -492,16 +492,17 @@ export interface MarkdownAssets {
 }
 
 export function parseMarkdownAssets(markdown: string): MarkdownAssets {
+  const lines = markdown.split('\n');
   return {
-    headings: parseHeadings(markdown),
-    images: parseImages(markdown),
-    links: parseLinks(markdown),
-    alerts: parseAlerts(markdown),
-    footnotes: parseFootnotes(markdown),
-    tables: parseTables(markdown),
-    quotes: parseQuotes(markdown),
-    orderedLists: parseOrderedLists(markdown),
-    unorderedLists: parseUnorderedLists(markdown),
-    codeBlocks: parseCodeBlocks(markdown),
+    headings: parseHeadings(markdown, lines),
+    images: parseImages(markdown, lines),
+    links: parseLinks(markdown, lines),
+    alerts: parseAlerts(markdown, lines),
+    footnotes: parseFootnotes(markdown, lines),
+    tables: parseTables(markdown, lines),
+    quotes: parseQuotes(markdown, lines),
+    orderedLists: parseOrderedLists(markdown, lines),
+    unorderedLists: parseUnorderedLists(markdown, lines),
+    codeBlocks: parseCodeBlocks(markdown, lines),
   };
 }

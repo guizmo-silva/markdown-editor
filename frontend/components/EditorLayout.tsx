@@ -15,6 +15,7 @@ import { ImportModal } from './ImportModal';
 import { TrashModal } from './TrashModal';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useTheme } from './ThemeProvider';
+import { useToast } from './Toast/Toast';
 import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, exportToPdf, exportToDocx, importDocx, importZip, getVolumes, listFiles, getTrashCount } from '@/services/api';
 
 const SIDEBAR_MIN_WIDTH = 230;
@@ -38,6 +39,7 @@ export default function EditorLayout() {
   const { getIconPath } = useThemedIcon();
   const { theme: globalTheme } = useTheme();
   const { t } = useTranslation();
+  const { showError, showWarning } = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -335,7 +337,7 @@ export default function EditorLayout() {
       }
     } catch (err) {
       console.error('Failed to load file:', err);
-      alert(err instanceof Error ? err.message : 'Failed to load file');
+      showError(err instanceof Error ? err.message : 'Failed to load file');
     } finally {
       setIsLoading(false);
     }
@@ -413,7 +415,7 @@ export default function EditorLayout() {
       getTrashCount().then(setTrashCount).catch(() => {});
     } catch (err) {
       console.error('Failed to delete file:', err);
-      alert(err instanceof Error ? err.message : 'Failed to delete file');
+      showError(err instanceof Error ? err.message : 'Failed to delete file');
     }
   };
 
@@ -431,7 +433,7 @@ export default function EditorLayout() {
       updateTabId(oldPath, newPath);
     } catch (err) {
       console.error('Failed to rename file:', err);
-      alert(err instanceof Error ? err.message : 'Failed to rename file');
+      showError(err instanceof Error ? err.message : 'Failed to rename file');
     }
   };
 
@@ -466,7 +468,7 @@ export default function EditorLayout() {
     if (result === 'ok') {
       setShowWelcomeModal(false);
     } else if (result === 'error') {
-      alert('Failed to create file. Check volume permissions.');
+      showError('Failed to create file. Check volume permissions.');
     }
   };
 
@@ -480,7 +482,7 @@ export default function EditorLayout() {
     // Validate filename length (255 bytes max)
     const nameBytes = new TextEncoder().encode(newName).length;
     if (nameBytes > 255) {
-      alert('Filename too long (max 255 bytes)');
+      showWarning('Filename too long (max 255 bytes)');
       return;
     }
 
@@ -500,7 +502,7 @@ export default function EditorLayout() {
       setFileRefreshTrigger(prev => prev + 1);
     } catch (err) {
       console.error('Failed to rename file:', err);
-      alert(err instanceof Error ? err.message : 'Failed to rename file');
+      showError(err instanceof Error ? err.message : 'Failed to rename file');
     }
   };
 
@@ -525,7 +527,7 @@ export default function EditorLayout() {
         await handleFileSelect(filePath);
         setFileRefreshTrigger(t => t + 1);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Erro ao importar .docx');
+        showError(err instanceof Error ? err.message : 'Erro ao importar .docx');
       }
       return;
     }
@@ -537,7 +539,7 @@ export default function EditorLayout() {
         await handleFileSelect(filePath);
         setFileRefreshTrigger(t => t + 1);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Erro ao importar .zip');
+        showError(err instanceof Error ? err.message : 'Erro ao importar .zip');
       }
       return;
     }
@@ -567,7 +569,7 @@ export default function EditorLayout() {
           if (msg.toLowerCase().includes('already exists')) {
             counter++;
           } else {
-            alert(msg || 'Erro ao importar arquivo');
+            showError(msg || 'Erro ao importar arquivo');
             return;
           }
         }
@@ -631,7 +633,7 @@ export default function EditorLayout() {
       if (format === 'pdf') {
         const previewEl = document.querySelector('.markdown-preview') as HTMLElement | null;
         if (!previewEl) {
-          alert('Alterne para o modo Split ou Preview para exportar em PDF.');
+          showWarning('Alterne para o modo Split ou Preview para exportar em PDF.');
           return;
         }
 
@@ -723,7 +725,7 @@ export default function EditorLayout() {
       setShowExportModal(false);
     } catch (err) {
       console.error('Failed to export:', err);
-      alert(err instanceof Error ? err.message : 'Failed to export');
+      showError(err instanceof Error ? err.message : 'Failed to export');
     }
   };
 

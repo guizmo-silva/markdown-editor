@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import I18nProvider from "@/components/I18nProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ToastProvider } from "@/components/Toast/Toast";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -47,7 +48,9 @@ export default function RootLayout({
       <body className={`${inter.variable} ${robotoMono.variable} ${robotoFlex.variable} ${notoSansSC.variable} antialiased`}>
         <Script src="/runtime-config.js" strategy="beforeInteractive" />
         <ThemeProvider>
-          <I18nProvider>{children}</I18nProvider>
+          <ToastProvider>
+            <I18nProvider>{children}</I18nProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
