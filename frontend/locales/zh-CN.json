@@ -83,7 +83,8 @@
   "viewToggle": {
     "codeView": "仅代码",
     "splitView": "分屏视图",
-    "previewView": "仅预览"
+    "previewView": "仅预览",
+    "splitHorizontalHint": "双击：水平分割"
   },
   "menu": {
     "language": "语言",

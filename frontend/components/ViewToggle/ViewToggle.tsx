@@ -1,29 +1,47 @@
 'use client';
 
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export type ViewMode = 'code' | 'split' | 'preview';
+export type ViewMode = 'code' | 'split' | 'split-horizontal' | 'preview';
 
 interface ViewToggleProps {
   currentMode: ViewMode;
   onModeChange: (mode: ViewMode) => void;
   vertical?: boolean;
+  onSplitDoubleClick?: () => void;
+  splitVariant?: 'split' | 'split-horizontal';
 }
 
-export default function ViewToggle({ currentMode, onModeChange, vertical = false }: ViewToggleProps) {
+export default function ViewToggle({ currentMode, onModeChange, vertical = false, onSplitDoubleClick, splitVariant = 'split' }: ViewToggleProps) {
   const { t } = useTranslation();
+  const splitClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Calculate slider position based on current mode
+  // split-horizontal maps to slider position 1 (same as split)
   const getSliderPosition = () => {
     switch (currentMode) {
       case 'code': return 0;
-      case 'split': return 1;
+      case 'split':
+      case 'split-horizontal': return 1;
       case 'preview': return 2;
       default: return 0;
     }
   };
 
   const sliderPosition = getSliderPosition();
+
+  const handleSplitClick = () => {
+    if (splitClickTimerRef.current) {
+      clearTimeout(splitClickTimerRef.current);
+      splitClickTimerRef.current = null;
+      onSplitDoubleClick?.();
+    } else {
+      splitClickTimerRef.current = setTimeout(() => {
+        splitClickTimerRef.current = null;
+        onModeChange('split');
+      }, 220);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center gap-1">
@@ -59,13 +77,24 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
 
         {/* Split View */}
         <button
-          onClick={() => onModeChange('split')}
+          onClick={handleSplitClick}
           className="relative z-10 p-2 rounded transition-colors text-[var(--text-primary)] hover:bg-[var(--bg-code)]/50"
-          title={t('viewToggle.splitView')}
+          title={`${t('viewToggle.splitView')}\n${t('viewToggle.splitHorizontalHint')}`}
         >
         <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="1.5" y="1.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-          <rect x="7.75" y="1.5" width="1.5" height="14" fill="currentColor"/>
+          {(currentMode === 'split-horizontal' || splitVariant === 'split-horizontal') ? (
+            // Horizontal split icon
+            <>
+              <rect x="1.5" y="1.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+              <rect x="1.5" y="7.75" width="14" height="1.5" fill="currentColor"/>
+            </>
+          ) : (
+            // Vertical split icon
+            <>
+              <rect x="1.5" y="1.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+              <rect x="7.75" y="1.5" width="1.5" height="14" fill="currentColor"/>
+            </>
+          )}
         </svg>
         </button>
 

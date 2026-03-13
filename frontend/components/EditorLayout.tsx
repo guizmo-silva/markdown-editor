@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CodeMirrorEditor, type CodeMirrorHandle } from './Editor';
-import { MarkdownPreview, type PreviewClickInfo } from './Preview';
+import { MarkdownPreview, PreviewInfoBar, PREVIEW_ZOOM_LEVELS, PREVIEW_DEFAULT_ZOOM, type PreviewClickInfo } from './Preview';
 import { AssetsSidebar } from './Sidebar';
 import LogoMenu from './Sidebar/LogoMenu';
 import { ViewToggle, type ViewMode } from './ViewToggle';
@@ -50,9 +50,13 @@ export default function EditorLayout() {
   const [isResizing, setIsResizing] = useState(false);
   const [splitPosition, setSplitPosition] = useState(50); // Percentage for code editor width
   const [isResizingSplit, setIsResizingSplit] = useState(false);
+  const [splitHorizontalPosition, setSplitHorizontalPosition] = useState(50);
+  const [isResizingHorizontalSplit, setIsResizingHorizontalSplit] = useState(false);
   const [columnWidth, setColumnWidth] = useState(100); // Column width percentage (50-100) for single-view modes
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const toolbarWrapperRef = useRef<HTMLDivElement>(null);
+  const lastSplitModeRef = useRef<'split' | 'split-horizontal'>('split');
+  const [lastSplitMode, setLastSplitMode] = useState<'split' | 'split-horizontal'>('split');
   const [sidebarBorderTop, setSidebarBorderTop] = useState(75);
   const editorRef = useRef<CodeMirrorHandle>(null);
   const tabKeyCounter = useRef(0);
@@ -93,6 +97,20 @@ export default function EditorLayout() {
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [trashCount, setTrashCount] = useState(0);
   const [imageRevision, setImageRevision] = useState(0);
+  const [previewZoom, setPreviewZoom] = useState(PREVIEW_DEFAULT_ZOOM);
+  const handlePreviewZoomIn = useCallback(() => {
+    setPreviewZoom(prev => {
+      const idx = PREVIEW_ZOOM_LEVELS.indexOf(prev);
+      return idx < PREVIEW_ZOOM_LEVELS.length - 1 ? PREVIEW_ZOOM_LEVELS[idx + 1] : prev;
+    });
+  }, []);
+  const handlePreviewZoomOut = useCallback(() => {
+    setPreviewZoom(prev => {
+      const idx = PREVIEW_ZOOM_LEVELS.indexOf(prev);
+      return idx > 0 ? PREVIEW_ZOOM_LEVELS[idx - 1] : prev;
+    });
+  }, []);
+  const handlePreviewZoomReset = useCallback(() => setPreviewZoom(PREVIEW_DEFAULT_ZOOM), []);
   const importDestFolderRef = useRef<string>('/');
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1204,21 +1222,31 @@ export default function EditorLayout() {
   // Wrapper: save scroll positions BEFORE switching, then restore after render
   const handleViewModeChange = useCallback((next: ViewMode) => {
     const prev = viewMode;
-    if (prev === next) return;
+
+    // Remember last split mode when leaving a split mode
+    if (prev === 'split' || prev === 'split-horizontal') {
+      lastSplitModeRef.current = prev;
+      setLastSplitMode(prev);
+    }
+
+    // When switching to 'split', restore the last remembered split mode
+    const resolvedNext: ViewMode = next === 'split' ? lastSplitModeRef.current : next;
+
+    if (prev === resolvedNext) return;
 
     // Save scroll from views currently visible (components still mounted here)
-    if (prev === 'code' || prev === 'split') {
+    if (prev === 'code' || prev === 'split' || prev === 'split-horizontal') {
       editorScrollMemory.current = editorRef.current?.getScrollTop() ?? 0;
     }
-    if (prev === 'preview' || prev === 'split') {
+    if (prev === 'preview' || prev === 'split' || prev === 'split-horizontal') {
       previewScrollMemory.current = previewScrollRef.current?.scrollTop ?? 0;
     }
 
-    setViewMode(next);
+    setViewMode(resolvedNext);
 
     // Restore after React renders the new view
     requestAnimationFrame(() => {
-      if (next === 'code' || next === 'split') {
+      if (resolvedNext === 'code' || resolvedNext === 'split' || resolvedNext === 'split-horizontal') {
         if (pendingCursorOffset.current !== null) {
           // Word-click from preview: scroll editor to exact offset
           editorRef.current?.scrollToOffset(pendingCursorOffset.current);
@@ -1233,7 +1261,7 @@ export default function EditorLayout() {
           editorRef.current?.setScrollTop(editorScrollMemory.current);
         }
       }
-      if (next === 'preview' || next === 'split') {
+      if (resolvedNext === 'preview' || resolvedNext === 'split' || resolvedNext === 'split-horizontal') {
         if (previewScrollRef.current) {
           previewScrollRef.current.scrollTop = previewScrollMemory.current;
         }
@@ -1296,6 +1324,32 @@ export default function EditorLayout() {
     setIsResizingSplit(false);
   }, []);
 
+  const handleSplitDoubleClick = useCallback(() => {
+    setViewMode(prev => {
+      const next = prev === 'split-horizontal' ? 'split' : 'split-horizontal';
+      lastSplitModeRef.current = next;
+      setLastSplitMode(next);
+      return next;
+    });
+  }, []);
+
+  const handleHorizontalSplitResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingHorizontalSplit(true);
+  }, []);
+
+  const handleHorizontalSplitResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizingHorizontalSplit || !splitContainerRef.current) return;
+    const rect = splitContainerRef.current.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    const pct = Math.max(20, Math.min(80, (relativeY / rect.height) * 100));
+    setSplitHorizontalPosition(pct);
+  }, [isResizingHorizontalSplit]);
+
+  const handleHorizontalSplitResizeEnd = useCallback(() => {
+    setIsResizingHorizontalSplit(false);
+  }, []);
+
   const handleDividerMouseEnter = useCallback(() => {
     dividerTooltipTimerRef.current = setTimeout(() => setShowDividerTooltip(true), 600);
   }, []);
@@ -1322,6 +1376,21 @@ export default function EditorLayout() {
       }
     };
   }, [isResizingSplit, handleSplitResizeMove, handleSplitResizeEnd]);
+
+  useEffect(() => {
+    if (isResizingHorizontalSplit) {
+      document.addEventListener('mousemove', handleHorizontalSplitResizeMove);
+      document.addEventListener('mouseup', handleHorizontalSplitResizeEnd);
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleHorizontalSplitResizeMove);
+      document.removeEventListener('mouseup', handleHorizontalSplitResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizingHorizontalSplit, handleHorizontalSplitResizeMove, handleHorizontalSplitResizeEnd]);
 
   useEffect(() => {
     if (isResizing) {
@@ -1382,6 +1451,8 @@ export default function EditorLayout() {
             markdown={markdown}
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
+            onSplitDoubleClick={handleSplitDoubleClick}
+            splitVariant={lastSplitMode}
             onNavigateToLine={handleNavigateToLine}
             onFileSelect={handleFileSelect}
             onDeleteFile={handleDeleteFile}
@@ -1417,7 +1488,7 @@ export default function EditorLayout() {
 
           {/* Vertical Toggle */}
           <div className="py-3 flex-1">
-            <ViewToggle currentMode={viewMode} onModeChange={handleViewModeChange} vertical={true} />
+            <ViewToggle currentMode={viewMode} onModeChange={handleViewModeChange} vertical={true} onSplitDoubleClick={handleSplitDoubleClick} splitVariant={lastSplitMode} />
           </div>
 
           {/* Trash button (collapsed, only when trash has items) */}
@@ -1471,7 +1542,104 @@ export default function EditorLayout() {
         />
 
         {/* Content Area - Based on view mode */}
-        <div ref={splitContainerRef} className="flex-1 flex overflow-hidden relative">
+        <div
+          ref={splitContainerRef}
+          className="flex-1 overflow-hidden relative"
+          style={viewMode === 'split-horizontal'
+            ? { display: 'flex', flexDirection: 'column', width: '100%', maxWidth: `${columnWidth}%`, margin: '0 auto' }
+            : { display: 'flex' }}
+        >
+
+          {/* Split Horizontal — flex-col, espelhando o split vertical */}
+          {viewMode === 'split-horizontal' && (
+            <>
+              {/* Top panel: editor — flex item com flex-basis explícito */}
+              <div
+                className="flex-shrink-0 flex flex-col overflow-hidden"
+                style={{ flexBasis: `${splitHorizontalPosition}%` }}
+              >
+                <div ref={toolbarWrapperRef}>
+                  <Toolbar
+                    textareaRef={editorRef}
+                    value={markdown}
+                    onChange={setMarkdown}
+                    currentFilePath={currentFilePath ?? undefined}
+                    onImageImported={handleImageImported}
+                  />
+                </div>
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <CodeMirrorEditor
+                    ref={editorRef}
+                    value={markdown}
+                    onChange={handleEditorChange}
+                    scrollToLine={scrollToLine}
+                    viewTheme={editorTheme}
+                    onToggleTheme={toggleEditorTheme}
+                    saveStatus={saveStatus}
+                    documentId={activeTab ? String(activeTab.stableKey) : null}
+                    onScrollLineChange={handleEditorScrollLineChange}
+                    columnWidth={columnWidth}
+                    onColumnWidthChange={undefined}
+                  />
+                </div>
+              </div>
+
+              {/* Divider — flex item fixo de 5px */}
+              <div
+                className="flex-shrink-0 flex items-center justify-center cursor-row-resize bg-[var(--bg-primary)] hover:bg-[var(--split-line)] active:bg-[var(--split-line)] transition-colors"
+                style={{ height: '5px' }}
+                onMouseDown={handleHorizontalSplitResizeStart}
+                onDoubleClick={() => setSplitHorizontalPosition(50)}
+              >
+                <div className="flex gap-[3px]">
+                  <div className="w-[3px] h-[3px] rounded-full bg-[var(--border-primary)]" />
+                  <div className="w-[3px] h-[3px] rounded-full bg-[var(--border-primary)]" />
+                  <div className="w-[3px] h-[3px] rounded-full bg-[var(--border-primary)]" />
+                </div>
+              </div>
+
+              {/* Bottom panel: preview — flex-col com InfoBar como sibling direto */}
+              <div
+                className="flex-shrink-0 flex flex-col overflow-hidden"
+                style={{ flexBasis: `calc(${100 - splitHorizontalPosition}% - 5px)`, borderLeft: '1px solid var(--border-editor)' }}
+              >
+                <div className="flex-1 min-h-0 relative overflow-hidden">
+                  <MarkdownPreview
+                    content={previewContent}
+                    viewTheme={previewTheme}
+                    onToggleTheme={togglePreviewTheme}
+                    previewScrollRef={previewScrollRef}
+                    isScrollSynced={isScrollSynced}
+                    onToggleScrollSync={toggleScrollSync}
+                    onClickSourcePosition={handlePreviewClickSource}
+                    columnWidth={columnWidth}
+                    onColumnWidthChange={setColumnWidth}
+                    filePath={currentFilePath ?? undefined}
+                    imageRevision={imageRevision}
+                    hideInfoBar
+                    previewZoom={previewZoom}
+                    onPreviewZoomIn={handlePreviewZoomIn}
+                    onPreviewZoomOut={handlePreviewZoomOut}
+                    onPreviewZoomReset={handlePreviewZoomReset}
+                  />
+                </div>
+                <PreviewInfoBar
+                  content={previewContent}
+                  viewTheme={previewTheme}
+                  onToggleTheme={togglePreviewTheme}
+                  isScrollSynced={isScrollSynced}
+                  onToggleScrollSync={toggleScrollSync}
+                  columnWidth={columnWidth}
+                  onColumnWidthChange={setColumnWidth}
+                  previewZoom={previewZoom}
+                  onPreviewZoomIn={handlePreviewZoomIn}
+                  onPreviewZoomOut={handlePreviewZoomOut}
+                  onPreviewZoomReset={handlePreviewZoomReset}
+                />
+              </div>
+            </>
+          )}
+
           {/* Code Editor */}
           {(viewMode === 'code' || viewMode === 'split') && (
             <div
@@ -1532,7 +1700,7 @@ export default function EditorLayout() {
           {/* Preview */}
           {(viewMode === 'preview' || viewMode === 'split') && (
             <div
-              className={viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}
+              className={`relative ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}
               style={{
                 width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 5px)` : '100%',
                 ...(viewMode === 'preview' ? { maxWidth: `${columnWidth}%`, margin: '0 auto' } : {})

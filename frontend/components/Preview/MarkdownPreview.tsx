@@ -187,6 +187,9 @@ export interface PreviewClickInfo {
   wordOccurrenceIndex: number;
 }
 
+export const PREVIEW_ZOOM_LEVELS = [70, 80, 90, 100, 110, 120, 130, 140, 150];
+export const PREVIEW_DEFAULT_ZOOM = 100;
+
 interface MarkdownPreviewProps {
   content: string;
   viewTheme?: 'light' | 'dark';
@@ -199,39 +202,46 @@ interface MarkdownPreviewProps {
   onColumnWidthChange?: (value: number) => void;
   filePath?: string;
   imageRevision?: number;
+  hideInfoBar?: boolean;
+  previewZoom?: number;
+  onPreviewZoomIn?: () => void;
+  onPreviewZoomOut?: () => void;
+  onPreviewZoomReset?: () => void;
 }
 
 // Inline tag names that correspond to inlineTypes in the remark plugin
 const inlineTagNames = new Set(['EM', 'STRONG', 'A', 'CODE', 'DEL']);
 
-const PREVIEW_ZOOM_LEVELS = [70, 80, 90, 100, 110, 120, 130, 140, 150];
-const PREVIEW_DEFAULT_ZOOM = 100;
-
-function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange, filePath, imageRevision }: MarkdownPreviewProps) {
+function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange, filePath, imageRevision, hideInfoBar, previewZoom: previewZoomProp, onPreviewZoomIn: onPreviewZoomInProp, onPreviewZoomOut: onPreviewZoomOutProp, onPreviewZoomReset: onPreviewZoomResetProp }: MarkdownPreviewProps) {
   const isDark = viewTheme === 'dark';
 
   // Theme-specific colors
   const textColor = isDark ? '#BEBEBE' : '#333333';
 
-  const [previewZoom, setPreviewZoom] = useState(PREVIEW_DEFAULT_ZOOM);
+  const [internalPreviewZoom, setInternalPreviewZoom] = useState(PREVIEW_DEFAULT_ZOOM);
 
-  const handlePreviewZoomIn = useCallback(() => {
-    setPreviewZoom(prev => {
+  const handleInternalPreviewZoomIn = useCallback(() => {
+    setInternalPreviewZoom(prev => {
       const idx = PREVIEW_ZOOM_LEVELS.indexOf(prev);
       return idx < PREVIEW_ZOOM_LEVELS.length - 1 ? PREVIEW_ZOOM_LEVELS[idx + 1] : prev;
     });
   }, []);
 
-  const handlePreviewZoomOut = useCallback(() => {
-    setPreviewZoom(prev => {
+  const handleInternalPreviewZoomOut = useCallback(() => {
+    setInternalPreviewZoom(prev => {
       const idx = PREVIEW_ZOOM_LEVELS.indexOf(prev);
       return idx > 0 ? PREVIEW_ZOOM_LEVELS[idx - 1] : prev;
     });
   }, []);
 
-  const handlePreviewZoomReset = useCallback(() => {
-    setPreviewZoom(PREVIEW_DEFAULT_ZOOM);
+  const handleInternalPreviewZoomReset = useCallback(() => {
+    setInternalPreviewZoom(PREVIEW_DEFAULT_ZOOM);
   }, []);
+
+  const previewZoom = previewZoomProp ?? internalPreviewZoom;
+  const handlePreviewZoomIn = onPreviewZoomInProp ?? handleInternalPreviewZoomIn;
+  const handlePreviewZoomOut = onPreviewZoomOutProp ?? handleInternalPreviewZoomOut;
+  const handlePreviewZoomReset = onPreviewZoomResetProp ?? handleInternalPreviewZoomReset;
 
   // Compute the base path for resolving relative image srcs
   const imageBasePath = filePath ? filePath.substring(0, filePath.lastIndexOf('/')) : null;
@@ -378,7 +388,7 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
   }), [imageBasePath, imageRevision]);
 
   return (
-    <div className={`h-full w-full flex flex-col preview-container ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
+    <div className={`absolute inset-0 flex flex-col preview-container ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
       {/* Preview content area */}
       <div ref={previewScrollRef} className="flex-1 overflow-auto p-8 pb-[calc(100vh-8rem)]">
         <div
@@ -397,19 +407,21 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
       </div>
 
       {/* Info Bar */}
-      <PreviewInfoBar
-        content={content}
-        viewTheme={viewTheme}
-        onToggleTheme={onToggleTheme}
-        isScrollSynced={isScrollSynced}
-        onToggleScrollSync={onToggleScrollSync}
-        columnWidth={columnWidth}
-        onColumnWidthChange={onColumnWidthChange}
-        previewZoom={previewZoom}
-        onPreviewZoomIn={handlePreviewZoomIn}
-        onPreviewZoomOut={handlePreviewZoomOut}
-        onPreviewZoomReset={handlePreviewZoomReset}
-      />
+      {!hideInfoBar && (
+        <PreviewInfoBar
+          content={content}
+          viewTheme={viewTheme}
+          onToggleTheme={onToggleTheme}
+          isScrollSynced={isScrollSynced}
+          onToggleScrollSync={onToggleScrollSync}
+          columnWidth={columnWidth}
+          onColumnWidthChange={onColumnWidthChange}
+          previewZoom={previewZoom}
+          onPreviewZoomIn={handlePreviewZoomIn}
+          onPreviewZoomOut={handlePreviewZoomOut}
+          onPreviewZoomReset={handlePreviewZoomReset}
+        />
+      )}
     </div>
   );
 }

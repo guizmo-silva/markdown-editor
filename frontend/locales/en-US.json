@@ -83,7 +83,8 @@
   "viewToggle": {
     "codeView": "Code only",
     "splitView": "Split view",
-    "previewView": "Preview only"
+    "previewView": "Preview only",
+    "splitHorizontalHint": "Double click: split horizontally"
   },
   "menu": {
     "language": "Language",

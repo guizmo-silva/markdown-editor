@@ -35,6 +35,8 @@ interface AssetsSidebarProps {
   markdown: string;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  onSplitDoubleClick?: () => void;
+  splitVariant?: 'split' | 'split-horizontal';
   onNavigateToLine?: (line: number) => void;
   onFileSelect?: (filePath: string) => void;
   onDeleteFile?: (filePath: string) => void;
@@ -53,6 +55,8 @@ export default function AssetsSidebar({
   markdown,
   viewMode,
   onViewModeChange,
+  onSplitDoubleClick,
+  splitVariant,
   onNavigateToLine,
   onFileSelect,
   onDeleteFile,
@@ -183,7 +187,7 @@ export default function AssetsSidebar({
         <LogoMenu onImportClick={onImportClick} />
 
         {/* View Toggle */}
-        <ViewToggle currentMode={viewMode} onModeChange={onViewModeChange} />
+        <ViewToggle currentMode={viewMode} onModeChange={onViewModeChange} onSplitDoubleClick={onSplitDoubleClick} splitVariant={splitVariant} />
       </div>
 
       {/* Sections Container */}
