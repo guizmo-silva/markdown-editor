@@ -89,7 +89,8 @@
   "menu": {
     "language": "语言",
     "appearance": "外观",
-    "darkMode": "深色模式"
+    "darkMode": "深色模式",
+    "importFile": "导入文件"
   },
   "status": {
     "saved": "已保存",

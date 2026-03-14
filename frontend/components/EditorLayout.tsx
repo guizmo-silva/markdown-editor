@@ -19,6 +19,7 @@ import { useToast } from './Toast/Toast';
 import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, exportToPdf, exportToDocx, importDocx, importZip, getVolumes, listFiles, getTrashCount } from '@/services/api';
 
 const SIDEBAR_MIN_WIDTH = 230;
+const SIDEBAR_DEFAULT_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
 const SPLIT_MIN_PERCENT = 20; // Minimum 20% for each panel
 const SPLIT_MAX_PERCENT = 80; // Maximum 80% for each panel
@@ -1470,6 +1471,7 @@ export default function EditorLayout() {
           <div
             className="absolute top-0 right-0 w-3 h-full cursor-col-resize z-10 flex items-stretch justify-center group"
             onMouseDown={handleResizeStart}
+            onDoubleClick={() => setSidebarWidth(SIDEBAR_DEFAULT_WIDTH)}
           >
             <div className="w-px h-full bg-transparent group-hover:bg-[var(--split-line)] transition-colors" />
           </div>
@@ -1546,7 +1548,7 @@ export default function EditorLayout() {
           ref={splitContainerRef}
           className="flex-1 overflow-hidden relative"
           style={viewMode === 'split-horizontal'
-            ? { display: 'flex', flexDirection: 'column', width: '100%', maxWidth: `${columnWidth}%`, margin: '0 auto' }
+            ? { display: 'flex', flexDirection: 'column', width: '100%' }
             : { display: 'flex' }}
         >
 
@@ -1567,7 +1569,10 @@ export default function EditorLayout() {
                     onImageImported={handleImageImported}
                   />
                 </div>
-                <div className="flex-1 min-h-0 overflow-hidden">
+                <div
+                  className="flex-1 min-h-0 overflow-hidden"
+                  style={{ maxWidth: `${columnWidth}%`, margin: '0 auto', width: '100%' }}
+                >
                   <CodeMirrorEditor
                     ref={editorRef}
                     value={markdown}
@@ -1601,7 +1606,7 @@ export default function EditorLayout() {
               {/* Bottom panel: preview — flex-col com InfoBar como sibling direto */}
               <div
                 className="flex-shrink-0 flex flex-col overflow-hidden"
-                style={{ flexBasis: `calc(${100 - splitHorizontalPosition}% - 5px)`, borderLeft: '1px solid var(--border-editor)' }}
+                style={{ flexBasis: `calc(${100 - splitHorizontalPosition}% - 5px)`, borderLeft: '1px solid var(--border-editor)', maxWidth: `${columnWidth}%`, marginLeft: 'auto', marginRight: 'auto', width: '100%' }}
               >
                 <div className="flex-1 min-h-0 relative overflow-hidden">
                   <MarkdownPreview
@@ -1647,7 +1652,6 @@ export default function EditorLayout() {
               style={{
                 width: viewMode === 'split' ? `${splitPosition}%` : '100%',
                 minWidth: viewMode === 'split' ? `${CODE_VIEW_MIN_WIDTH}px` : undefined,
-                ...(viewMode === 'code' ? { maxWidth: `${columnWidth}%`, margin: '0 auto' } : {})
               }}
             >
               <div ref={toolbarWrapperRef}>
@@ -1659,7 +1663,10 @@ export default function EditorLayout() {
                   onImageImported={handleImageImported}
                 />
               </div>
-              <div className={`flex-1 ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}>
+              <div
+                className={`flex-1 ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}
+                style={viewMode === 'code' ? { maxWidth: `${columnWidth}%`, margin: '0 auto', width: '100%' } : undefined}
+              >
                 <CodeMirrorEditor
                   ref={editorRef}
                   value={markdown}

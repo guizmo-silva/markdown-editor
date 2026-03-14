@@ -89,7 +89,8 @@
   "menu": {
     "language": "Язык",
     "appearance": "Оформление",
-    "darkMode": "Тёмный режим"
+    "darkMode": "Тёмный режим",
+    "importFile": "Импортировать файл"
   },
   "status": {
     "saved": "Сохранено",

@@ -146,6 +146,34 @@ body {
   background-color: var(--text-secondary);
 }
 
+/* Editor/Preview scrollbars - Chromium only (Firefox ignores ::-webkit-scrollbar) */
+.editor-scroll::-webkit-scrollbar,
+.cm-scroller::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.editor-scroll::-webkit-scrollbar-track,
+.cm-scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-scroll::-webkit-scrollbar-thumb,
+.cm-scroller::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 2px;
+}
+
+.editor-scroll:hover::-webkit-scrollbar-thumb,
+.cm-scroller:hover::-webkit-scrollbar-thumb {
+  background-color: var(--border-primary);
+}
+
+.editor-scroll::-webkit-scrollbar-thumb:hover,
+.cm-scroller::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary);
+}
+
 /* Custom scrollbar for tabs */
 .scrollbar-thin {
   scrollbar-width: thin;

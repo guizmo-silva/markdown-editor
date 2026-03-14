@@ -390,7 +390,7 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
   return (
     <div className={`absolute inset-0 flex flex-col preview-container ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
       {/* Preview content area */}
-      <div ref={previewScrollRef} className="flex-1 overflow-auto p-8 pb-[calc(100vh-8rem)]">
+      <div ref={previewScrollRef} className="flex-1 overflow-auto p-8 pb-[calc(100vh-8rem)] editor-scroll">
         <div
           className={`markdown-preview${onClickSourcePosition ? ' clickable-source' : ''}`}
           style={{ fontFamily: 'var(--font-roboto-flex), sans-serif', color: textColor, fontSize: `${previewZoom}%` }}

@@ -89,7 +89,8 @@
   "menu": {
     "language": "Langue",
     "appearance": "Apparence",
-    "darkMode": "Mode sombre"
+    "darkMode": "Mode sombre",
+    "importFile": "Importer un fichier"
   },
   "status": {
     "saved": "Enregistré",

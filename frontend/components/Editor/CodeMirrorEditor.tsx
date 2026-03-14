@@ -533,10 +533,13 @@ const createFormatCommand = (prefix: string, suffix: string) => {
         selection: { anchor: from, head: from + unwrapped.length }
       });
     } else {
-      // Add formatting
+      // Add formatting — trim trailing newlines from triple-click selection
+      const trailingNewlines = selectedText.match(/\n+$/)?.[0] ?? '';
+      const trimmedText = trailingNewlines ? selectedText.slice(0, -trailingNewlines.length) : selectedText;
+      const trimmedTo = from + trimmedText.length;
       view.dispatch({
-        changes: { from, to, insert: prefix + selectedText + suffix },
-        selection: { anchor: from + prefix.length, head: to + prefix.length }
+        changes: { from, to, insert: prefix + trimmedText + suffix + trailingNewlines },
+        selection: { anchor: from + prefix.length, head: trimmedTo + prefix.length }
       });
     }
     return true;
