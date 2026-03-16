@@ -1606,41 +1606,46 @@ export default function EditorLayout() {
               {/* Bottom panel: preview — flex-col com InfoBar como sibling direto */}
               <div
                 className="flex-shrink-0 flex flex-col overflow-hidden"
-                style={{ flexBasis: `calc(${100 - splitHorizontalPosition}% - 5px)`, borderLeft: '1px solid var(--border-editor)', maxWidth: `${columnWidth}%`, marginLeft: 'auto', marginRight: 'auto', width: '100%' }}
+                style={{ flexBasis: `calc(${100 - splitHorizontalPosition}% - 5px)` }}
               >
-                <div className="flex-1 min-h-0 relative overflow-hidden">
-                  <MarkdownPreview
+                <div
+                  className="flex-1 min-h-0 flex flex-col overflow-hidden"
+                  style={{ maxWidth: `${columnWidth}%`, margin: '0 auto', width: '100%' }}
+                >
+                  <div className="flex-1 min-h-0 relative overflow-hidden">
+                    <MarkdownPreview
+                      content={previewContent}
+                      viewTheme={previewTheme}
+                      onToggleTheme={togglePreviewTheme}
+                      previewScrollRef={previewScrollRef}
+                      isScrollSynced={isScrollSynced}
+                      onToggleScrollSync={toggleScrollSync}
+                      onClickSourcePosition={handlePreviewClickSource}
+                      columnWidth={columnWidth}
+                      onColumnWidthChange={setColumnWidth}
+                      filePath={currentFilePath ?? undefined}
+                      imageRevision={imageRevision}
+                      hideInfoBar
+                      previewZoom={previewZoom}
+                      onPreviewZoomIn={handlePreviewZoomIn}
+                      onPreviewZoomOut={handlePreviewZoomOut}
+                      onPreviewZoomReset={handlePreviewZoomReset}
+                    />
+                  </div>
+                  <PreviewInfoBar
                     content={previewContent}
                     viewTheme={previewTheme}
                     onToggleTheme={togglePreviewTheme}
-                    previewScrollRef={previewScrollRef}
                     isScrollSynced={isScrollSynced}
                     onToggleScrollSync={toggleScrollSync}
-                    onClickSourcePosition={handlePreviewClickSource}
                     columnWidth={columnWidth}
                     onColumnWidthChange={setColumnWidth}
-                    filePath={currentFilePath ?? undefined}
-                    imageRevision={imageRevision}
-                    hideInfoBar
                     previewZoom={previewZoom}
                     onPreviewZoomIn={handlePreviewZoomIn}
                     onPreviewZoomOut={handlePreviewZoomOut}
                     onPreviewZoomReset={handlePreviewZoomReset}
                   />
                 </div>
-                <PreviewInfoBar
-                  content={previewContent}
-                  viewTheme={previewTheme}
-                  onToggleTheme={togglePreviewTheme}
-                  isScrollSynced={isScrollSynced}
-                  onToggleScrollSync={toggleScrollSync}
-                  columnWidth={columnWidth}
-                  onColumnWidthChange={setColumnWidth}
-                  previewZoom={previewZoom}
-                  onPreviewZoomIn={handlePreviewZoomIn}
-                  onPreviewZoomOut={handlePreviewZoomOut}
-                  onPreviewZoomReset={handlePreviewZoomReset}
-                />
               </div>
             </>
           )}
@@ -1710,7 +1715,7 @@ export default function EditorLayout() {
               className={`relative ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}
               style={{
                 width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 5px)` : '100%',
-                ...(viewMode === 'preview' ? { maxWidth: `${columnWidth}%`, margin: '0 auto' } : {})
+                ...(viewMode === 'preview' ? { maxWidth: `${columnWidth}%`, margin: '0 auto', borderTop: '2px solid var(--tab-bg)' } : {})
               }}
             >
               <MarkdownPreview
