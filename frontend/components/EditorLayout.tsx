@@ -51,8 +51,10 @@ export default function EditorLayout() {
   const [isResizing, setIsResizing] = useState(false);
   const [splitPosition, setSplitPosition] = useState(50); // Percentage for code editor width
   const [isResizingSplit, setIsResizingSplit] = useState(false);
+  const [isSplitAnimating, setIsSplitAnimating] = useState(false);
   const [splitHorizontalPosition, setSplitHorizontalPosition] = useState(50);
   const [isResizingHorizontalSplit, setIsResizingHorizontalSplit] = useState(false);
+  const [isHorizontalSplitAnimating, setIsHorizontalSplitAnimating] = useState(false);
   const [columnWidth, setColumnWidth] = useState(100); // Column width percentage (50-100) for single-view modes
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const toolbarWrapperRef = useRef<HTMLDivElement>(null);
@@ -1296,6 +1298,7 @@ export default function EditorLayout() {
   // Split resize handlers
   const handleSplitResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    setIsSplitAnimating(false);
     setIsResizingSplit(true);
   }, []);
 
@@ -1336,6 +1339,7 @@ export default function EditorLayout() {
 
   const handleHorizontalSplitResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    setIsHorizontalSplitAnimating(false);
     setIsResizingHorizontalSplit(true);
   }, []);
 
@@ -1558,7 +1562,7 @@ export default function EditorLayout() {
               {/* Top panel: editor — flex item com flex-basis explícito */}
               <div
                 className="flex-shrink-0 flex flex-col overflow-hidden"
-                style={{ flexBasis: `${splitHorizontalPosition}%` }}
+                style={{ flexBasis: `${splitHorizontalPosition}%`, transition: isHorizontalSplitAnimating ? 'flex-basis 0.2s ease-out' : undefined }}
               >
                 <div ref={toolbarWrapperRef}>
                   <Toolbar
@@ -1594,7 +1598,7 @@ export default function EditorLayout() {
                 className="flex-shrink-0 flex items-center justify-center cursor-row-resize bg-[var(--bg-primary)] hover:bg-[var(--split-line)] active:bg-[var(--split-line)] transition-colors"
                 style={{ height: '5px' }}
                 onMouseDown={handleHorizontalSplitResizeStart}
-                onDoubleClick={() => setSplitHorizontalPosition(50)}
+                onDoubleClick={() => { setIsHorizontalSplitAnimating(true); setSplitHorizontalPosition(50); }}
               >
                 <div className="flex gap-[3px]">
                   <div className="w-[3px] h-[3px] rounded-full bg-[var(--border-primary)]" />
@@ -1606,7 +1610,8 @@ export default function EditorLayout() {
               {/* Bottom panel: preview — flex-col com InfoBar como sibling direto */}
               <div
                 className="flex-shrink-0 flex flex-col overflow-hidden"
-                style={{ flexBasis: `calc(${100 - splitHorizontalPosition}% - 5px)` }}
+                style={{ flexBasis: `calc(${100 - splitHorizontalPosition}% - 5px)`, transition: isHorizontalSplitAnimating ? 'flex-basis 0.2s ease-out' : undefined }}
+                onTransitionEnd={() => setIsHorizontalSplitAnimating(false)}
               >
                 <div
                   className="flex-1 min-h-0 flex flex-col overflow-hidden"
@@ -1657,6 +1662,7 @@ export default function EditorLayout() {
               style={{
                 width: viewMode === 'split' ? `${splitPosition}%` : '100%',
                 minWidth: viewMode === 'split' ? `${CODE_VIEW_MIN_WIDTH}px` : undefined,
+                transition: isSplitAnimating ? 'width 0.2s ease-out' : undefined,
               }}
             >
               <div ref={toolbarWrapperRef}>
@@ -1694,7 +1700,7 @@ export default function EditorLayout() {
             <div
               className="relative w-[5px] bg-[var(--split-line)] cursor-col-resize hover:bg-[var(--text-secondary)] active:bg-[var(--text-secondary)] transition-colors flex-shrink-0 flex flex-col items-center justify-center gap-[3px]"
               onMouseDown={handleSplitResizeStart}
-              onDoubleClick={() => setSplitPosition(50)}
+              onDoubleClick={() => { setIsSplitAnimating(true); setSplitPosition(50); }}
               onMouseEnter={handleDividerMouseEnter}
               onMouseLeave={handleDividerMouseLeave}
             >
@@ -1715,8 +1721,10 @@ export default function EditorLayout() {
               className={`relative ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}
               style={{
                 width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 5px)` : '100%',
-                ...(viewMode === 'preview' ? { maxWidth: `${columnWidth}%`, margin: '0 auto', borderTop: '2px solid var(--tab-bg)' } : {})
+                ...(viewMode === 'preview' ? { maxWidth: `${columnWidth}%`, margin: '0 auto', borderTop: '2px solid var(--tab-bg)' } : {}),
+                transition: isSplitAnimating ? 'width 0.2s ease-out' : undefined,
               }}
+              onTransitionEnd={() => setIsSplitAnimating(false)}
             >
               <MarkdownPreview
                 content={previewContent}

@@ -6,7 +6,7 @@ import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightAc
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
-import { syntaxHighlighting, HighlightStyle, foldGutter, codeFolding, foldService } from '@codemirror/language';
+import { syntaxHighlighting, HighlightStyle, foldGutter, codeFolding, foldService, unfoldEffect, foldEffect, foldable, foldInside } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { autocompletion, CompletionContext, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { useTranslation } from 'react-i18next';
@@ -178,7 +178,7 @@ const lightTheme = EditorView.theme({
   '.cm-fm-comment': { color: '#6a737d', fontStyle: 'italic' },
   '.cm-foldGutter .cm-gutterElement': { padding: '0 4px 0 1px', cursor: 'pointer', color: '#999999' },
   '.cm-foldGutter .cm-gutterElement.cm-activeLineGutter': { color: '#555555' },
-  '.cm-foldPlaceholder': { marginLeft: '6px' },
+  '.cm-foldPlaceholder': { marginLeft: '6px', display: 'inline-block', animation: 'cm-fold-placeholder-in 0.18s ease-out', transformOrigin: 'left center', color: 'inherit', background: 'rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.18)', borderRadius: '4px', padding: '0 6px 2px', cursor: 'pointer', verticalAlign: 'baseline' },
 });
 
 // Dark theme for CodeMirror
@@ -271,7 +271,7 @@ const darkTheme = EditorView.theme({
   '.cm-fm-comment': { color: '#6a737d', fontStyle: 'italic' },
   '.cm-foldGutter .cm-gutterElement': { padding: '0 4px 0 1px', cursor: 'pointer', color: '#aaaaaa' },
   '.cm-foldGutter .cm-gutterElement.cm-activeLineGutter': { color: '#dddddd' },
-  '.cm-foldPlaceholder': { marginLeft: '6px' },
+  '.cm-foldPlaceholder': { marginLeft: '6px', display: 'inline-block', animation: 'cm-fold-placeholder-in 0.18s ease-out', transformOrigin: 'left center', color: 'inherit', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '4px', padding: '0 6px 2px', cursor: 'pointer', verticalAlign: 'baseline' },
 });
 
 // Build language completions from @codemirror/language-data
@@ -701,6 +701,234 @@ const frontMatterPlugin = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations }
 );
 
+// Helper: walk up from a DOM node to find the enclosing .cm-line element
+function cmLineAt(view: EditorView, pos: number): Element | null {
+  try {
+    const info = view.domAtPos(pos);
+    let el: Element | null = info.node instanceof Element ? info.node : (info.node as Node).parentElement;
+    while (el && !el.classList.contains('cm-line')) el = el.parentElement;
+    return el;
+  } catch { return null; }
+}
+
+// Creates a fixed-position ghost clone of a removed line and plays the given animation.
+// rect must be captured BEFORE the line is removed from the DOM.
+function spawnLineGhost(node: HTMLElement, rect: DOMRect, contentDOM: HTMLElement, animName: string) {
+  if (rect.height === 0) return;
+  const ghost = node.cloneNode(true) as HTMLElement;
+  const cs = window.getComputedStyle(contentDOM);
+  Object.assign(ghost.style, {
+    position: 'fixed',
+    top: `${rect.top}px`,
+    left: `${rect.left}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    fontFamily: cs.fontFamily,
+    fontSize: cs.fontSize,
+    lineHeight: cs.lineHeight,
+    color: cs.color,
+    backgroundColor: 'transparent',
+    margin: '0', padding: '0',
+    pointerEvents: 'none',
+    zIndex: '9999',
+    overflow: 'hidden',
+    whiteSpace: 'pre',
+    animation: `${animName} 0.15s ease-out forwards`,
+  });
+  document.body.appendChild(ghost);
+  ghost.addEventListener('animationend', () => ghost.remove(), { once: true });
+}
+
+// Combined fold/unfold animation plugin.
+//
+// FOLD:
+//   1. capture-phase mousedown on the fold gutter → snapshot all cm-line positions
+//   2. ViewPlugin.update detects foldEffect → schedules a rAF (by then CM has
+//      already updated the DOM) → spawns ghost clones for lines that disappeared
+//
+// UNFOLD:
+//   ViewPlugin.update detects unfoldEffect → on next rAF finds the newly
+//   rendered lines and applies a slide-in animation class.
+const foldAnimationPlugin = ViewPlugin.fromClass(class {
+  private lineSnapshots = new Map<Node, DOMRect>();
+  private pendingFoldAnim = false;
+  private gutterSnapshot: { rect: DOMRect; text: string; color: string; fontSize: string; fontFamily: string } | null = null;
+  private onMousedown: (e: MouseEvent) => void;
+
+  constructor(private view: EditorView) {
+    this.onMousedown = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (!target.closest('.cm-foldGutter')) return;
+
+      const lane = view.lineBlockAtHeight(e.clientY - view.documentTop);
+      if (foldInside(view.state, lane.from, lane.to)) return; // click = unfold, skip
+      if (!foldable(view.state, lane.from, lane.to)) return;  // nothing foldable
+
+      // Snapshot the gutter icon element by Y position (more robust than target.closest)
+      let gutterEl: HTMLElement | null = null;
+      view.dom.querySelectorAll('.cm-foldGutter .cm-gutterElement').forEach(el => {
+        const r = (el as HTMLElement).getBoundingClientRect();
+        if (e.clientY >= r.top && e.clientY <= r.bottom) gutterEl = el as HTMLElement;
+      });
+      if (gutterEl) {
+        const r = (gutterEl as HTMLElement).getBoundingClientRect();
+        const cs = window.getComputedStyle(gutterEl as HTMLElement);
+        this.gutterSnapshot = {
+          rect: r,
+          text: (gutterEl as HTMLElement).textContent ?? '',
+          color: cs.color,
+          fontSize: cs.fontSize,
+          fontFamily: cs.fontFamily,
+        };
+      } else {
+        this.gutterSnapshot = null;
+      }
+
+      // Snapshot every visible line's viewport rect BEFORE the fold happens
+      this.lineSnapshots.clear();
+      view.contentDOM.querySelectorAll('.cm-line').forEach(line => {
+        this.lineSnapshots.set(line, (line as HTMLElement).getBoundingClientRect());
+      });
+      this.pendingFoldAnim = true;
+    };
+    // capture:true fires before any element-level handlers (incl. stopPropagation)
+    view.dom.addEventListener('mousedown', this.onMousedown, { capture: true });
+  }
+
+  update(update: ViewUpdate) {
+    let hasFold = false;
+    let unfoldFrom = -1, unfoldTo = -1;
+
+    for (const tr of update.transactions) {
+      for (const eff of tr.effects) {
+        if (eff.is(foldEffect))   hasFold = true;
+        if (eff.is(unfoldEffect)) { unfoldFrom = eff.value.from; unfoldTo = eff.value.to; }
+      }
+    }
+
+    // --- FOLD: CM updates the DOM synchronously inside dispatch, BEFORE update()
+    //     returns, so we need rAF to run after the DOM is patched. ---
+    if (hasFold && this.pendingFoldAnim) {
+      this.pendingFoldAnim = false;
+      const snapshots = new Map(this.lineSnapshots);
+      this.lineSnapshots.clear();
+      const gutterSnap = this.gutterSnapshot;
+      this.gutterSnapshot = null;
+      const contentDOM = update.view.contentDOM;
+      requestAnimationFrame(() => {
+        const currentLines = contentDOM.querySelectorAll('.cm-line');
+        const currentSet = new Set(currentLines);
+        // Ghost clones for removed lines
+        for (const [node, rect] of snapshots) {
+          if (!currentSet.has(node as Element)) {
+            spawnLineGhost(node as HTMLElement, rect, contentDOM, 'cm-line-fold-out');
+          }
+        }
+        // Ghost for the gutter fold icon (text/styles captured at mousedown, before CM changed them)
+        if (gutterSnap) {
+          const { rect, text, color, fontSize, fontFamily } = gutterSnap;
+          if (text.trim()) {
+            const ghost = document.createElement('div');
+            ghost.textContent = text;
+            Object.assign(ghost.style, {
+              position: 'fixed',
+              top: `${rect.top}px`,
+              left: `${rect.left}px`,
+              width: `${rect.width}px`,
+              height: `${rect.height}px`,
+              color,
+              fontSize,
+              fontFamily,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+              zIndex: '9999',
+              animation: 'cm-line-fold-out 0.15s ease-out forwards',
+            });
+            document.body.appendChild(ghost);
+            ghost.addEventListener('animationend', () => ghost.remove(), { once: true });
+          }
+        }
+        // FLIP for lines that survived but moved up
+        currentLines.forEach(line => {
+          const el = line as HTMLElement;
+          const oldRect = snapshots.get(el);
+          if (!oldRect) return;
+          const newRect = el.getBoundingClientRect();
+          const dy = oldRect.top - newRect.top;
+          if (Math.abs(dy) > 0.5) {
+            el.style.transition = 'none';
+            el.style.transform = `translateY(${dy}px)`;
+            void el.offsetHeight;
+            el.style.transition = 'transform 0.15s ease-out';
+            el.style.transform = '';
+            el.addEventListener('transitionend', () => {
+              el.style.transition = '';
+              el.style.transform = '';
+            }, { once: true });
+          }
+        });
+      });
+    }
+
+    // --- UNFOLD: snapshot pre-change positions here (before DOM patch),
+    //     then in rAF: fade-in new lines + FLIP-animate lines pushed down ---
+    if (unfoldFrom >= 0) {
+      const view = update.view;
+      const doc = view.state.doc;
+      // Snapshot ALL line positions BEFORE the DOM update
+      const preSnapshots = new Map<Element, DOMRect>();
+      view.contentDOM.querySelectorAll('.cm-line').forEach(line => {
+        preSnapshots.set(line, (line as HTMLElement).getBoundingClientRect());
+      });
+
+      requestAnimationFrame(() => {
+        // Collect the newly revealed line elements
+        const newlyRevealed = new Set<Element>();
+        for (let pos = unfoldFrom; pos <= unfoldTo;) {
+          const line = doc.lineAt(pos);
+          const el = cmLineAt(view, line.from);
+          if (el) newlyRevealed.add(el);
+          pos = line.to + 1;
+        }
+
+        view.contentDOM.querySelectorAll('.cm-line').forEach(line => {
+          const el = line as HTMLElement;
+          if (newlyRevealed.has(el)) {
+            // Newly revealed: slide in from above
+            el.classList.remove('cm-line-unfolding');
+            void el.offsetHeight;
+            el.classList.add('cm-line-unfolding');
+            el.addEventListener('animationend', () => el.classList.remove('cm-line-unfolding'), { once: true });
+          } else {
+            // Existing line: FLIP if it moved
+            const oldRect = preSnapshots.get(el);
+            if (!oldRect) return;
+            const newRect = el.getBoundingClientRect();
+            const dy = oldRect.top - newRect.top;
+            if (Math.abs(dy) > 0.5) {
+              el.style.transition = 'none';
+              el.style.transform = `translateY(${dy}px)`;
+              void el.offsetHeight; // force reflow
+              el.style.transition = 'transform 0.15s ease-out';
+              el.style.transform = '';
+              el.addEventListener('transitionend', () => {
+                el.style.transition = '';
+                el.style.transform = '';
+              }, { once: true });
+            }
+          }
+        });
+      });
+    }
+  }
+
+  destroy() {
+    this.view.dom.removeEventListener('mousedown', this.onMousedown, true);
+  }
+});
+
 // foldService: allows folding from the first --- to the closing ---
 const frontMatterFoldService = foldService.of((state, lineStart) => {
   const fm = state.field(frontMatterRangeField);
@@ -990,6 +1218,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
             return el;
           },
         }),
+        foldAnimationPlugin,
         foldGutter(),
         codeBlockAutocomplete,
         smartTypography,
@@ -1238,6 +1467,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
             },
           }),
           foldGutter(),
+          foldAnimationPlugin,
           codeBlockAutocomplete,
           smartTypography,
           pasteLinkHandler,

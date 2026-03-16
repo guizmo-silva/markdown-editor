@@ -225,6 +225,27 @@ body {
   background: #606060;
 }
 
+/* CodeMirror fold/unfold animations */
+@keyframes cm-fold-placeholder-in {
+  from { opacity: 0; transform: scaleX(0.4); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+@keyframes cm-line-fold-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-4px); }
+}
+@keyframes cm-line-unfold-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cm-line.cm-line-folding {
+  animation: cm-line-fold-out 0.15s ease-out forwards;
+  pointer-events: none;
+}
+.cm-line.cm-line-unfolding {
+  animation: cm-line-unfold-in 0.15s ease-out;
+}
+
 /* InfoBar full-bleed background (extends beyond column-width container) */
 .infobar-fullbleed {
   position: relative;

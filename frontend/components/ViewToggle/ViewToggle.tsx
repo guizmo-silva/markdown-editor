@@ -81,20 +81,15 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
           className="relative z-10 p-2 rounded transition-colors text-[var(--text-primary)] hover:bg-[var(--bg-code)]/50"
           title={`${t('viewToggle.splitView')}\n${t('viewToggle.splitHorizontalHint')}`}
         >
-        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {(currentMode === 'split-horizontal' || splitVariant === 'split-horizontal') ? (
-            // Horizontal split icon
-            <>
-              <rect x="1.5" y="1.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-              <rect x="1.5" y="7.75" width="14" height="1.5" fill="currentColor"/>
-            </>
-          ) : (
-            // Vertical split icon
-            <>
-              <rect x="1.5" y="1.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-              <rect x="7.75" y="1.5" width="1.5" height="14" fill="currentColor"/>
-            </>
-          )}
+        <svg
+          width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg"
+          style={{
+            transition: 'transform 0.3s ease-out',
+            transform: (currentMode === 'split-horizontal' || splitVariant === 'split-horizontal') ? 'rotate(90deg)' : 'rotate(0deg)',
+          }}
+        >
+          <rect x="1.5" y="1.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+          <rect x="7.75" y="1.5" width="1.5" height="14" fill="currentColor"/>
         </svg>
         </button>
 
