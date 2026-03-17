@@ -1,3 +1,4 @@
+![Imagem](https://raw.githubusercontent.com/guizmo-silva/markdown-editor/refs/heads/main/docs/logo/mkd-zimaos-icon.png)
 # MKD — Editor de Markdown auto-hospedado
 
 [English](docs/about/en-US.md) · [Español](docs/about/es-ES.md) · [Français](docs/about/fr-FR.md) · [Deutsch](docs/about/de-DE.md) · [Русский](docs/about/ru-RU.md) · [中文](docs/about/zh-CN.md)
@@ -11,12 +12,13 @@ Editor de Markdown self-hosted pensado para uso pessoal, rodando via Docker em s
 - **Barra lateral** com navegador de elementos do documento (títulos, citações, links, imagens, tabelas, alertas e notas de rodapé) e explorador de arquivos integrado
 - **Modos de visualização** — apenas código, apenas preview ou tela dividida lado a lado
 - **Importação** de arquivos `.md` e `.txt`
-- **Exportação** em `.txt`, `.md`, `.html` e ZIP com imagens linkacas localmente; PDF planejado para fase futura
+- **Exportação** em `.txt`, `.md`, `.pdf` `.html` e `.zip` com imagens linkadas localmente;
 - **Salvamento automático**
 - **Abas** — edite múltiplos documentos ao mesmo tempo
 - **Interface e correção ortográfica em vários idiomas** — Português, Inglês, Espanhol, Francês, Alemão, Russo e Chinês Simplificado
 - **Suporte a imagens** — importação de imagem externa ou linkada
 - **Modos claro e escuro**
+- **Lixeira interna**
 
 ### Markdown suportado
 
@@ -30,7 +32,7 @@ Editor de Markdown self-hosted pensado para uso pessoal, rodando via Docker em s
 
 ## Instalação
 
-Consulte o guia completo em **[docs/install/SETUP.md](docs/install/SETUP.md)**.
+**[Consulte o guia completo em aqui](docs/install/SETUP.md)**.
 
 ### Resumo rápido
 
@@ -44,7 +46,7 @@ docker compose up -d
 
 1. Acesse em <http://localhost:3010>
 
-> O editor só acessa as pastas explicitamente configuradas no `docker-compose.yml` — sem acesso arbitrário ao sistema de arquivos do servidor.
+> O editor só acessa as pastas explicitamente configuradas no `docker-compose.yml`
 
 ---
 
@@ -121,17 +123,14 @@ markdown-editor/
 │       ├── middleware/
 │       └── utils/
 │
-├── docker/
-│   ├── Dockerfile.frontend
-│   └── Dockerfile.backend
-│
-└── docs/
-    ├── about/              # README traduzido para outros idiomas
-    └── install/            # Guia de instalação e docker-compose
+└── docker/
+    ├── Dockerfile.frontend
+    └── Dockerfile.backend
+
 ```
 
 ---
 
-## Licença
+##### Esse programa foi útil para você? Então me pague um café 😉
 
-[AGPL-3.0](LICENSE)
+<a href='https://ko-fi.com/M4M41W6IPV' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

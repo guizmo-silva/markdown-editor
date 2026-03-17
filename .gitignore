@@ -42,6 +42,9 @@ next-env.d.ts
 *.swo
 *~
 
+# Claude Code (local AI assistant config)
+.claude/
+
 # Docker
 docker-compose.override.yml
 docker-compose.dev.yml

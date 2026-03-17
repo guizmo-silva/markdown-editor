@@ -119,6 +119,9 @@ const lightTheme = EditorView.theme({
   '.cm-activeLineGutter': {
     backgroundColor: '#D8D8D8',
   },
+  '.cm-selectedLineGutter': {
+    backgroundColor: '#D8D8D8',
+  },
   '.cm-activeLine': {
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
@@ -210,6 +213,9 @@ const darkTheme = EditorView.theme({
     minWidth: '32px',
   },
   '.cm-activeLineGutter': {
+    backgroundColor: '#3a3a3a',
+  },
+  '.cm-selectedLineGutter': {
     backgroundColor: '#3a3a3a',
   },
   '.cm-activeLine': {
@@ -397,6 +403,20 @@ const smartTypography = EditorView.inputHandler.of((view, from, to, text) => {
 const pasteLinkHandler = EditorView.domEventHandlers({
   paste(event, view) {
     const clipboardText = event.clipboardData?.getData('text/plain')?.trim() ?? '';
+
+    // Ctrl+Shift+V: paste as plain text, no URL conversion
+    if (plainPasteMode) {
+      plainPasteMode = false;
+      if (!clipboardText) return false;
+      event.preventDefault();
+      const { from, to } = view.state.selection.main;
+      view.dispatch({
+        changes: { from, to, insert: clipboardText },
+        selection: { anchor: from + clipboardText.length },
+      });
+      return true;
+    }
+
     if (!isUrl(clipboardText)) return false;
 
     const { from, to } = view.state.selection.main;
@@ -419,6 +439,26 @@ const pasteLinkHandler = EditorView.domEventHandlers({
     }
     return true;
   },
+});
+
+// Highlight gutter line numbers for all lines covered by a non-empty selection
+const selectedLineGutterHighlight = ViewPlugin.fromClass(class {
+  update(update: ViewUpdate) {
+    if (!update.selectionSet && !update.viewportChanged && !update.docChanged) return;
+    const view = update.view;
+    const selectedNums = new Set<number>();
+    for (const range of view.state.selection.ranges) {
+      if (range.empty) continue;
+      const fromNum = view.state.doc.lineAt(range.from).number;
+      const toNum = view.state.doc.lineAt(range.to > range.from ? range.to - 1 : range.from).number;
+      for (let n = fromNum; n <= toNum; n++) selectedNums.add(n);
+    }
+    view.dom.querySelectorAll<HTMLElement>('.cm-lineNumbers .cm-gutterElement').forEach(el => {
+      const n = parseInt(el.textContent ?? '', 10);
+      if (isNaN(n)) return;
+      el.classList.toggle('cm-selectedLineGutter', selectedNums.has(n));
+    });
+  }
 });
 
 // Compartment for dynamic theme switching
@@ -565,12 +605,22 @@ const linkCommand = (view: EditorView): boolean => {
   return true;
 };
 
+// Flag set by Ctrl+Shift+V keydown; consumed by pasteLinkHandler
+let plainPasteMode = false;
+
 // Keymap for formatting shortcuts (Mod = Ctrl on Windows/Linux, Cmd on macOS)
 const formatKeymap = keymap.of([
   { key: 'Mod-b', run: createFormatCommand('**', '**') },   // Bold
   { key: 'Mod-i', run: createFormatCommand('*', '*') },     // Italic
   { key: 'Mod-Shift-x', run: createFormatCommand('~~', '~~') }, // Strikethrough
   { key: 'Mod-k', run: linkCommand },                        // Link
+  { key: 'Mod-Shift-v', run: () => {
+    // Let the browser fire a native paste event with clipboardData (no permission UI).
+    // Chrome/Edge: works silently. Firefox: may show a non-blocking post-paste notification.
+    plainPasteMode = true;
+    setTimeout(() => { plainPasteMode = false; }, 200);
+    return false;
+  }},
 ]);
 
 // Effect to trigger line highlight flash
@@ -1185,6 +1235,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       extensions: [
         lineNumbers(),
         highlightActiveLineGutter(),
+        selectedLineGutterHighlight,
         highlightActiveLine(),
         history(),
         formatKeymap,
@@ -1421,6 +1472,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         extensions: [
           lineNumbers(),
           highlightActiveLineGutter(),
+          selectedLineGutterHighlight,
           highlightActiveLine(),
           history(),
           formatKeymap,
