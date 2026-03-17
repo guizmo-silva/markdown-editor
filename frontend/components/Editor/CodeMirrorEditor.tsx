@@ -6,7 +6,7 @@ import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightAc
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
-import { syntaxHighlighting, HighlightStyle, foldGutter, codeFolding, foldService, unfoldEffect, foldEffect, foldable, foldInside } from '@codemirror/language';
+import { syntaxHighlighting, HighlightStyle, foldGutter, codeFolding, foldService, unfoldEffect, foldEffect, foldable, foldedRanges } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { autocompletion, CompletionContext, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { useTranslation } from 'react-i18next';
@@ -761,7 +761,9 @@ const foldAnimationPlugin = ViewPlugin.fromClass(class {
       if (!target.closest('.cm-foldGutter')) return;
 
       const lane = view.lineBlockAtHeight(e.clientY - view.documentTop);
-      if (foldInside(view.state, lane.from, lane.to)) return; // click = unfold, skip
+      let isFolded = false;
+      foldedRanges(view.state).between(lane.from, lane.to, () => { isFolded = true; });
+      if (isFolded) return; // click = unfold, skip
       if (!foldable(view.state, lane.from, lane.to)) return;  // nothing foldable
 
       // Snapshot the gutter icon element by Y position (more robust than target.closest)
