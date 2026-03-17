@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export type ViewMode = 'code' | 'split' | 'split-horizontal' | 'preview';
@@ -16,6 +16,12 @@ interface ViewToggleProps {
 export default function ViewToggle({ currentMode, onModeChange, vertical = false, onSplitDoubleClick, splitVariant = 'split' }: ViewToggleProps) {
   const { t } = useTranslation();
   const splitClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pendingHorizontal, setPendingHorizontal] = useState<boolean | null>(null);
+
+  // Clear pending rotation once the real mode has caught up
+  useEffect(() => {
+    setPendingHorizontal(null);
+  }, [currentMode, splitVariant]);
 
   // split-horizontal maps to slider position 1 (same as split)
   const getSliderPosition = () => {
@@ -34,6 +40,8 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
     if (splitClickTimerRef.current) {
       clearTimeout(splitClickTimerRef.current);
       splitClickTimerRef.current = null;
+      const currentlyHorizontal = currentMode === 'split-horizontal' || splitVariant === 'split-horizontal';
+      setPendingHorizontal(!currentlyHorizontal);
       onSplitDoubleClick?.();
     } else {
       splitClickTimerRef.current = setTimeout(() => {
@@ -85,7 +93,7 @@ export default function ViewToggle({ currentMode, onModeChange, vertical = false
           width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg"
           style={{
             transition: 'transform 0.3s ease-out',
-            transform: (currentMode === 'split-horizontal' || splitVariant === 'split-horizontal') ? 'rotate(90deg)' : 'rotate(0deg)',
+            transform: (pendingHorizontal !== null ? pendingHorizontal : (currentMode === 'split-horizontal' || splitVariant === 'split-horizontal')) ? 'rotate(90deg)' : 'rotate(0deg)',
           }}
         >
           <rect x="1.5" y="1.5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>

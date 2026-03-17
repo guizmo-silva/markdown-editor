@@ -60,6 +60,9 @@ export default function EditorLayout() {
   const toolbarWrapperRef = useRef<HTMLDivElement>(null);
   const lastSplitModeRef = useRef<'split' | 'split-horizontal'>('split');
   const [lastSplitMode, setLastSplitMode] = useState<'split' | 'split-horizontal'>('split');
+  const [orientationPhase, setOrientationPhase] = useState<'idle' | 'fade-out' | 'fade-in'>('idle');
+  const pendingOrientationModeRef = useRef<'split' | 'split-horizontal'>('split');
+  const [horizontalEnterFrom, setHorizontalEnterFrom] = useState<'preview' | 'orientation' | null>(null);
   const [sidebarBorderTop, setSidebarBorderTop] = useState(75);
   const editorRef = useRef<CodeMirrorHandle>(null);
   const tabKeyCounter = useRef(0);
@@ -1245,6 +1248,10 @@ export default function EditorLayout() {
       previewScrollMemory.current = previewScrollRef.current?.scrollTop ?? 0;
     }
 
+    if (resolvedNext === 'split-horizontal' && prev === 'preview') {
+      setHorizontalEnterFrom('preview');
+    }
+
     setViewMode(resolvedNext);
 
     // Restore after React renders the new view
@@ -1329,13 +1336,40 @@ export default function EditorLayout() {
   }, []);
 
   const handleSplitDoubleClick = useCallback(() => {
-    setViewMode(prev => {
-      const next = prev === 'split-horizontal' ? 'split' : 'split-horizontal';
-      lastSplitModeRef.current = next;
-      setLastSplitMode(next);
-      return next;
-    });
-  }, []);
+    if (orientationPhase !== 'idle') return;
+    const effectiveCurrent = (viewMode === 'split' || viewMode === 'split-horizontal')
+      ? viewMode
+      : lastSplitMode;
+    const next = effectiveCurrent === 'split-horizontal' ? 'split' : 'split-horizontal';
+    pendingOrientationModeRef.current = next;
+    if (next === 'split-horizontal') setHorizontalEnterFrom('orientation');
+    setOrientationPhase('fade-out');
+  }, [viewMode, lastSplitMode, orientationPhase]);
+
+  useEffect(() => {
+    if (orientationPhase === 'fade-out') {
+      const t = setTimeout(() => {
+        const next = pendingOrientationModeRef.current;
+        setViewMode(next);
+        lastSplitModeRef.current = next;
+        setLastSplitMode(next);
+        setOrientationPhase('fade-in');
+      }, 150);
+      return () => clearTimeout(t);
+    }
+    if (orientationPhase === 'fade-in') {
+      const t = setTimeout(() => setOrientationPhase('idle'), 180);
+      return () => clearTimeout(t);
+    }
+  }, [orientationPhase]);
+
+  // Clear horizontalEnterFrom when leaving split-horizontal, so the next
+  // entry from code view correctly triggers the slide-up animation.
+  useEffect(() => {
+    if (viewMode !== 'split-horizontal') {
+      setHorizontalEnterFrom(null);
+    }
+  }, [viewMode]);
 
   const handleHorizontalSplitResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -1418,7 +1452,7 @@ export default function EditorLayout() {
   useEffect(() => {
     const update = () => {
       const toolbar = toolbarWrapperRef.current;
-      if (toolbar) {
+      if (toolbar && toolbar.getBoundingClientRect().width > 0) {
         setSidebarBorderTop(toolbar.getBoundingClientRect().bottom - 1);
       } else {
         const content = splitContainerRef.current;
@@ -1531,7 +1565,7 @@ export default function EditorLayout() {
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* Tabs */}
         <Tabs
           tabs={tabs.map(tab => ({
@@ -1547,200 +1581,185 @@ export default function EditorLayout() {
           onTabReorder={reorderTabs}
         />
 
+        {/* Overlay: divisória girante — fora do container que faz fade para não herdar opacity */}
+        {orientationPhase !== 'idle' && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+            <div
+              style={{
+                position: 'absolute',
+                width: '5px',
+                height: '200%',
+                left: '50%',
+                top: '50%',
+                background: 'var(--split-line)',
+                animation: `${
+                  pendingOrientationModeRef.current === 'split-horizontal'
+                    ? 'divider-to-horizontal'
+                    : 'divider-to-vertical'
+                } 300ms ease-out forwards`,
+              }}
+            />
+          </div>
+        )}
+
         {/* Content Area - Based on view mode */}
         <div
           ref={splitContainerRef}
-          className="flex-1 overflow-hidden relative"
-          style={viewMode === 'split-horizontal'
-            ? { display: 'flex', flexDirection: 'column', width: '100%' }
-            : { display: 'flex' }}
+          className={`flex-1 overflow-hidden relative ${
+            orientationPhase === 'fade-out' ? 'orientation-fade-out' :
+            orientationPhase === 'fade-in'  ? 'orientation-fade-in'  : ''
+          }`}
+          style={{ display: 'flex', width: '100%' }}
         >
 
-          {/* Split Horizontal — flex-col, espelhando o split vertical */}
-          {viewMode === 'split-horizontal' && (
-            <>
-              {/* Top panel: editor — flex item com flex-basis explícito */}
-              <div
-                className="flex-shrink-0 flex flex-col overflow-hidden"
-                style={{ flexBasis: `${splitHorizontalPosition}%`, transition: isHorizontalSplitAnimating ? 'flex-basis 0.2s ease-out' : undefined }}
-              >
-                <div ref={toolbarWrapperRef}>
-                  <Toolbar
-                    textareaRef={editorRef}
-                    value={markdown}
-                    onChange={setMarkdown}
-                    currentFilePath={currentFilePath ?? undefined}
-                    onImageImported={handleImageImported}
-                  />
-                </div>
-                <div
-                  className="flex-1 min-h-0 overflow-hidden"
-                  style={{ maxWidth: `${columnWidth}%`, margin: '0 auto', width: '100%' }}
-                >
-                  <CodeMirrorEditor
-                    ref={editorRef}
-                    value={markdown}
-                    onChange={handleEditorChange}
-                    scrollToLine={scrollToLine}
-                    viewTheme={editorTheme}
-                    onToggleTheme={toggleEditorTheme}
-                    saveStatus={saveStatus}
-                    documentId={activeTab ? String(activeTab.stableKey) : null}
-                    onScrollLineChange={handleEditorScrollLineChange}
-                    columnWidth={columnWidth}
-                    onColumnWidthChange={undefined}
-                  />
-                </div>
-              </div>
+          {/* Unified always-mounted layout — evita remontagem de CodeMirror e MarkdownPreview */}
+          {(() => {
+            const isHorizontal = viewMode === 'split-horizontal';
+            const isSplit = viewMode === 'split';
+            const isAnySplit = isHorizontal || isSplit;
+            return (
+              <div style={{ display: 'flex', flexDirection: isHorizontal ? 'column' : 'row', width: '100%', height: '100%' }}>
 
-              {/* Divider — flex item fixo de 5px */}
-              <div
-                className="flex-shrink-0 flex items-center justify-center cursor-row-resize bg-[var(--bg-primary)] hover:bg-[var(--split-line)] active:bg-[var(--split-line)] transition-colors"
-                style={{ height: '5px' }}
-                onMouseDown={handleHorizontalSplitResizeStart}
-                onDoubleClick={() => { setIsHorizontalSplitAnimating(true); setSplitHorizontalPosition(50); }}
-              >
-                <div className="flex gap-[3px]">
-                  <div className="w-[3px] h-[3px] rounded-full bg-[var(--border-primary)]" />
-                  <div className="w-[3px] h-[3px] rounded-full bg-[var(--border-primary)]" />
-                  <div className="w-[3px] h-[3px] rounded-full bg-[var(--border-primary)]" />
-                </div>
-              </div>
-
-              {/* Bottom panel: preview — flex-col com InfoBar como sibling direto */}
-              <div
-                className="flex-shrink-0 flex flex-col overflow-hidden"
-                style={{ flexBasis: `calc(${100 - splitHorizontalPosition}% - 5px)`, transition: isHorizontalSplitAnimating ? 'flex-basis 0.2s ease-out' : undefined }}
-                onTransitionEnd={() => setIsHorizontalSplitAnimating(false)}
-              >
+                {/* Editor panel */}
                 <div
-                  className="flex-1 min-h-0 flex flex-col overflow-hidden"
-                  style={{ maxWidth: `${columnWidth}%`, margin: '0 auto', width: '100%' }}
+                  className="flex-shrink-0 flex flex-col overflow-hidden"
+                  style={{
+                    ...(isHorizontal
+                      ? { flexBasis: `${splitHorizontalPosition}%`, transition: isResizingHorizontalSplit ? undefined : isHorizontalSplitAnimating ? 'flex-basis 0.2s ease-out' : 'flex-basis 80ms ease-out' }
+                      : isSplit
+                        ? { width: `${splitPosition}%`, minWidth: `${CODE_VIEW_MIN_WIDTH}px`, transition: isResizingSplit ? undefined : isSplitAnimating ? 'width 0.2s ease-out' : 'width 80ms ease-out' }
+                        : viewMode === 'preview'
+                          ? { width: 0, minWidth: 0, transition: 'width 80ms ease-out' }
+                          : { width: '100%', transition: 'width 80ms ease-out' }
+                    ),
+                  }}
+                  onTransitionEnd={isSplit ? () => setIsSplitAnimating(false) : undefined}
                 >
-                  <div className="flex-1 min-h-0 relative overflow-hidden">
-                    <MarkdownPreview
-                      content={previewContent}
-                      viewTheme={previewTheme}
-                      onToggleTheme={togglePreviewTheme}
-                      previewScrollRef={previewScrollRef}
-                      isScrollSynced={isScrollSynced}
-                      onToggleScrollSync={toggleScrollSync}
-                      onClickSourcePosition={handlePreviewClickSource}
-                      columnWidth={columnWidth}
-                      onColumnWidthChange={setColumnWidth}
-                      filePath={currentFilePath ?? undefined}
-                      imageRevision={imageRevision}
-                      hideInfoBar
-                      previewZoom={previewZoom}
-                      onPreviewZoomIn={handlePreviewZoomIn}
-                      onPreviewZoomOut={handlePreviewZoomOut}
-                      onPreviewZoomReset={handlePreviewZoomReset}
+                  <div ref={toolbarWrapperRef}>
+                    <Toolbar
+                      textareaRef={editorRef}
+                      value={markdown}
+                      onChange={setMarkdown}
+                      currentFilePath={currentFilePath ?? undefined}
+                      onImageImported={handleImageImported}
                     />
                   </div>
-                  <PreviewInfoBar
-                    content={previewContent}
-                    viewTheme={previewTheme}
-                    onToggleTheme={togglePreviewTheme}
-                    isScrollSynced={isScrollSynced}
-                    onToggleScrollSync={toggleScrollSync}
-                    columnWidth={columnWidth}
-                    onColumnWidthChange={setColumnWidth}
-                    previewZoom={previewZoom}
-                    onPreviewZoomIn={handlePreviewZoomIn}
-                    onPreviewZoomOut={handlePreviewZoomOut}
-                    onPreviewZoomReset={handlePreviewZoomReset}
-                  />
+                  <div
+                    className={isAnySplit ? 'flex-1 overflow-hidden' : 'flex-1 min-h-0'}
+                    style={viewMode === 'code' ? { maxWidth: `${columnWidth}%`, margin: '0 auto', width: '100%' } : undefined}
+                  >
+                    <CodeMirrorEditor
+                      ref={editorRef}
+                      value={markdown}
+                      onChange={handleEditorChange}
+                      scrollToLine={scrollToLine}
+                      viewTheme={editorTheme}
+                      onToggleTheme={toggleEditorTheme}
+                      saveStatus={saveStatus}
+                      documentId={activeTab ? String(activeTab.stableKey) : null}
+                      onScrollLineChange={handleEditorScrollLineChange}
+                      columnWidth={!isAnySplit ? columnWidth : undefined}
+                      onColumnWidthChange={!isAnySplit ? setColumnWidth : undefined}
+                    />
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
 
-          {/* Code Editor */}
-          {(viewMode === 'code' || viewMode === 'split') && (
-            <div
-              className={`flex flex-col ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}
-              style={{
-                width: viewMode === 'split' ? `${splitPosition}%` : '100%',
-                minWidth: viewMode === 'split' ? `${CODE_VIEW_MIN_WIDTH}px` : undefined,
-                transition: isSplitAnimating ? 'width 0.2s ease-out' : undefined,
-              }}
-            >
-              <div ref={toolbarWrapperRef}>
-                <Toolbar
-                  textareaRef={editorRef}
-                  value={markdown}
-                  onChange={setMarkdown}
-                  currentFilePath={currentFilePath ?? undefined}
-                  onImageImported={handleImageImported}
-                />
-              </div>
-              <div
-                className={`flex-1 ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}
-                style={viewMode === 'code' ? { maxWidth: `${columnWidth}%`, margin: '0 auto', width: '100%' } : undefined}
-              >
-                <CodeMirrorEditor
-                  ref={editorRef}
-                  value={markdown}
-                  onChange={handleEditorChange}
-                  scrollToLine={scrollToLine}
-                  viewTheme={editorTheme}
-                  onToggleTheme={toggleEditorTheme}
-                  saveStatus={saveStatus}
-                  documentId={activeTab ? String(activeTab.stableKey) : null}
-                  onScrollLineChange={handleEditorScrollLineChange}
-                  columnWidth={viewMode !== 'split' ? columnWidth : undefined}
-                  onColumnWidthChange={viewMode !== 'split' ? setColumnWidth : undefined}
-                />
-              </div>
-            </div>
-          )}
+                {/* Vertical split resize handle */}
+                {isSplit && (
+                  <div
+                    className="relative w-[5px] bg-[var(--split-line)] cursor-col-resize hover:bg-[var(--text-secondary)] active:bg-[var(--text-secondary)] transition-colors flex-shrink-0 flex flex-col items-center justify-center gap-[3px]"
+                    onMouseDown={handleSplitResizeStart}
+                    onDoubleClick={() => { setIsSplitAnimating(true); setSplitPosition(50); }}
+                    onMouseEnter={handleDividerMouseEnter}
+                    onMouseLeave={handleDividerMouseLeave}
+                  >
+                    <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
+                    <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
+                    <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
+                    {showDividerTooltip && (
+                      <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+8px)] z-50 whitespace-nowrap bg-[var(--bg-secondary)] text-[var(--text-secondary)] text-xs px-2 py-1 rounded shadow-md pointer-events-none border border-[var(--split-line)]">
+                        {t('tooltips.splitResizer')}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-          {/* Split Resize Handle */}
-          {viewMode === 'split' && (
-            <div
-              className="relative w-[5px] bg-[var(--split-line)] cursor-col-resize hover:bg-[var(--text-secondary)] active:bg-[var(--text-secondary)] transition-colors flex-shrink-0 flex flex-col items-center justify-center gap-[3px]"
-              onMouseDown={handleSplitResizeStart}
-              onDoubleClick={() => { setIsSplitAnimating(true); setSplitPosition(50); }}
-              onMouseEnter={handleDividerMouseEnter}
-              onMouseLeave={handleDividerMouseLeave}
-            >
-              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
-              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
-              <div className="w-[3px] h-[3px] rounded-full bg-[var(--bg-secondary)]" />
-              {showDividerTooltip && (
-                <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+8px)] z-50 whitespace-nowrap bg-[var(--bg-secondary)] text-[var(--text-secondary)] text-xs px-2 py-1 rounded shadow-md pointer-events-none border border-[var(--split-line)]">
-                  {t('tooltips.splitResizer')}
+                {/* Horizontal split resize handle */}
+                {isHorizontal && (
+                  <div
+                    className="flex-shrink-0 flex items-center justify-center cursor-row-resize bg-[var(--bg-primary)] hover:bg-[var(--split-line)] active:bg-[var(--split-line)] transition-colors"
+                    style={{ height: '5px' }}
+                    onMouseDown={handleHorizontalSplitResizeStart}
+                    onDoubleClick={() => { setIsHorizontalSplitAnimating(true); setSplitHorizontalPosition(50); }}
+                  >
+                    <div className="flex gap-[3px]">
+                      <div className="w-[3px] h-[3px] rounded-full bg-[var(--border-primary)]" />
+                      <div className="w-[3px] h-[3px] rounded-full bg-[var(--border-primary)]" />
+                      <div className="w-[3px] h-[3px] rounded-full bg-[var(--border-primary)]" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Preview panel */}
+                <div
+                  className="flex flex-col flex-shrink-0 overflow-hidden"
+                  style={{
+                    ...(isHorizontal
+                      ? { flexBasis: `calc(${100 - splitHorizontalPosition}% - 5px)`, transition: isResizingHorizontalSplit ? undefined : isHorizontalSplitAnimating ? 'flex-basis 0.2s ease-out' : 'flex-basis 80ms ease-out' }
+                      : isSplit
+                        ? { width: `calc(${100 - splitPosition}% - 5px)`, transition: isResizingSplit ? undefined : isSplitAnimating ? 'width 0.2s ease-out' : 'width 80ms ease-out' }
+                        : viewMode === 'code'
+                          ? { width: 0, minWidth: 0, transition: 'width 80ms ease-out' }
+                          : { width: '100%', maxWidth: `${columnWidth}%`, margin: '0 auto', borderTop: '2px solid var(--tab-bg)', transition: 'width 80ms ease-out' }
+                    ),
+                  }}
+                  onTransitionEnd={isHorizontal ? () => setIsHorizontalSplitAnimating(false) : undefined}
+                >
+                  <div
+                    className="flex-1 min-h-0 flex flex-col overflow-hidden"
+                    style={isHorizontal ? { maxWidth: `${columnWidth}%`, margin: '0 auto', width: '100%' } : undefined}
+                  >
+                    <div className="flex-1 min-h-0 relative overflow-hidden">
+                      <MarkdownPreview
+                        content={previewContent}
+                        viewTheme={previewTheme}
+                        onToggleTheme={togglePreviewTheme}
+                        previewScrollRef={previewScrollRef}
+                        isScrollSynced={isScrollSynced}
+                        onToggleScrollSync={isSplit ? toggleScrollSync : undefined}
+                        onClickSourcePosition={handlePreviewClickSource}
+                        columnWidth={!isAnySplit ? columnWidth : undefined}
+                        onColumnWidthChange={!isAnySplit ? setColumnWidth : undefined}
+                        filePath={currentFilePath ?? undefined}
+                        imageRevision={imageRevision}
+                        hideInfoBar={isHorizontal}
+                        previewZoom={previewZoom}
+                        onPreviewZoomIn={handlePreviewZoomIn}
+                        onPreviewZoomOut={handlePreviewZoomOut}
+                        onPreviewZoomReset={handlePreviewZoomReset}
+                      />
+                    </div>
+                    {/* InfoBar: always mounted, visibility controlled internally via animateIn */}
+                    <PreviewInfoBar
+                        content={previewContent}
+                        viewTheme={previewTheme}
+                        onToggleTheme={togglePreviewTheme}
+                        isScrollSynced={isScrollSynced}
+                        onToggleScrollSync={toggleScrollSync}
+                        columnWidth={columnWidth}
+                        onColumnWidthChange={setColumnWidth}
+                        previewZoom={previewZoom}
+                        onPreviewZoomIn={handlePreviewZoomIn}
+                        onPreviewZoomOut={handlePreviewZoomOut}
+                        onPreviewZoomReset={handlePreviewZoomReset}
+                        animateIn={isHorizontal ? (horizontalEnterFrom !== null ? 'instant' : 'slide-up') : 'hidden'}
+                      />
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* Preview */}
-          {(viewMode === 'preview' || viewMode === 'split') && (
-            <div
-              className={`relative ${viewMode === 'split' ? 'overflow-hidden' : 'min-h-0'}`}
-              style={{
-                width: viewMode === 'split' ? `calc(${100 - splitPosition}% - 5px)` : '100%',
-                ...(viewMode === 'preview' ? { maxWidth: `${columnWidth}%`, margin: '0 auto', borderTop: '2px solid var(--tab-bg)' } : {}),
-                transition: isSplitAnimating ? 'width 0.2s ease-out' : undefined,
-              }}
-              onTransitionEnd={() => setIsSplitAnimating(false)}
-            >
-              <MarkdownPreview
-                content={previewContent}
-                viewTheme={previewTheme}
-                onToggleTheme={togglePreviewTheme}
-                previewScrollRef={previewScrollRef}
-                isScrollSynced={isScrollSynced}
-                onToggleScrollSync={viewMode === 'split' ? toggleScrollSync : undefined}
-                onClickSourcePosition={handlePreviewClickSource}
-                columnWidth={viewMode !== 'split' ? columnWidth : undefined}
-                onColumnWidthChange={viewMode !== 'split' ? setColumnWidth : undefined}
-                filePath={currentFilePath ?? undefined}
-                imageRevision={imageRevision}
-              />
-            </div>
-          )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 

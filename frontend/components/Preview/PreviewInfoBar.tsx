@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 interface PreviewInfoBarProps {
@@ -16,11 +16,12 @@ interface PreviewInfoBarProps {
   onPreviewZoomIn?: () => void;
   onPreviewZoomOut?: () => void;
   onPreviewZoomReset?: () => void;
+  animateIn?: 'hidden' | 'instant' | 'slide-up';
 }
 
 const COMPACT_THRESHOLD = 500;
 
-export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isScrollSynced, onToggleScrollSync, columnWidth, onColumnWidthChange, previewZoom, onPreviewZoomIn, onPreviewZoomOut, onPreviewZoomReset }: PreviewInfoBarProps) {
+export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isScrollSynced, onToggleScrollSync, columnWidth, onColumnWidthChange, previewZoom, onPreviewZoomIn, onPreviewZoomOut, onPreviewZoomReset, animateIn }: PreviewInfoBarProps) {
   const { t } = useTranslation();
 
   const [isCompact, setIsCompact] = useState(false);
@@ -62,6 +63,26 @@ export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isSc
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showStatsMenu]);
+
+  useLayoutEffect(() => {
+    const el = infoBarRef.current;
+    if (!el) return;
+    if (animateIn === 'hidden') {
+      el.classList.remove('infobar-slide-in');
+      el.style.height = '0';
+      el.style.overflow = 'hidden';
+    } else {
+      el.style.height = '';
+      el.style.overflow = '';
+      el.classList.remove('infobar-slide-in');
+      if (animateIn === 'slide-up') {
+        void el.offsetHeight;
+        el.classList.add('infobar-slide-in');
+        const cleanup = () => el.classList.remove('infobar-slide-in');
+        el.addEventListener('animationend', cleanup, { once: true });
+      }
+    }
+  }, [animateIn]);
 
   // Calculate statistics
   const stats = useMemo(() => {

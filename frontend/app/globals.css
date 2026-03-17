@@ -263,3 +263,41 @@ body {
   z-index: -1;
   pointer-events: none;
 }
+
+/* --- Split horizontal enter animations --- */
+@keyframes infobar-enter {
+  from { clip-path: inset(100% 0 0 0); opacity: 0; }
+  to   { clip-path: inset(0% 0 0 0);   opacity: 1; }
+}
+.infobar-slide-in {
+  animation: infobar-enter 280ms ease-out forwards;
+}
+
+/* --- Split orientation transition --- */
+@keyframes orientation-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes orientation-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* Divisória: vertical (rotate 0) → horizontal (rotate 90deg) */
+@keyframes divider-to-horizontal {
+  from  { transform: translateX(-50%) translateY(-50%) rotate(0deg);   opacity: 1; }
+  75%   { transform: translateX(-50%) translateY(-50%) rotate(90deg);  opacity: 1; }
+  to    { transform: translateX(-50%) translateY(-50%) rotate(90deg);  opacity: 0; }
+}
+/* Divisória: horizontal (rotate 90deg) → vertical (rotate 0) */
+@keyframes divider-to-vertical {
+  from  { transform: translateX(-50%) translateY(-50%) rotate(90deg);  opacity: 1; }
+  75%   { transform: translateX(-50%) translateY(-50%) rotate(0deg);   opacity: 1; }
+  to    { transform: translateX(-50%) translateY(-50%) rotate(0deg);   opacity: 0; }
+}
+
+.orientation-fade-out {
+  animation: orientation-fade-out 120ms ease-in-out forwards;
+}
+.orientation-fade-in {
+  animation: orientation-fade-in 120ms ease-in-out forwards;
+}
