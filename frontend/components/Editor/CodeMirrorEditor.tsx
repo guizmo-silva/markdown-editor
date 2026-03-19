@@ -448,11 +448,6 @@ function getFontSizeExtension(zoom: number) {
   });
 }
 
-// RectangleMarker subclass that sets border-radius inline so it survives
-// CodeMirror's elt.style.cssText = ... call inside adjust().
-// Custom marker that sets border-radius inline (survives RectangleMarker.adjust()'s cssText reset).
-// Used to cover the "step" area between lines of different widths with editor background,
-// with a concave arc at the inner corner.
 // Tight selection layer: draws one absolutely-positioned rect per visual block in the
 // selection. Uses block.top + block.height so consecutive blocks are adjacent (no gap).
 // Uses CodeMirror's layer() API (above: false → z-index: -1, behind text).
@@ -510,9 +505,7 @@ function tightSelectionMarkers(view: EditorView): readonly RectangleMarker[] {
 
     // Second pass: emit selection rects.
     // Only round a corner when it is "exposed" — i.e. no adjacent rect reaches the
-    // same right boundary.  This prevents the double-arc junction artifact that
-    // appears when the bottom-right of line N and the top-right of line N+1 are
-    // both rounded at the same x position.
+    // same right boundary.
     for (let i = 0; i < rects.length; i++) {
       const r = rects[i];
       if (!r) continue;
@@ -540,47 +533,6 @@ function tightSelectionMarkers(view: EditorView): readonly RectangleMarker[] {
         Math.round(r.right - r.left),
         Math.ceil(r.height) + 1,
       ));
-    }
-
-    // Third pass: concave inner-corner masks.
-    // Each mask is placed INSIDE the selection rect at the inner corner of each step.
-    // It paints var(--bg-code) — the editor background — with border-radius whose arc
-    // center lands on the inner corner. The interior-facing side is transparent (selection
-    // gray shows through); the inner corner side shows editor background = concave cut.
-    const BITE = 4;
-    for (let i = 0; i < rects.length - 1; i++) {
-      const curr = rects[i];
-      const next = rects[i + 1];
-      if (!curr || !next) continue;
-      if (curr.empty || next.empty) continue;
-      const currBottom = Math.floor(curr.top) + Math.ceil(curr.height) + 1;
-      const nextTop    = Math.floor(next.top);
-      const stepR = Math.round(curr.right - next.right);
-      const stepL = Math.round(next.right - curr.right);
-
-      if (stepR > BITE) {
-        // Narrowing: mask at top-right of line i+1 (the inner corner).
-        // border-bottom-left-radius arc center = (next.right, nextTop) = inner corner.
-        // bg-code fills near the top-right (inner corner); transparent at bottom-left (interior).
-        markers.push(new RectangleMarker(
-          'cm-sel-mask-tl',
-          Math.round(next.right) - BITE, // left: BITE px inside line i+1's right edge
-          nextTop,                        // top:  top of line i+1
-          BITE,
-          BITE,
-        ));
-      } else if (stepL > BITE) {
-        // Widening: mask at bottom-right of line i (the inner corner).
-        // border-top-left-radius arc center = (curr.right, currBottom) = inner corner.
-        // bg-code fills near the bottom-right (inner corner); transparent at top-left (interior).
-        markers.push(new RectangleMarker(
-          'cm-sel-mask-bl',
-          Math.round(curr.right) - BITE, // left: BITE px inside line i's right edge
-          currBottom - BITE,              // top:  BITE px above line i's bottom
-          BITE,
-          BITE,
-        ));
-      }
     }
   }
   return markers;

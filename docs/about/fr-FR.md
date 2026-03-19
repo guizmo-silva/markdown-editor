@@ -9,12 +9,13 @@
 - **Barre latérale** avec navigateur d'éléments du document (titres, citations, liens, images, tableaux, alertes et notes de bas de page) et explorateur de fichiers intégré
 - **Modes d'affichage** — code uniquement, aperçu uniquement ou vue fractionnée côte à côte
 - **Importation** de fichiers `.md` et `.txt`
-- **Exportation** en `.txt`, `.md`, `.html` et ZIP avec images liées localement ; PDF prévu pour une phase future
+- **Exportation** en `.txt`, `.md`, `.pdf`, `.html` et ZIP avec images liées localement
 - **Sauvegarde automatique**
 - **Onglets** — éditez plusieurs documents simultanément
 - **Interface et correcteur orthographique en plusieurs langues** — Portugais, Anglais, Espagnol, Français, Allemand, Russe et Chinois Simplifié
 - **Prise en charge des images** — importation d'images externes ou liées
 - **Modes clair et sombre**
+- **Corbeille interne**
 
 ### Markdown pris en charge
 

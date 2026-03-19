@@ -9,12 +9,13 @@ Selbst gehosteter Markdown-Editor für den persönlichen Gebrauch, der über Doc
 - **Seitenleiste** mit Dokumentennavigator (Überschriften, Zitate, Links, Bilder, Tabellen, Hinweise und Fußnoten) sowie integriertem Datei-Explorer
 - **Ansichtsmodi** — nur Code, nur Vorschau oder geteilte Ansicht nebeneinander
 - **Import** von `.md`- und `.txt`-Dateien
-- **Export** als `.txt`, `.md`, `.html` und ZIP mit lokal verlinkten Bildern; PDF für eine zukünftige Phase geplant
+- **Export** als `.txt`, `.md`, `.pdf`, `.html` und ZIP mit lokal verlinkten Bildern
 - **Automatisches Speichern**
 - **Tabs** — mehrere Dokumente gleichzeitig bearbeiten
 - **Oberfläche und Rechtschreibprüfung in mehreren Sprachen** — Portugiesisch, Englisch, Spanisch, Französisch, Deutsch, Russisch und Vereinfachtes Chinesisch
 - **Bildunterstützung** — Import externer oder verlinkter Bilder
 - **Hell- und Dunkelmodus**
+- **Interner Papierkorb**
 
 ### Unterstütztes Markdown
 

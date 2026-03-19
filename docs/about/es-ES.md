@@ -9,12 +9,13 @@ Editor de Markdown self-hosted pensado para uso personal, ejecutándose mediante
 - **Barra lateral** con navegador de elementos del documento (títulos, citas, enlaces, imágenes, tablas, alertas y notas al pie) y explorador de archivos integrado
 - **Modos de visualización** — solo código, solo vista previa o vista dividida lado a lado
 - **Importación** de archivos `.md` y `.txt`
-- **Exportación** a `.txt`, `.md`, `.html` y ZIP con imágenes enlazadas localmente; PDF planificado para una fase futura
+- **Exportación** a `.txt`, `.md`, `.pdf`, `.html` y ZIP con imágenes enlazadas localmente
 - **Guardado automático**
 - **Pestañas** — edita múltiples documentos al mismo tiempo
 - **Interfaz y corrección ortográfica en varios idiomas** — Portugués, Inglés, Español, Francés, Alemán, Ruso y Chino Simplificado
 - **Soporte de imágenes** — importación de imágenes externas o enlazadas
 - **Modos claro y oscuro**
+- **Papelera interna**
 
 ### Markdown compatible
 

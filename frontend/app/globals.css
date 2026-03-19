@@ -255,24 +255,6 @@ body {
 .cm-sel-rbottom     { border-bottom-right-radius: 3px; }
 .cm-sel-first.cm-sel-last { border-radius: 3px; }      /* single line: all corners */
 
-/* Concave inner-corner masks — placed INSIDE the selection rect at the inner corner.
-   Paints editor background (var(--bg-code) = #D8D8D8 light / #272727 dark) to cut into
-   the selection gray, with border-radius facing the selection interior (transparent there).
-   Arc center lands exactly on the inner corner point, creating a smooth concave curve.
-
-   Narrowing: mask covers top-right of narrower lower rect. border-bottom-left-radius
-   clips the bottom-left (interior side), leaving bg-code at the top-right (inner corner). */
-.cm-sel-mask-tl {
-  background: var(--bg-code);
-  border-bottom-left-radius: 4px;
-}
-/* Widening: mask covers bottom-right of narrower upper rect. border-top-left-radius
-   clips the top-left (interior side), leaving bg-code at the bottom-right (inner corner). */
-.cm-sel-mask-bl {
-  background: var(--bg-code);
-  border-top-left-radius: 4px;
-}
-
 
 /* CodeMirror fold/unfold animations */
 @keyframes cm-fold-placeholder-in {

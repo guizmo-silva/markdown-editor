@@ -9,12 +9,13 @@ Self-hosted Markdown editor designed for personal use, running via Docker on hom
 - **Sidebar** with document element navigator (headings, quotes, links, images, tables, alerts, and footnotes) and integrated file explorer
 - **View modes** — code only, preview only, or side-by-side split view
 - **Import** `.md` and `.txt` files
-- **Export** to `.txt`, `.md`, `.html`, and ZIP with locally linked images; PDF planned for a future phase
+- **Export** to `.txt`, `.md`, `.pdf`, `.html`, and ZIP with locally linked images
 - **Auto-save**
 - **Tabs** — edit multiple documents at the same time
 - **Interface and spellcheck in multiple languages** — Portuguese, English, Spanish, French, German, Russian, and Simplified Chinese
 - **Image support** — import external or linked images
 - **Light and dark modes**
+- **Internal trash**
 
 ### Supported Markdown
 
