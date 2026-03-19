@@ -142,10 +142,16 @@ const sanitizeSchema = {
     a: [
       ...(defaultSchema.attributes?.a || []),
       'href',
+      'target',
+      'rel',
       'data-footnote-ref',
       'data-footnote-backref',
       'aria-describedby',
       'aria-label',
+    ],
+    img: [
+      ...(defaultSchema.attributes?.img || []),
+      'style', // Allow inline styles (e.g. height/width on Ko-fi banners)
     ],
     section: [
       'data-footnotes',

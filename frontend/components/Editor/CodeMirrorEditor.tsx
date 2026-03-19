@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState, useImperativeHandle, forwardRef } from 'react';
 import { EditorState, EditorSelection, Compartment, StateEffect, StateField, Transaction, Text, Range } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine, scrollPastEnd, Decoration, DecorationSet, ViewPlugin, ViewUpdate } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine, scrollPastEnd, Decoration, DecorationSet, ViewPlugin, ViewUpdate, layer, RectangleMarker, drawSelection } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -119,17 +119,8 @@ const lightTheme = EditorView.theme({
   '.cm-activeLineGutter': {
     backgroundColor: '#D8D8D8',
   },
-  '.cm-selectedLineGutter': {
-    backgroundColor: '#D8D8D8',
-  },
   '.cm-activeLine': {
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  '.cm-selectionBackground': {
-    backgroundColor: '#B0B0B0 !important',
-  },
-  '&.cm-focused .cm-selectionBackground': {
-    backgroundColor: '#A0A0A0 !important',
   },
   '.cm-cursor': {
     borderLeftColor: '#333',
@@ -182,6 +173,8 @@ const lightTheme = EditorView.theme({
   '.cm-foldGutter .cm-gutterElement': { padding: '0 4px 0 1px', cursor: 'pointer', color: '#999999' },
   '.cm-foldGutter .cm-gutterElement.cm-activeLineGutter': { color: '#555555' },
   '.cm-foldPlaceholder': { marginLeft: '6px', display: 'inline-block', animation: 'cm-fold-placeholder-in 0.18s ease-out', transformOrigin: 'left center', color: 'inherit', background: 'rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.18)', borderRadius: '4px', padding: '0 6px 2px', cursor: 'pointer', verticalAlign: 'baseline' },
+  // Hide drawSelection's own selection rects — we use tightSelectionLayer instead
+  '.cm-selectionBackground': { background: 'transparent !important' },
 });
 
 // Dark theme for CodeMirror
@@ -215,17 +208,8 @@ const darkTheme = EditorView.theme({
   '.cm-activeLineGutter': {
     backgroundColor: '#3a3a3a',
   },
-  '.cm-selectedLineGutter': {
-    backgroundColor: '#3a3a3a',
-  },
   '.cm-activeLine': {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  '.cm-selectionBackground': {
-    backgroundColor: '#555555 !important',
-  },
-  '&.cm-focused .cm-selectionBackground': {
-    backgroundColor: '#606060 !important',
   },
   '.cm-cursor': {
     borderLeftColor: '#FFFFFF',
@@ -278,6 +262,8 @@ const darkTheme = EditorView.theme({
   '.cm-foldGutter .cm-gutterElement': { padding: '0 4px 0 1px', cursor: 'pointer', color: '#aaaaaa' },
   '.cm-foldGutter .cm-gutterElement.cm-activeLineGutter': { color: '#dddddd' },
   '.cm-foldPlaceholder': { marginLeft: '6px', display: 'inline-block', animation: 'cm-fold-placeholder-in 0.18s ease-out', transformOrigin: 'left center', color: 'inherit', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '4px', padding: '0 6px 2px', cursor: 'pointer', verticalAlign: 'baseline' },
+  // Hide drawSelection's own selection rects — we use tightSelectionLayer instead
+  '.cm-selectionBackground': { background: 'transparent !important' },
 });
 
 // Build language completions from @codemirror/language-data
@@ -441,26 +427,6 @@ const pasteLinkHandler = EditorView.domEventHandlers({
   },
 });
 
-// Highlight gutter line numbers for all lines covered by a non-empty selection
-const selectedLineGutterHighlight = ViewPlugin.fromClass(class {
-  update(update: ViewUpdate) {
-    if (!update.selectionSet && !update.viewportChanged && !update.docChanged) return;
-    const view = update.view;
-    const selectedNums = new Set<number>();
-    for (const range of view.state.selection.ranges) {
-      if (range.empty) continue;
-      const fromNum = view.state.doc.lineAt(range.from).number;
-      const toNum = view.state.doc.lineAt(range.to > range.from ? range.to - 1 : range.from).number;
-      for (let n = fromNum; n <= toNum; n++) selectedNums.add(n);
-    }
-    view.dom.querySelectorAll<HTMLElement>('.cm-lineNumbers .cm-gutterElement').forEach(el => {
-      const n = parseInt(el.textContent ?? '', 10);
-      if (isNaN(n)) return;
-      el.classList.toggle('cm-selectedLineGutter', selectedNums.has(n));
-    });
-  }
-});
-
 // Compartment for dynamic theme switching
 const themeCompartment = new Compartment();
 
@@ -481,6 +447,153 @@ function getFontSizeExtension(zoom: number) {
     '.cm-gutters': { fontSize, lineHeight },
   });
 }
+
+// RectangleMarker subclass that sets border-radius inline so it survives
+// CodeMirror's elt.style.cssText = ... call inside adjust().
+// Custom marker that sets border-radius inline (survives RectangleMarker.adjust()'s cssText reset).
+// Used to cover the "step" area between lines of different widths with editor background,
+// with a concave arc at the inner corner.
+// Tight selection layer: draws one absolutely-positioned rect per visual block in the
+// selection. Uses block.top + block.height so consecutive blocks are adjacent (no gap).
+// Uses CodeMirror's layer() API (above: false → z-index: -1, behind text).
+// The layer's children get position:absolute automatically via .cm-layer > * CSS.
+function getSelBase(view: EditorView) {
+  const rect = view.scrollDOM.getBoundingClientRect();
+  return {
+    left: rect.left - view.scrollDOM.scrollLeft,
+    top:  rect.top  - view.scrollDOM.scrollTop,
+  };
+}
+
+function tightSelectionMarkers(view: EditorView): readonly RectangleMarker[] {
+  const { state } = view;
+  const markers: RectangleMarker[] = [];
+  const base = getSelBase(view);
+
+
+  for (const range of state.selection.ranges) {
+    if (range.empty) continue;
+
+    // Collect all visual blocks
+    const blocks: Array<{ lFrom: number; lTo: number; height: number }> = [];
+    let pos = range.from;
+    while (pos <= range.to) {
+      const block = view.lineBlockAt(pos);
+      blocks.push({
+        lFrom: Math.max(range.from, block.from),
+        lTo:   Math.min(range.to,   block.to),
+        height: block.height,
+      });
+      if (block.to >= range.to) break;
+      pos = block.to + 1;
+    }
+
+    // First pass: compute pixel rects for each block
+    type PR = { left: number; top: number; right: number; height: number; empty: boolean };
+    const rects: (PR | null)[] = blocks.map(({ lFrom, lTo, height }) => {
+      if (lFrom === lTo) {
+        const fc = view.coordsAtPos(lFrom);
+        if (!fc) return null;
+        return { left: fc.left - base.left, top: fc.top - base.top, right: fc.left - base.left + 8, height, empty: true };
+      }
+      const fc = view.coordsAtPos(lFrom, 1);
+      const tc = view.coordsAtPos(lTo, -1);
+      if (!fc || !tc) return null;
+      return {
+        left:   fc.left  - base.left,
+        top:    fc.top   - base.top,
+        right:  Math.max(fc.left - base.left + 2, tc.right - base.left + 4),
+        height,
+        empty:  false,
+      };
+    });
+
+    // Second pass: emit selection rects.
+    // Only round a corner when it is "exposed" — i.e. no adjacent rect reaches the
+    // same right boundary.  This prevents the double-arc junction artifact that
+    // appears when the bottom-right of line N and the top-right of line N+1 are
+    // both rounded at the same x position.
+    for (let i = 0; i < rects.length; i++) {
+      const r = rects[i];
+      if (!r) continue;
+      const isFirst = i === 0;
+      const isLast  = i === rects.length - 1;
+
+      const currR = Math.round(r.right);
+      const prevR = i > 0 && rects[i - 1] ? Math.round(rects[i - 1]!.right) : -Infinity;
+      const nextR = i < rects.length - 1 && rects[i + 1] ? Math.round(rects[i + 1]!.right) : -Infinity;
+
+      // Top-right is exposed (outer convex) when this line is wider than the one above it.
+      const rtop    = isFirst || prevR < currR - 1;
+      // Bottom-right is exposed (outer convex) when wider than the one below it.
+      const rbottom = isLast  || nextR < currR - 1;
+
+      const cls = 'cm-sel-rect'
+        + (isFirst  ? ' cm-sel-first'   : '')
+        + (isLast   ? ' cm-sel-last'    : '')
+        + (rtop     ? ' cm-sel-rtop'    : '')
+        + (rbottom  ? ' cm-sel-rbottom' : '');
+      markers.push(new RectangleMarker(
+        cls,
+        Math.round(r.left),
+        Math.floor(r.top),
+        Math.round(r.right - r.left),
+        Math.ceil(r.height) + 1,
+      ));
+    }
+
+    // Third pass: concave inner-corner masks.
+    // Each mask is placed INSIDE the selection rect at the inner corner of each step.
+    // It paints var(--bg-code) — the editor background — with border-radius whose arc
+    // center lands on the inner corner. The interior-facing side is transparent (selection
+    // gray shows through); the inner corner side shows editor background = concave cut.
+    const BITE = 4;
+    for (let i = 0; i < rects.length - 1; i++) {
+      const curr = rects[i];
+      const next = rects[i + 1];
+      if (!curr || !next) continue;
+      if (curr.empty || next.empty) continue;
+      const currBottom = Math.floor(curr.top) + Math.ceil(curr.height) + 1;
+      const nextTop    = Math.floor(next.top);
+      const stepR = Math.round(curr.right - next.right);
+      const stepL = Math.round(next.right - curr.right);
+
+      if (stepR > BITE) {
+        // Narrowing: mask at top-right of line i+1 (the inner corner).
+        // border-bottom-left-radius arc center = (next.right, nextTop) = inner corner.
+        // bg-code fills near the top-right (inner corner); transparent at bottom-left (interior).
+        markers.push(new RectangleMarker(
+          'cm-sel-mask-tl',
+          Math.round(next.right) - BITE, // left: BITE px inside line i+1's right edge
+          nextTop,                        // top:  top of line i+1
+          BITE,
+          BITE,
+        ));
+      } else if (stepL > BITE) {
+        // Widening: mask at bottom-right of line i (the inner corner).
+        // border-top-left-radius arc center = (curr.right, currBottom) = inner corner.
+        // bg-code fills near the bottom-right (inner corner); transparent at top-left (interior).
+        markers.push(new RectangleMarker(
+          'cm-sel-mask-bl',
+          Math.round(curr.right) - BITE, // left: BITE px inside line i's right edge
+          currBottom - BITE,              // top:  BITE px above line i's bottom
+          BITE,
+          BITE,
+        ));
+      }
+    }
+  }
+  return markers;
+}
+
+const tightSelectionLayer = layer({
+  above: false,
+  markers: tightSelectionMarkers,
+  update(update) {
+    return update.selectionSet || update.docChanged || update.viewportChanged || update.geometryChanged;
+  },
+  class: 'cm-tight-sel-layer',
+});
 
 // Helper function to create format toggle commands for keyboard shortcuts
 const createFormatCommand = (prefix: string, suffix: string) => {
@@ -1235,8 +1348,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       extensions: [
         lineNumbers(),
         highlightActiveLineGutter(),
-        selectedLineGutterHighlight,
         highlightActiveLine(),
+        drawSelection(),
+        tightSelectionLayer,
         history(),
         formatKeymap,
         closeBrackets(),
@@ -1472,8 +1586,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         extensions: [
           lineNumbers(),
           highlightActiveLineGutter(),
-          selectedLineGutterHighlight,
           highlightActiveLine(),
+          drawSelection(),
+          tightSelectionLayer,
           history(),
           formatKeymap,
           closeBrackets(),

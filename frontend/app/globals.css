@@ -217,13 +217,62 @@ body {
   border: none;
 }
 
-/* Text selection colors */
+/* Text selection colors — suppress inside CodeMirror, style everywhere else */
 ::selection {
   background: #A0A0A0;
 }
 .dark ::selection {
   background: #606060;
 }
+
+/* Suppress native ::selection inside CodeMirror — we draw our own via tightSelectionLayer */
+.cm-editor *::selection,
+.cm-editor ::selection {
+  background: transparent !important;
+}
+
+
+/* Tight selection rects drawn by tightSelectionLayer (layer() API, above: false).
+   The layer has z-index: -1 (behind text). Children are position:absolute via .cm-layer > *. */
+.cm-sel-rect {
+  background: #C0C0C0; /* light, unfocused */
+}
+.cm-editor.cm-focused .cm-tight-sel-layer .cm-sel-rect {
+  background: #A8A8A8; /* light, focused */
+}
+.dark .cm-sel-rect {
+  background: #3a3a3a; /* dark, unfocused */
+}
+.dark .cm-editor.cm-focused .cm-tight-sel-layer .cm-sel-rect {
+  background: #585858; /* dark, focused */
+}
+/* Rounded corners: only at *exposed* corners (no adjacent line at same right boundary).
+   Static base, dynamic corners via cm-sel-rtop / cm-sel-rbottom added in TS. */
+.cm-sel-rect        { border-radius: 0; }
+.cm-sel-first       { border-top-left-radius: 3px; }
+.cm-sel-last        { border-bottom-left-radius: 3px; }
+.cm-sel-rtop        { border-top-right-radius: 3px; }
+.cm-sel-rbottom     { border-bottom-right-radius: 3px; }
+.cm-sel-first.cm-sel-last { border-radius: 3px; }      /* single line: all corners */
+
+/* Concave inner-corner masks — placed INSIDE the selection rect at the inner corner.
+   Paints editor background (var(--bg-code) = #D8D8D8 light / #272727 dark) to cut into
+   the selection gray, with border-radius facing the selection interior (transparent there).
+   Arc center lands exactly on the inner corner point, creating a smooth concave curve.
+
+   Narrowing: mask covers top-right of narrower lower rect. border-bottom-left-radius
+   clips the bottom-left (interior side), leaving bg-code at the top-right (inner corner). */
+.cm-sel-mask-tl {
+  background: var(--bg-code);
+  border-bottom-left-radius: 4px;
+}
+/* Widening: mask covers bottom-right of narrower upper rect. border-top-left-radius
+   clips the top-left (interior side), leaving bg-code at the bottom-right (inner corner). */
+.cm-sel-mask-bl {
+  background: var(--bg-code);
+  border-top-left-radius: 4px;
+}
+
 
 /* CodeMirror fold/unfold animations */
 @keyframes cm-fold-placeholder-in {
