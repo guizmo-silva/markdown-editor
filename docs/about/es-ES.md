@@ -1,3 +1,4 @@
+![Image](https://raw.githubusercontent.com/guizmo-silva/markdown-editor/refs/heads/main/docs/logo/mkd-zimaos-icon.png)
 # MKD — Editor de Markdown autoalojado
 
 Editor de Markdown self-hosted pensado para uso personal, ejecutándose mediante Docker en servidores domésticos, NAS y plataformas como ZimaOS.
@@ -8,8 +9,8 @@ Editor de Markdown self-hosted pensado para uso personal, ejecutándose mediante
 
 - **Barra lateral** con navegador de elementos del documento (títulos, citas, enlaces, imágenes, tablas, alertas y notas al pie) y explorador de archivos integrado
 - **Modos de visualización** — solo código, solo vista previa o vista dividida lado a lado
-- **Importación** de archivos `.md` y `.txt`
-- **Exportación** a `.txt`, `.md`, `.pdf`, `.html` y ZIP con imágenes enlazadas localmente
+- **Importación** de archivos `.md`, `.docx`, `.zip` (.md + imágenes) y `.txt`
+- **Exportación** a `.txt`, `.md`, `.pdf`, `.html` y `.zip` con imágenes enlazadas localmente
 - **Guardado automático**
 - **Pestañas** — edita múltiples documentos al mismo tiempo
 - **Interfaz y corrección ortográfica en varios idiomas** — Portugués, Inglés, Español, Francés, Alemán, Ruso y Chino Simplificado
@@ -95,8 +96,38 @@ npm run dev
 - Frontend: <http://localhost:3000>
 - API: <http://localhost:3001>
 
+### Estructura del proyecto
+
+```text
+markdown-editor/
+├── frontend/
+│   ├── app/                # Rutas y diseño (Next.js App Router)
+│   ├── components/         # Componentes React
+│   │   ├── Editor/         # Editor CodeMirror
+│   │   ├── Preview/        # Renderizado del preview
+│   │   ├── Toolbar/        # Barra de herramientas
+│   │   ├── Sidebar/        # Barra lateral de assets
+│   │   ├── Tabs/           # Sistema de pestañas
+│   │   └── FileBrowser/    # Explorador de archivos
+│   ├── hooks/
+│   ├── locales/            # Traducciones (JSON por idioma)
+│   └── utils/
+│
+├── backend/
+│   └── src/
+│       ├── routes/
+│       ├── controllers/
+│       ├── services/
+│       ├── middleware/
+│       └── utils/
+│
+└── docker/
+    ├── Dockerfile.frontend
+    └── Dockerfile.backend
+```
+
 ---
 
-## Licencia
+##### ¿Este programa te fue útil? ¡Invítame un café! 😉
 
-[AGPL-3.0](../../LICENSE)
+<a href='https://ko-fi.com/M4M41W6IPV' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

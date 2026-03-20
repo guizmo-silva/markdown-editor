@@ -1,3 +1,4 @@
+![Image](https://raw.githubusercontent.com/guizmo-silva/markdown-editor/refs/heads/main/docs/logo/mkd-zimaos-icon.png)
 # MKD — Éditeur Markdown auto-hébergé
 
 Éditeur Markdown self-hosted conçu pour un usage personnel, fonctionnant via Docker sur des serveurs domestiques, NAS et plateformes comme ZimaOS.
@@ -8,8 +9,8 @@
 
 - **Barre latérale** avec navigateur d'éléments du document (titres, citations, liens, images, tableaux, alertes et notes de bas de page) et explorateur de fichiers intégré
 - **Modes d'affichage** — code uniquement, aperçu uniquement ou vue fractionnée côte à côte
-- **Importation** de fichiers `.md` et `.txt`
-- **Exportation** en `.txt`, `.md`, `.pdf`, `.html` et ZIP avec images liées localement
+- **Importation** de fichiers `.md`, `.docx`, `.zip` (.md + images) et `.txt`
+- **Exportation** en `.txt`, `.md`, `.pdf`, `.html` et `.zip` avec images liées localement
 - **Sauvegarde automatique**
 - **Onglets** — éditez plusieurs documents simultanément
 - **Interface et correcteur orthographique en plusieurs langues** — Portugais, Anglais, Espagnol, Français, Allemand, Russe et Chinois Simplifié
@@ -95,8 +96,38 @@ npm run dev
 - Frontend : <http://localhost:3000>
 - API : <http://localhost:3001>
 
+### Structure du projet
+
+```text
+markdown-editor/
+├── frontend/
+│   ├── app/                # Routes et mise en page (Next.js App Router)
+│   ├── components/         # Composants React
+│   │   ├── Editor/         # Éditeur CodeMirror
+│   │   ├── Preview/        # Rendu de l'aperçu
+│   │   ├── Toolbar/        # Barre d'outils
+│   │   ├── Sidebar/        # Barre latérale des assets
+│   │   ├── Tabs/           # Système d'onglets
+│   │   └── FileBrowser/    # Explorateur de fichiers
+│   ├── hooks/
+│   ├── locales/            # Traductions (JSON par langue)
+│   └── utils/
+│
+├── backend/
+│   └── src/
+│       ├── routes/
+│       ├── controllers/
+│       ├── services/
+│       ├── middleware/
+│       └── utils/
+│
+└── docker/
+    ├── Dockerfile.frontend
+    └── Dockerfile.backend
+```
+
 ---
 
-## Licence
+##### Ce programme vous a été utile ? Offrez-moi un café ! 😉
 
-[AGPL-3.0](../../LICENSE)
+<a href='https://ko-fi.com/M4M41W6IPV' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

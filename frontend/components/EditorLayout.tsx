@@ -1133,12 +1133,19 @@ export default function EditorLayout() {
       });
     };
 
+    const markAnchorClick = (e: MouseEvent) => {
+      const anchor = (e.target as Element).closest('a');
+      if (anchor?.getAttribute('href')?.startsWith('#')) markUserScroll();
+    };
+
     container.addEventListener('wheel', markUserScroll, { passive: true });
     container.addEventListener('touchstart', markUserScroll, { passive: true });
+    container.addEventListener('click', markAnchorClick);
     container.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       container.removeEventListener('wheel', markUserScroll);
       container.removeEventListener('touchstart', markUserScroll);
+      container.removeEventListener('click', markAnchorClick);
       container.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
       clearTimeout(userScrollTimeout);

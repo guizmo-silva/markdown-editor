@@ -1,3 +1,4 @@
+![Image](https://raw.githubusercontent.com/guizmo-silva/markdown-editor/refs/heads/main/docs/logo/mkd-zimaos-icon.png)
 # MKD — Self-hosted Markdown Editor
 
 Self-hosted Markdown editor designed for personal use, running via Docker on home servers, NAS devices, and platforms like ZimaOS.
@@ -8,8 +9,8 @@ Self-hosted Markdown editor designed for personal use, running via Docker on hom
 
 - **Sidebar** with document element navigator (headings, quotes, links, images, tables, alerts, and footnotes) and integrated file explorer
 - **View modes** — code only, preview only, or side-by-side split view
-- **Import** `.md` and `.txt` files
-- **Export** to `.txt`, `.md`, `.pdf`, `.html`, and ZIP with locally linked images
+- **Import** `.md`, `.docx`, `.zip` (.md + images) and `.txt` files
+- **Export** to `.txt`, `.md`, `.pdf`, `.html` and `.zip` with locally linked images
 - **Auto-save**
 - **Tabs** — edit multiple documents at the same time
 - **Interface and spellcheck in multiple languages** — Portuguese, English, Spanish, French, German, Russian, and Simplified Chinese
@@ -95,8 +96,38 @@ npm run dev
 - Frontend: <http://localhost:3000>
 - API: <http://localhost:3001>
 
+### Project structure
+
+```text
+markdown-editor/
+├── frontend/
+│   ├── app/                # Routes and layout (Next.js App Router)
+│   ├── components/         # React components
+│   │   ├── Editor/         # CodeMirror editor
+│   │   ├── Preview/        # Markdown rendering
+│   │   ├── Toolbar/        # Toolbar
+│   │   ├── Sidebar/        # Assets sidebar
+│   │   ├── Tabs/           # Tab system
+│   │   └── FileBrowser/    # File browser
+│   ├── hooks/
+│   ├── locales/            # Translations (JSON per language)
+│   └── utils/
+│
+├── backend/
+│   └── src/
+│       ├── routes/
+│       ├── controllers/
+│       ├── services/
+│       ├── middleware/
+│       └── utils/
+│
+└── docker/
+    ├── Dockerfile.frontend
+    └── Dockerfile.backend
+```
+
 ---
 
-## License
+##### Did this program help you? Then buy me a coffee 😉
 
-[AGPL-3.0](../../LICENSE)
+<a href='https://ko-fi.com/M4M41W6IPV' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { RefObject, MouseEvent } from 'react';
 import type { Root, RootContent } from 'mdast';
 import ReactMarkdown from 'react-markdown';
@@ -219,6 +220,7 @@ interface MarkdownPreviewProps {
 const inlineTagNames = new Set(['EM', 'STRONG', 'A', 'CODE', 'DEL']);
 
 function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, isScrollSynced, onToggleScrollSync, onClickSourcePosition, columnWidth, onColumnWidthChange, filePath, imageRevision, hideInfoBar, previewZoom: previewZoomProp, onPreviewZoomIn: onPreviewZoomInProp, onPreviewZoomOut: onPreviewZoomOutProp, onPreviewZoomReset: onPreviewZoomResetProp }: MarkdownPreviewProps) {
+  const { t } = useTranslation();
   const isDark = viewTheme === 'dark';
 
   // Theme-specific colors
@@ -405,6 +407,7 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkGemoji, remarkMath, remarkAlert, remarkFrontmatter, remarkSupersub, remarkSourceLines]}
             rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeMark, rehypeKatex]}
+            remarkRehypeOptions={{ footnoteLabel: t('sidebar.footnotes', 'Footnotes') }}
             components={markdownComponents}
           >
             {content}

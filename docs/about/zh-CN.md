@@ -1,3 +1,4 @@
+![Image](https://raw.githubusercontent.com/guizmo-silva/markdown-editor/refs/heads/main/docs/logo/mkd-zimaos-icon.png)
 # MKD — 自托管 Markdown 编辑器
 
 专为个人使用设计的自托管 Markdown 编辑器，通过 Docker 运行在家庭服务器、NAS 设备及 ZimaOS 等平台上。
@@ -8,8 +9,8 @@
 
 - **侧边栏** — 文档元素导航（标题、引用、链接、图片、表格、提示框和脚注）及内置文件管理器
 - **视图模式** — 纯代码、纯预览或并排分屏视图
-- **导入** `.md` 和 `.txt` 文件
-- **导出** 为 `.txt`、`.md`、`.pdf`、`.html` 及含本地链接图片的 ZIP 压缩包
+- **导入** `.md`、`.docx`、`.zip`（.md + 图片）和 `.txt` 文件
+- **导出** 为 `.txt`、`.md`、`.pdf`、`.html` 及含本地链接图片的 `.zip` 压缩包
 - **自动保存**
 - **标签页** — 同时编辑多个文档
 - **多语言界面与拼写检查** — 葡萄牙语、英语、西班牙语、法语、德语、俄语和简体中文
@@ -95,8 +96,38 @@ npm run dev
 - 前端：<http://localhost:3000>
 - API：<http://localhost:3001>
 
+### 项目结构
+
+```text
+markdown-editor/
+├── frontend/
+│   ├── app/                # 路由与布局 (Next.js App Router)
+│   ├── components/         # React 组件
+│   │   ├── Editor/         # CodeMirror 编辑器
+│   │   ├── Preview/        # Markdown 渲染
+│   │   ├── Toolbar/        # 工具栏
+│   │   ├── Sidebar/        # 侧边栏
+│   │   ├── Tabs/           # 标签系统
+│   │   └── FileBrowser/    # 文件管理器
+│   ├── hooks/
+│   ├── locales/            # 翻译文件（每种语言一个 JSON）
+│   └── utils/
+│
+├── backend/
+│   └── src/
+│       ├── routes/
+│       ├── controllers/
+│       ├── services/
+│       ├── middleware/
+│       └── utils/
+│
+└── docker/
+    ├── Dockerfile.frontend
+    └── Dockerfile.backend
+```
+
 ---
 
-## 许可证
+##### 这个程序对您有帮助吗？请我喝杯咖啡吧！😉
 
-[AGPL-3.0](../../LICENSE)
+<a href='https://ko-fi.com/M4M41W6IPV' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

@@ -11,7 +11,7 @@ Editor de Markdown self-hosted pensado para uso pessoal, rodando via Docker em s
 
 - **Barra lateral** com navegador de elementos do documento (títulos, citações, links, imagens, tabelas, alertas e notas de rodapé) e explorador de arquivos integrado
 - **Modos de visualização** — apenas código, apenas preview ou tela dividida lado a lado
-- **Importação** de arquivos `.md` e `.txt`
+- **Importação** de arquivos `.md`, `.docx`, `.zip` (.md + imagens) e `.txt`
 - **Exportação** em `.txt`, `.md`, `.pdf` `.html` e `.zip` com imagens linkadas localmente;
 - **Salvamento automático**
 - **Abas** — edite múltiplos documentos ao mesmo tempo

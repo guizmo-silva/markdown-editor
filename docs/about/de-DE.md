@@ -1,3 +1,4 @@
+![Image](https://raw.githubusercontent.com/guizmo-silva/markdown-editor/refs/heads/main/docs/logo/mkd-zimaos-icon.png)
 # MKD — Selbst gehosteter Markdown-Editor
 
 Selbst gehosteter Markdown-Editor für den persönlichen Gebrauch, der über Docker auf Heimservern, NAS-Geräten und Plattformen wie ZimaOS läuft.
@@ -8,8 +9,8 @@ Selbst gehosteter Markdown-Editor für den persönlichen Gebrauch, der über Doc
 
 - **Seitenleiste** mit Dokumentennavigator (Überschriften, Zitate, Links, Bilder, Tabellen, Hinweise und Fußnoten) sowie integriertem Datei-Explorer
 - **Ansichtsmodi** — nur Code, nur Vorschau oder geteilte Ansicht nebeneinander
-- **Import** von `.md`- und `.txt`-Dateien
-- **Export** als `.txt`, `.md`, `.pdf`, `.html` und ZIP mit lokal verlinkten Bildern
+- **Import** von `.md`-, `.docx`-, `.zip`- (.md + Bilder) und `.txt`-Dateien
+- **Export** als `.txt`, `.md`, `.pdf`, `.html` und `.zip` mit lokal verlinkten Bildern
 - **Automatisches Speichern**
 - **Tabs** — mehrere Dokumente gleichzeitig bearbeiten
 - **Oberfläche und Rechtschreibprüfung in mehreren Sprachen** — Portugiesisch, Englisch, Spanisch, Französisch, Deutsch, Russisch und Vereinfachtes Chinesisch
@@ -95,8 +96,38 @@ npm run dev
 - Frontend: <http://localhost:3000>
 - API: <http://localhost:3001>
 
+### Projektstruktur
+
+```text
+markdown-editor/
+├── frontend/
+│   ├── app/                # Routen und Layout (Next.js App Router)
+│   ├── components/         # React-Komponenten
+│   │   ├── Editor/         # CodeMirror-Editor
+│   │   ├── Preview/        # Vorschau-Rendering
+│   │   ├── Toolbar/        # Symbolleiste
+│   │   ├── Sidebar/        # Assets-Seitenleiste
+│   │   ├── Tabs/           # Tab-System
+│   │   └── FileBrowser/    # Datei-Browser
+│   ├── hooks/
+│   ├── locales/            # Übersetzungen (JSON pro Sprache)
+│   └── utils/
+│
+├── backend/
+│   └── src/
+│       ├── routes/
+│       ├── controllers/
+│       ├── services/
+│       ├── middleware/
+│       └── utils/
+│
+└── docker/
+    ├── Dockerfile.frontend
+    └── Dockerfile.backend
+```
+
 ---
 
-## Lizenz
+##### Hat Ihnen dieses Programm geholfen? Dann spendieren Sie mir einen Kaffee! 😉
 
-[AGPL-3.0](../../LICENSE)
+<a href='https://ko-fi.com/M4M41W6IPV' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

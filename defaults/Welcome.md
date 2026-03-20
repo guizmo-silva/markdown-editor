@@ -1,377 +1,181 @@
-# Bem-vindo ao Markdown Editor
+# MKD — Cheat-sheet 
 
-Este documento demonstra todas as funcionalidades de formatação suportadas pelo editor. Use-o como referência para criar seus próprios documentos!
+## Formatação de texto
 
----
+O editor suporta **negrito,** *itálico*, ***negrito e itálico***, ~~texto tachado~~ e `código inline`.
 
-## Formatação de Texto
-
-Você pode aplicar diferentes estilos ao seu texto:
-
-- **Texto em negrito** usando `**texto**` ou `__texto__`
-- *Texto em itálico* usando `*texto*` ou `_texto_`
-- ***Texto em negrito e itálico*** usando `***texto***`
-- ~~Texto tachado~~ usando `~~texto~~`
-- `Código inline` usando crases \`código\`
+Você pode escrever H~2~O com subscrito, 2^10^ com sobrescrito e ==destacar palavras== importantes.
 
 ---
 
 ## Cabeçalhos
 
-O Markdown suporta 6 níveis de cabeçalhos:
-
-# Cabeçalho Nível 1
-## Cabeçalho Nível 2
-### Cabeçalho Nível 3
-#### Cabeçalho Nível 4
-##### Cabeçalho Nível 5
-###### Cabeçalho Nível 6
+# O editor abre direto no navegador
+## Sem instalação, sem configuração
+### Basta subir o container Docker
+#### E apontar para suas pastas
+##### A interface fica disponível na porta 3010
+###### Funciona em qualquer dispositivo na rede local
 
 ---
 
 ## Listas
 
-### Lista Não Ordenada
+### Funcionalidades disponíveis
 
-- Primeiro item
-- Segundo item
-  - Subitem 2.1
-  - Subitem 2.2
-    - Subitem 2.2.1
-- Terceiro item
+- Editor dividido com preview em tempo real
+- Barra lateral com navegação por elementos do documento
+  - Títulos, links, imagens, tabelas
+  - Alertas e notas de rodapé
+- Correção ortográfica em múltiplos idiomas
+  - Português, Inglês, Espanhol, Francês
+  - Alemão, Russo e Chinês Simplificado
 
-### Lista Ordenada
+### Como subir o editor
 
-1. Primeiro passo
-2. Segundo passo
-   1. Subpasso 2.1
-   2. Subpasso 2.2
-3. Terceiro passo
+1. Baixe o `docker-compose.yml` da pasta `docs/install/`
+2. Configure os volumes com suas pastas locais
+3. Execute `docker compose up -d`
+4. Acesse `http://localhost:3010`
 
-### Lista de Tarefas
+### Status do projeto
 
-- [x] Tarefa concluída
-- [x] Outra tarefa concluída
-- [ ] Tarefa pendente
-- [ ] Mais uma tarefa pendente
+- [x] Editor dividido com scroll sincronizado
+- [x] Salvamento automático
+- [x] Suporte a imagens com drag-and-drop
+- [x] Exportação para HTML e ZIP
+- [x] Exportação para PDF
+- [x] Exportação para DOCX
+
 
 ---
 
-## Citações (Blockquotes)
+## Citações
 
-> Esta é uma citação simples.
-> Pode ocupar múltiplas linhas.
+> O editor não tem acesso arbitrário ao sistema de arquivos do servidor.
+> Apenas as pastas explicitamente configuradas no `docker-compose.yml` ficam visíveis.
 
-> Citações também podem ser aninhadas:
+> Cada volume mapeado aparece como uma pasta raiz na barra lateral.
 >
-> > Esta é uma citação dentro de outra citação.
-> >
-> > > E esta é ainda mais profunda!
+> > Você pode mapear quantos volumes quiser usando a variável `EXTRA_VOLUMES`.
 
 ---
 
 ## Alertas
 
-O editor suporta os alertas do GitHub Flavored Markdown:
-
 > [!NOTE]
-> Esta é uma nota informativa. Use para destacar informações que o usuário deve conhecer.
+> Novos documentos são nomeados automaticamente com base no primeiro título digitado.
 
 > [!TIP]
-> Esta é uma dica útil. Use para sugerir melhores práticas ou atalhos.
+> Use a barra lateral para navegar rapidamente entre os títulos do documento atual.
 
 > [!IMPORTANT]
-> Esta é uma informação importante. Use para destacar pontos cruciais.
+> O auto-rename acontece apenas uma vez — ao nomear o arquivo pela primeira vez.
 
 > [!WARNING]
-> Este é um aviso. Use para alertar sobre possíveis problemas.
+> Fechar uma aba com alterações não salvas descarta o conteúdo não salvo.
 
 > [!CAUTION]
-> Este é um alerta de cuidado. Use para avisar sobre ações perigosas ou irreversíveis.
+> O editor conta com uma lixeira interna que é esvaziada a cada 30 dias.
 
 ---
 
 ## Tabelas
 
-| Recurso | Suportado | Observações |
-|---------|:---------:|-------------|
-| Negrito | Sim | Use `**texto**` |
-| Itálico | Sim | Use `*texto*` |
-| Tabelas | Sim | Alinhamento configurável |
-| Código | Sim | Syntax highlighting |
+| Funcionalidade | Descrição |
+| --- | --- |
+| Split View | Código e preview lado a lado |
+| Abas | Múltiplos documentos abertos simultaneamente |
+| Spellcheck | Dicionários Hunspell por idioma |
+| Exportação | MD, TXT, HTML, PDF, DOCX e ZIP com imagens |
+| Imagens | Import e drag-and-drop direto no editor |
 
-### Tabela com Alinhamentos
+### Formatos de exportação
 
-| Alinhado à Esquerda | Centralizado | Alinhado à Direita |
-|:--------------------|:------------:|-------------------:|
-| Texto | Texto | Texto |
-| Mais texto | Mais texto | Mais texto |
+| Formato | Disponível | Observação |
+|:--------|:----------:|:-----------|
+| `.md` | ✓ | Arquivo original |
+| `.txt` | ✓ | Texto puro sem formatação |
+| `.html` | ✓ | Documento standalone |
+| `.zip` | ✓ | HTML + imagens do documento |
+| `.pdf` | ✓ | Arquivo em .pdf com múltiplas páginas |
+| `.docx` | ✓ | Arquivo em formato Word com transposição de formatações |
 
 ---
 
-## Blocos de Código
+## Blocos de código
 
-### Código sem Linguagem
-
-```
-Este é um bloco de código simples
-sem syntax highlighting
-```
-
-### JavaScript
-
-```javascript
-function saudacao(nome) {
-  const mensagem = `Olá, ${nome}!`;
-  console.log(mensagem);
-  return mensagem;
-}
-
-saudacao('Mundo');
-```
-
-### Python
-
-```python
-def calcular_fibonacci(n):
-    """Calcula o n-ésimo número de Fibonacci."""
-    if n <= 1:
-        return n
-    return calcular_fibonacci(n - 1) + calcular_fibonacci(n - 2)
-
-# Imprime os primeiros 10 números
-for i in range(10):
-    print(f"F({i}) = {calcular_fibonacci(i)}")
-```
-
-### TypeScript
-
-```typescript
-interface Usuario {
-  id: number;
-  nome: string;
-  email: string;
-  ativo: boolean;
-}
-
-const criarUsuario = (dados: Partial<Usuario>): Usuario => {
-  return {
-    id: Date.now(),
-    nome: dados.nome ?? 'Anônimo',
-    email: dados.email ?? '',
-    ativo: dados.ativo ?? true,
-  };
-};
-```
-
-### CSS
-
-```css
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-```
-
-### JSON
-
-```json
-{
-  "nome": "Markdown Editor",
-  "versao": "1.0.0",
-  "recursos": [
-    "Edição em tempo real",
-    "Preview sincronizado",
-    "Exportação múltipla"
-  ],
-  "configuracoes": {
-    "tema": "escuro",
-    "fonte": "monospace",
-    "tamanho": 14
-  }
-}
-```
-
-### Bash
+Suba o editor em modo de desenvolvimento:
 
 ```bash
-#!/bin/bash
+docker compose -f docker-compose.dev.yml down && \
+docker compose -f docker-compose.dev.yml up -d --build
+```
 
-# Script de exemplo
-echo "Iniciando instalação..."
+Configure volumes adicionais no compose:
 
-for pacote in node npm docker; do
-    if command -v $pacote &> /dev/null; then
-        echo "✓ $pacote já está instalado"
-    else
-        echo "✗ $pacote não encontrado"
-    fi
-done
+```yaml
+environment:
+  - EXTRA_VOLUMES=projetos:/projetos,notas:/notas
+volumes:
+  - /home/usuario/documentos:/workspace
+  - /home/usuario/projetos:/projetos
+```
+
+Variáveis de ambiente disponíveis:
+
+```env
+PORT=3001
+WORKSPACE_ROOT=/workspace
+EXTRA_VOLUMES=nome1:/caminho1,nome2:/caminho2
+PUID=1000
+PGID=1000
 ```
 
 ---
 
 ## Links
 
-### Links Inline
+O código-fonte está disponível em [github.com/guizmo-silva/markdown-editor](https://github.com/guizmo-silva/markdown-editor).
 
-- [Visite o GitHub](https://github.com)
-- [Documentação do Markdown](https://docs.github.com/pt/get-started/writing-on-github)
-
-### Links de Referência
-
-Este editor foi inspirado em projetos como [VS Code][vscode] e [Obsidian][obsidian].
-
-[vscode]: https://code.visualstudio.com
-[obsidian]: https://obsidian.md
-
-### Autolinks
-
-Links são detectados automaticamente: https://github.com
-
-E-mails também: contato@exemplo.com
+Guia de instalação: [docs/install/SETUP.md](../docs/install/SETUP.md)
 
 ---
 
-## Imagens
+## Notas de rodapé
 
-### Imagem com Texto Alternativo
+O editor é self-hosted[^1] e foi construído para rodar em servidores domésticos[^2].
 
-![Logo do Markdown](https://markdown-here.com/img/icon256.png)
+[^1]: Self-hosted significa que você mesmo hospeda e controla a aplicação, sem depender de serviços de terceiros.
 
-### Imagem como Link
-
-[![Clique para visitar](https://via.placeholder.com/200x50/667eea/ffffff?text=Clique+Aqui)](https://github.com)
+[^2]: Testado em ZimaOS e Docker rodando no Fedora 43.
 
 ---
 
-## Notas de Rodapé
+## Fórmulas matemáticas
 
-O Markdown suporta notas de rodapé[^1] que são muito úteis para adicionar referências[^2] ou explicações adicionais[^nota-longa].
+Inline: a equação de atualização de um modelo de linguagem pode ser escrita como $P(w_t | w_{t-1}, \ldots, w_1)$
 
-[^1]: Esta é uma nota de rodapé simples.
-
-[^2]: As notas de rodapé aparecem no final do documento.
-
-[^nota-longa]: As notas de rodapé podem ter identificadores descritivos e conter múltiplos parágrafos.
-
-    Basta indentar o conteúdo adicional com 4 espaços.
-
----
-
-## Fórmulas Matemáticas
-
-O editor suporta fórmulas LaTeX/KaTeX:
-
-### Fórmulas Inline
-
-A famosa equação de Einstein: $E = mc^2$
-
-A fórmula de Bhaskara: $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$
-
-### Fórmulas em Bloco
-
-A integral de Gauss:
+Em bloco:
 
 $$
-\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
-$$
-
-Somatório:
-
-$$
-\sum_{i=1}^{n} i = \frac{n(n+1)}{2}
-$$
-
-Matriz:
-
-$$
-\begin{pmatrix}
-a & b \\
-c & d
-\end{pmatrix}
-\times
-\begin{pmatrix}
-e & f \\
-g & h
-\end{pmatrix}
-=
-\begin{pmatrix}
-ae+bg & af+bh \\
-ce+dg & cf+dh
-\end{pmatrix}
+\text{TF-IDF}(t, d) = \text{TF}(t, d) \times \log\left(\frac{N}{df(t)}\right)
 $$
 
 ---
 
-## Linhas Horizontais
+## Combinando elementos
 
-Você pode criar linhas horizontais de três formas:
-
-Usando três hífens:
-
----
-
-Usando três asteriscos:
-
-***
-
-Usando três underscores:
-
-___
-
----
-
-## Texto Especial
-
-### Subscrito e Sobrescrito
-
-H~2~O é a fórmula da água.
-
-O resultado é 2^10^ = 1024.
-
-### Destaque
-
-Use ==texto destacado== para chamar atenção.
-
----
-
-## Combinando Elementos
-
-Você pode combinar vários elementos em estruturas complexas:
-
-> ### Citação com Formatação
+> ### Fluxo de trabalho recomendado
 >
-> Esta citação contém:
-> - **Texto em negrito**
-> - *Texto em itálico*
-> - `Código inline`
+> - Crie um **novo documento** pela barra de ferramentas
+> - O arquivo é nomeado automaticamente pelo *primeiro título*
+> - Use `Ctrl+S` para forçar salvamento manual
 >
-> E até mesmo um bloco de código:
->
-> ```python
-> print("Olá do bloco de código dentro da citação!")
+> ```bash
+> # Os arquivos ficam salvos no volume mapeado
+> ls /home/usuario/documentos
 > ```
 >
 > > [!TIP]
-> > Alertas também funcionam dentro de citações!
-
----
-
-## Conclusão
-
-Este documento cobriu todas as principais funcionalidades de formatação do Markdown suportadas por este editor. Use estas referências para criar documentos ricos e bem formatados!
-
-**Atalhos úteis:**
-- Use a barra de ferramentas para aplicar formatações rapidamente
-- Navegue pelos elementos usando a barra lateral
-- Exporte seu documento em diferentes formatos
-
----
-
-*Documento criado para demonstração do Markdown Editor*
+> > Mantenha imagens na mesma pasta do documento para que o ZIP de exportação as inclua automaticamente.

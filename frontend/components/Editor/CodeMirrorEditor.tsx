@@ -58,10 +58,10 @@ const lightHighlighting = HighlightStyle.define([
   { tag: tags.monospace, fontFamily: 'Roboto Mono, monospace', backgroundColor: 'rgba(0,0,0,0.1)', color: '#c7254e' },
   { tag: tags.link, color: '#0066cc', textDecoration: 'underline' },
   { tag: tags.url, color: '#0066cc' },
-  { tag: tags.list, color: '#555555' },
-  { tag: tags.quote, color: '#555555', fontStyle: 'italic' },
-  { tag: tags.processingInstruction, color: '#999999' },
-  { tag: tags.meta, color: '#999999' },
+  { tag: tags.list, color: '#c25d00' },
+  { tag: tags.quote, color: '#2e7d32', fontStyle: 'italic' },
+  { tag: tags.processingInstruction, color: '#5e738a' },
+  { tag: tags.meta, color: '#7c3aed' },
   { tag: tags.content, color: '#404040' },
   { tag: tags.comment, color: '#999999', fontStyle: 'italic' },
 ]);
@@ -80,10 +80,10 @@ const darkHighlighting = HighlightStyle.define([
   { tag: tags.monospace, fontFamily: 'Roboto Mono, monospace', backgroundColor: 'rgba(255,255,255,0.1)', color: '#ff8fa3' },
   { tag: tags.link, color: '#6cb6ff', textDecoration: 'underline' },
   { tag: tags.url, color: '#6cb6ff' },
-  { tag: tags.list, color: '#CCCCCC' },
-  { tag: tags.quote, color: '#AAAAAA', fontStyle: 'italic' },
-  { tag: tags.processingInstruction, color: '#888888' },
-  { tag: tags.meta, color: '#888888' },
+  { tag: tags.list, color: '#e8934a' },
+  { tag: tags.quote, color: '#6dbb78', fontStyle: 'italic' },
+  { tag: tags.processingInstruction, color: '#7da8cc' },
+  { tag: tags.meta, color: '#b084e8' },
   { tag: tags.content, color: '#BEBEBE' },
   { tag: tags.comment, color: '#777777', fontStyle: 'italic' },
 ]);
@@ -387,6 +387,10 @@ const smartTypography = EditorView.inputHandler.of((view, from, to, text) => {
 });
 
 const pasteLinkHandler = EditorView.domEventHandlers({
+  dragstart(event) {
+    event.preventDefault();
+    return true;
+  },
   paste(event, view) {
     const clipboardText = event.clipboardData?.getData('text/plain')?.trim() ?? '';
 
