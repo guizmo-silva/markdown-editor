@@ -465,20 +465,50 @@ function tightSelectionMarkers(view: EditorView): readonly RectangleMarker[] {
   const markers: RectangleMarker[] = [];
   const base = getSelBase(view);
 
-
   for (const range of state.selection.ranges) {
     if (range.empty) continue;
 
-    // Collect all visual blocks
+    // Collect all visual line segments covered by the selection.
+    // view.lineBlockAt returns the document-line block (block.height = total of all
+    // wrapped visual lines, block.to = end of document line). When a selection spans
+    // a visual wrap boundary we must split at that boundary ourselves.
+    // Strategy: after getting a block, compare coordsAtPos(lFrom).top with
+    // coordsAtPos(lTo).top. If they differ by more than half a line height the
+    // range straddles a visual wrap — binary-search for the wrap point, emit the
+    // first visual segment, and continue from the next character.
     const blocks: Array<{ lFrom: number; lTo: number; height: number }> = [];
     let pos = range.from;
     while (pos <= range.to) {
       const block = view.lineBlockAt(pos);
-      blocks.push({
-        lFrom: Math.max(range.from, block.from),
-        lTo:   Math.min(range.to,   block.to),
-        height: block.height,
-      });
+      // Use pos (not block.from) as lFrom lower bound so wrap-continuation
+      // iterations start from the correct position within the same document line.
+      const lFrom = Math.max(range.from, pos);
+      const lTo   = Math.min(range.to, block.to);
+
+      const fc0 = lFrom === lTo
+        ? view.coordsAtPos(lFrom)
+        : view.coordsAtPos(lFrom, 1);
+      const lineH = fc0 ? fc0.bottom - fc0.top : block.height;
+
+      if (fc0 && lFrom < lTo) {
+        const tc0 = view.coordsAtPos(lTo, -1);
+        if (tc0 && tc0.top - fc0.top > lineH * 0.5) {
+          // Range spans a visual wrap — find the last position on this visual line.
+          let lo = lFrom, hi = lTo, vEnd = lFrom;
+          while (lo < hi - 1) {
+            const mid = (lo + hi) >> 1;
+            const mc  = view.coordsAtPos(mid, 1);
+            if (mc && mc.top < fc0.top + lineH * 0.5) { lo = mid; vEnd = mid; }
+            else hi = mid;
+          }
+          blocks.push({ lFrom, lTo: vEnd, height: lineH });
+          pos = vEnd + 1; // advance to the next visual line within the same doc line
+          continue;
+        }
+      }
+
+      blocks.push({ lFrom, lTo, height: lineH });
+
       if (block.to >= range.to) break;
       pos = block.to + 1;
     }
@@ -498,23 +528,24 @@ function tightSelectionMarkers(view: EditorView): readonly RectangleMarker[] {
         left:   fc.left  - base.left,
         top:    fc.top   - base.top,
         right:  Math.max(fc.left - base.left + 2, tc.right - base.left + 4),
-        height,
+        height, // already the visual-line height from blocks building step
         empty:  false,
       };
     });
 
     // Second pass: emit selection rects.
-    // Only round a corner when it is "exposed" — i.e. no adjacent rect reaches the
-    // same right boundary.
-    for (let i = 0; i < rects.length; i++) {
-      const r = rects[i];
-      if (!r) continue;
+    // Filter nulls first so corner-detection indices and height derivation are clean.
+    // Height is derived from the next rect's top so adjacent rects tile perfectly
+    // with no sub-pixel horizontal gap. The last rect gets a +1 overshoot instead.
+    const valid = rects.filter((r): r is PR => r !== null);
+    for (let i = 0; i < valid.length; i++) {
+      const r = valid[i];
       const isFirst = i === 0;
-      const isLast  = i === rects.length - 1;
+      const isLast  = i === valid.length - 1;
 
       const currR = Math.round(r.right);
-      const prevR = i > 0 && rects[i - 1] ? Math.round(rects[i - 1]!.right) : -Infinity;
-      const nextR = i < rects.length - 1 && rects[i + 1] ? Math.round(rects[i + 1]!.right) : -Infinity;
+      const prevR = i > 0       ? Math.round(valid[i - 1].right) : -Infinity;
+      const nextR = !isLast     ? Math.round(valid[i + 1].right) : -Infinity;
 
       // Top-right is exposed (outer convex) when this line is wider than the one above it.
       const rtop    = isFirst || prevR < currR - 1;
@@ -526,12 +557,18 @@ function tightSelectionMarkers(view: EditorView): readonly RectangleMarker[] {
         + (isLast   ? ' cm-sel-last'    : '')
         + (rtop     ? ' cm-sel-rtop'    : '')
         + (rbottom  ? ' cm-sel-rbottom' : '');
+
+      const rectTop    = Math.floor(r.top);
+      const rectHeight = !isLast
+        ? Math.max(1, Math.floor(valid[i + 1].top) - rectTop)
+        : Math.ceil(r.height) + 1;
+
       markers.push(new RectangleMarker(
         cls,
         Math.round(r.left),
-        Math.floor(r.top),
+        rectTop,
         Math.round(r.right - r.left),
-        Math.ceil(r.height) + 1,
+        rectHeight,
       ));
     }
   }
