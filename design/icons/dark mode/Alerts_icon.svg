@@ -1,13 +1,58 @@
-<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_95_4)">
-<path d="M6.90125 5.71655H5.98816V14.2834H6.90125V15.4382H4.50037V4.56177H6.90125V5.71655Z" fill="white"/>
-<path d="M13.0933 4.56177H15.4995V15.4382H13.0933V14.2834H14.0117V5.71655H13.0933V4.56177Z" fill="white"/>
-<path d="M10.7442 11.2393H9.26175L9.168 5.69043H10.8379L10.7442 11.2393ZM9.05081 13.4248C9.05081 13.167 9.13479 12.9521 9.30276 12.7803C9.47073 12.6084 9.70315 12.5225 10 12.5225C10.2891 12.5225 10.5196 12.6084 10.6914 12.7803C10.8633 12.9521 10.9492 13.167 10.9492 13.4248C10.9492 13.6748 10.8633 13.8857 10.6914 14.0576C10.5196 14.2256 10.2891 14.3096 10 14.3096C9.70315 14.3096 9.47073 14.2256 9.30276 14.0576C9.13479 13.8857 9.05081 13.6748 9.05081 13.4248Z" fill="white"/>
-<path d="M18.6018 19L17.3028 16.75L19.9008 16.75L18.6018 19Z" fill="white"/>
-</g>
-<defs>
-<clipPath id="clip0_95_4">
-<rect width="20" height="20" fill="white"/>
-</clipPath>
-</defs>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="20"
+   height="20"
+   viewBox="0 0 20 20"
+   fill="none"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="Alerts_icon.svg"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview4"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="42.5"
+     inkscape:cx="10"
+     inkscape:cy="11.058824"
+     inkscape:window-width="1920"
+     inkscape:window-height="1024"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4" />
+  <path
+     d="M 7.30112,5.71655 H 5.98804 v 8.56685 h 1.31308 v 1.1548 H 4.50024 V 4.56177 h 2.80088 z"
+     fill="#000000"
+     id="path1"
+     sodipodi:nodetypes="ccccccccc"
+     style="fill:#f9f9f9" />
+  <path
+     d="m 12.6931,4.56177 h 2.8063 V 15.4382 h -2.8063 v -1.1548 h 1.3185 V 5.71655 h -1.3185 z"
+     fill="#000000"
+     id="path2"
+     sodipodi:nodetypes="ccccccccc"
+     style="fill:#f9f9f9" />
+  <path
+     d="M 10.931975,11.942955 H 9.0736323 L 8.9561053,4.9867749 H 11.049565 Z M 8.7257557,14.01603 c 0,-0.34605 0.1127282,-0.634516 0.3381982,-0.865127 0.2254699,-0.230745 0.5374525,-0.34605 0.9359612,-0.34605 0.3880519,0 0.6973229,0.115305 0.9280689,0.34605 0.230745,0.230611 0.34605,0.519077 0.34605,0.865127 0,0.335581 -0.115305,0.618677 -0.34605,0.849422 -0.230746,0.22551 -0.540017,0.338265 -0.9280689,0.338265 -0.3985087,0 -0.7104913,-0.112755 -0.9359612,-0.338265 -0.22547,-0.230745 -0.3381982,-0.513841 -0.3381982,-0.849422 z"
+     fill="#000000"
+     id="path3"
+     sodipodi:nodetypes="cccccscscscscs"
+     style="fill:#f9f9f9" />
+  <path
+     d="m 18.6018,19 -1.299,-2.25 h 2.598 z"
+     fill="#000000"
+     id="path4"
+     style="fill:#f9f9f9" />
+  <defs
+     id="defs4" />
 </svg>

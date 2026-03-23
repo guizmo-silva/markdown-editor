@@ -1,11 +1,76 @@
-<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_50_77)">
-<path d="M13.4746 16H11.7534V11.2466H8.16455V16H6.45068V5.33594H8.16455V9.79639H11.7534V5.33594H13.4746V16Z" fill="white"/>
-<path d="M18.5 19L17.201 16.75L19.799 16.75L18.5 19Z" fill="white"/>
-</g>
-<defs>
-<clipPath id="clip0_50_77">
-<rect width="20" height="20" fill="white"/>
-</clipPath>
-</defs>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="20"
+   height="20"
+   viewBox="0 0 20 20"
+   fill="none"
+   version="1.1"
+   id="svg2"
+   sodipodi:docname="Headign_icon.svg"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview2"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="41.1"
+     inkscape:cx="10"
+     inkscape:cy="10"
+     inkscape:window-width="1920"
+     inkscape:window-height="1024"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg2" />
+  <path
+     d="M 6.4511719,5.6359375 V 15.7 a 0.3,0.3 45 0 0 0.3,0.3 h 1.4136718 a 0.3,0.3 135 0 0 0.3000001,-0.3 v -3.753516 a 0.3,0.3 135 0 1 0.3,-0.3 l 2.3882812,0 a 0.3,0.3 45 0 1 0.3,0.3 V 15.7 a 0.3,0.3 45 0 0 0.3,0.3 h 1.421484 a 0.3,0.3 135 0 0 0.3,-0.3 l 0,-10.0640625 a 0.3,0.3 45 0 0 -0.3,-0.3 h -1.421484 a 0.3,0.3 135 0 0 -0.3,0.3 v 3.4605469 a 0.3,0.3 135 0 1 -0.3,0.3 H 8.7648437 a 0.3,0.3 45 0 1 -0.2999999,-0.3 V 5.6359375 a 0.3,0.3 45 0 0 -0.3,-0.3 H 6.7511719 a 0.3,0.3 135 0 0 -0.3,0.3 z"
+     fill="#000000"
+     id="path1"
+     sodipodi:nodetypes="ccccccccccccc"
+     inkscape:path-effect="#path-effect2;#path-effect3"
+     style="fill:#ffffff" />
+  <path
+     d="m 18.5,19 -1.299,-2.25 h 2.598 z"
+     fill="#000000"
+     id="path2"
+     style="fill:#ffffff" />
+  <defs
+     id="defs2">
+    <inkscape:path-effect
+       effect="fillet_chamfer"
+       id="path-effect3"
+       is_visible="true"
+       lpeversion="1"
+       nodesatellites_param="F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1 @ F,0,0,1,0,0.3,0,1"
+       radius="0.3"
+       unit="px"
+       method="auto"
+       mode="F"
+       chamfer_steps="1"
+       flexible="false"
+       use_knot_distance="true"
+       apply_no_radius="true"
+       apply_with_radius="true"
+       only_selected="false"
+       hide_knots="false" />
+    <inkscape:path-effect
+       effect="offset"
+       id="path-effect2"
+       is_visible="true"
+       lpeversion="1.3"
+       linejoin_type="miter"
+       unit="mm"
+       offset="0"
+       miter_limit="4"
+       attempt_force_join="false"
+       update_on_knot_move="true" />
+  </defs>
 </svg>

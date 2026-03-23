@@ -69,6 +69,13 @@ export interface CodeBlockElement {
   raw: string;
 }
 
+export interface FormulaElement {
+  line: number;
+  type: 'block' | 'inline';
+  content: string;
+  raw: string;
+}
+
 export function parseHeadings(markdown: string, _lines?: string[]): HeadingElement[] {
   const lines = _lines ?? markdown.split('\n');
   const headings: HeadingElement[] = [];
@@ -489,6 +496,71 @@ export interface MarkdownAssets {
   orderedLists: OrderedListElement[];
   unorderedLists: UnorderedListElement[];
   codeBlocks: CodeBlockElement[];
+  formulas: FormulaElement[];
+}
+
+export function parseFormulas(markdown: string, _lines?: string[]): FormulaElement[] {
+  const lines = _lines ?? markdown.split('\n');
+  const formulas: FormulaElement[] = [];
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Block formula: $$ ... $$
+    if (trimmed.startsWith('$$')) {
+      const startLine = i + 1;
+      const afterOpen = trimmed.slice(2);
+
+      // Single-line block: $$content$$
+      if (afterOpen.endsWith('$$') && afterOpen.length > 2) {
+        const content = afterOpen.slice(0, -2).trim();
+        if (content) {
+          formulas.push({ line: startLine, type: 'block', content, raw: line });
+        }
+        i++;
+        continue;
+      }
+
+      // Multi-line block
+      let content = afterOpen.trim();
+      let raw = line;
+      i++;
+
+      while (i < lines.length && !lines[i].trim().startsWith('$$')) {
+        const lc = lines[i].trim();
+        if (lc) content += (content ? '\n' : '') + lc;
+        raw += '\n' + lines[i];
+        i++;
+      }
+      if (i < lines.length) {
+        raw += '\n' + lines[i];
+        i++;
+      }
+
+      if (content) {
+        formulas.push({ line: startLine, type: 'block', content, raw });
+      }
+      continue;
+    }
+
+    // Inline formulas: $...$
+    const inlineRegex = /\$([^$\n]+)\$/g;
+    let match;
+    while ((match = inlineRegex.exec(line)) !== null) {
+      formulas.push({
+        line: i + 1,
+        type: 'inline',
+        content: match[1].trim(),
+        raw: match[0],
+      });
+    }
+
+    i++;
+  }
+
+  return formulas;
 }
 
 export function parseMarkdownAssets(markdown: string): MarkdownAssets {
@@ -504,5 +576,6 @@ export function parseMarkdownAssets(markdown: string): MarkdownAssets {
     orderedLists: parseOrderedLists(markdown, lines),
     unorderedLists: parseUnorderedLists(markdown, lines),
     codeBlocks: parseCodeBlocks(markdown, lines),
+    formulas: parseFormulas(markdown, lines),
   };
 }

@@ -60,7 +60,10 @@
     "caseConvert": "Alternar maiúsculas/minúsculas",
     "caseSentence": "Primeira maiúscula",
     "caseLower": "minúsculas",
-    "caseUpper": "MAIÚSCULAS"
+    "caseUpper": "MAIÚSCULAS",
+    "highlight": "Destaque",
+    "more": "Mais",
+    "back": "Voltar"
   },
   "sidebar": {
     "title": "Elementos",
@@ -73,8 +76,9 @@
     "tables": "Tabelas",
     "quotes": "Citações",
     "orderedLists": "Listas Numeradas",
-    "unorderedLists": "Listas com Marcadores",
-    "codeBlocks": "Blocos de Código"
+    "unorderedLists": "Listas",
+    "codeBlocks": "Blocos de Código",
+    "formulas": "Fórmulas"
   },
   "fileBrowser": {
     "title": "Arquivos",

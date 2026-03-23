@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   width="20"
-   height="20"
-   viewBox="0 0 20 20"
-   fill="none"
+   viewBox="-5 -2 24 24"
+   width="24"
+   height="24"
+   fill="currentColor"
    version="1.1"
    id="svg1"
-   sodipodi:docname="Italic_icon.svg"
+   sodipodi:docname="bookmark_icon.svg"
    inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -23,9 +23,9 @@
      inkscape:pageopacity="0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#505050"
-     inkscape:zoom="41.1"
-     inkscape:cx="9.6350365"
-     inkscape:cy="10"
+     inkscape:zoom="34.25"
+     inkscape:cx="12"
+     inkscape:cy="12"
      inkscape:window-width="1920"
      inkscape:window-height="1024"
      inkscape:window-x="0"
@@ -33,8 +33,7 @@
      inkscape:window-maximized="1"
      inkscape:current-layer="svg1" />
   <path
-     d="m 8.01807,5.33594 h 6.26223 l -0.2124,1.5792 h -2.0756 l -1.4429,7.51296 h 2.0829 L 12.4272,16 H 6.16504 L 6.37012,14.4281 H 8.39443 L 9.8373,6.91514 H 7.80566 Z"
-     fill="#000000"
+     d="M3 2a1 1 0 0 0-1 1v15l2.978-2.717a3 3 0 0 1 4.044 0L12 18V3a1 1 0 0 0-1-1H3zm0-2h8a3 3 0 0 1 3 3v15a2 2 0 0 1-3.348 1.477L7.674 16.76a1 1 0 0 0-1.348 0l-2.978 2.717A2 2 0 0 1 0 18V3a3 3 0 0 1 3-3zm5 8h2a1 1 0 0 1 0 2H8v2a1 1 0 0 1-2 0v-2H4a1 1 0 1 1 0-2h2V6a1 1 0 1 1 2 0v2z"
      id="path1"
-     sodipodi:nodetypes="ccccccccccccc" />
+     style="fill:#ffffff" />
 </svg>

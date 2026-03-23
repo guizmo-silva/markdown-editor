@@ -60,7 +60,10 @@
     "caseConvert": "Groß-/Kleinschr.",
     "caseSentence": "Ersten Buchstaben groß",
     "caseLower": "kleinbuchstaben",
-    "caseUpper": "GROSSBUCHSTABEN"
+    "caseUpper": "GROSSBUCHSTABEN",
+    "highlight": "Hervorhebung",
+    "more": "Mehr",
+    "back": "Zurück"
   },
   "sidebar": {
     "title": "Elemente",
@@ -73,8 +76,9 @@
     "tables": "Tabellen",
     "quotes": "Zitate",
     "orderedLists": "Nummerierte Listen",
-    "unorderedLists": "Aufzählungslisten",
-    "codeBlocks": "Codeblöcke"
+    "unorderedLists": "Listen",
+    "codeBlocks": "Codeblöcke",
+    "formulas": "Formeln"
   },
   "fileBrowser": {
     "title": "Dateien",

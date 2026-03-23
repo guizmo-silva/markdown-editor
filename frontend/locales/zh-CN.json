@@ -60,7 +60,10 @@
     "caseConvert": "大小写转换",
     "caseSentence": "首字母大写",
     "caseLower": "全部小写",
-    "caseUpper": "全部大写"
+    "caseUpper": "全部大写",
+    "highlight": "高亮",
+    "more": "更多",
+    "back": "返回"
   },
   "sidebar": {
     "title": "元素",
@@ -73,8 +76,9 @@
     "tables": "表格",
     "quotes": "引用",
     "orderedLists": "有序列表",
-    "unorderedLists": "无序列表",
-    "codeBlocks": "代码块"
+    "unorderedLists": "列表",
+    "codeBlocks": "代码块",
+    "formulas": "公式"
   },
   "fileBrowser": {
     "title": "文件",

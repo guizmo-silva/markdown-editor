@@ -60,7 +60,10 @@
     "caseConvert": "Case conversion",
     "caseSentence": "Sentence case",
     "caseLower": "lowercase",
-    "caseUpper": "UPPERCASE"
+    "caseUpper": "UPPERCASE",
+    "highlight": "Highlight",
+    "more": "More",
+    "back": "Back"
   },
   "sidebar": {
     "title": "Assets",
@@ -73,8 +76,9 @@
     "tables": "Tables",
     "quotes": "Quotes",
     "orderedLists": "Numbered Lists",
-    "unorderedLists": "Bullet Lists",
-    "codeBlocks": "Code Blocks"
+    "unorderedLists": "Lists",
+    "codeBlocks": "Code Blocks",
+    "formulas": "Formulas"
   },
   "fileBrowser": {
     "title": "Files",

@@ -75,8 +75,6 @@ export default function Toolbar({
   const { getIconPath } = useThemedIcon();
   const { showError, showWarning } = useToast();
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
-  const [showAlertMenu, setShowAlertMenu] = useState(false);
-  const [showCharMenu, setShowCharMenu] = useState(false);
 
   // Helper to get editor handle (works with both textarea and CodeMirror)
   const getEditor = (): EditorHandle | null => {
@@ -105,20 +103,15 @@ export default function Toolbar({
   const [linkMenuPos, setLinkMenuPos] = useState({ top: 0, left: 0 });
   const [imageMenuPos, setImageMenuPos] = useState({ top: 0, left: 0 });
   const [tableMenuPos, setTableMenuPos] = useState({ top: 0, left: 0 });
-  const [alertMenuPos, setAlertMenuPos] = useState({ top: 0, left: 0 });
-  const [charMenuPos, setCharMenuPos] = useState({ top: 0, left: 0 });
   const [snippets, setSnippets] = useState<Snippet[]>(() => loadSnippets());
-  const [showSnippetsMenu, setShowSnippetsMenu] = useState(false);
-  const [snippetsMenuPos, setSnippetsMenuPos] = useState({ top: 0, left: 0 });
-  const [showCaseMenu, setShowCaseMenu] = useState(false);
-  const [caseMenuPos, setCaseMenuPos] = useState({ top: 0, left: 0 });
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [moreMenuPos, setMoreMenuPos] = useState({ top: 0, left: 0 });
+  const [moreSubmenu, setMoreSubmenu] = useState<'alerts' | 'specialChars' | 'caseConvert' | 'snippets' | null>(null);
   const [showAddSnippetModal, setShowAddSnippetModal] = useState(false);
   const [newSnippetName, setNewSnippetName] = useState('');
   const [newSnippetContent, setNewSnippetContent] = useState('');
   const [addSnippetError, setAddSnippetError] = useState('');
   const headingButtonRef = useRef<HTMLDivElement>(null);
-  const alertButtonRef = useRef<HTMLDivElement>(null);
-  const charButtonRef = useRef<HTMLDivElement>(null);
   const quoteButtonRef = useRef<HTMLDivElement>(null);
   const linkButtonRef = useRef<HTMLDivElement>(null);
   const imageButtonRef = useRef<HTMLDivElement>(null);
@@ -129,16 +122,12 @@ export default function Toolbar({
 
   // Refs for dropdown menus (needed for click outside detection with portals)
   const headingMenuRef = useRef<HTMLDivElement>(null);
-  const alertMenuRef = useRef<HTMLDivElement>(null);
-  const charMenuRef = useRef<HTMLDivElement>(null);
   const quoteMenuRef = useRef<HTMLDivElement>(null);
   const linkMenuRef = useRef<HTMLDivElement>(null);
   const imageMenuRef = useRef<HTMLDivElement>(null);
   const tableMenuRef = useRef<HTMLDivElement>(null);
-  const snippetsButtonRef = useRef<HTMLDivElement>(null);
-  const snippetsMenuRef = useRef<HTMLDivElement>(null);
-  const caseButtonRef = useRef<HTMLDivElement>(null);
-  const caseMenuRef = useRef<HTMLDivElement>(null);
+  const moreButtonRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown menus when clicking outside
   useEffect(() => {
@@ -150,13 +139,6 @@ export default function Toolbar({
         const isInsideMenu = headingMenuRef.current?.contains(target);
         if (!isInsideButton && !isInsideMenu) {
           setShowHeadingMenu(false);
-        }
-      }
-      if (showAlertMenu) {
-        const isInsideButton = alertButtonRef.current?.contains(target);
-        const isInsideMenu = alertMenuRef.current?.contains(target);
-        if (!isInsideButton && !isInsideMenu) {
-          setShowAlertMenu(false);
         }
       }
       if (showQuoteMenu) {
@@ -188,37 +170,24 @@ export default function Toolbar({
           setTableHover({ rows: 0, cols: 0 });
         }
       }
-      if (showCharMenu) {
-        const isInsideButton = charButtonRef.current?.contains(target);
-        const isInsideMenu = charMenuRef.current?.contains(target);
+      if (showMoreMenu) {
+        const isInsideButton = moreButtonRef.current?.contains(target);
+        const isInsideMenu = moreMenuRef.current?.contains(target);
         if (!isInsideButton && !isInsideMenu) {
-          setShowCharMenu(false);
-        }
-      }
-      if (showSnippetsMenu) {
-        const isInsideButton = snippetsButtonRef.current?.contains(target);
-        const isInsideMenu = snippetsMenuRef.current?.contains(target);
-        if (!isInsideButton && !isInsideMenu) {
-          setShowSnippetsMenu(false);
-        }
-      }
-      if (showCaseMenu) {
-        const isInsideButton = caseButtonRef.current?.contains(target);
-        const isInsideMenu = caseMenuRef.current?.contains(target);
-        if (!isInsideButton && !isInsideMenu) {
-          setShowCaseMenu(false);
+          setShowMoreMenu(false);
+          setMoreSubmenu(null);
         }
       }
     };
 
-    if (showHeadingMenu || showAlertMenu || showQuoteMenu || showLinkMenu || showImageMenu || showTableMenu || showCharMenu || showSnippetsMenu || showCaseMenu) {
+    if (showHeadingMenu || showQuoteMenu || showLinkMenu || showImageMenu || showTableMenu || showMoreMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showHeadingMenu, showAlertMenu, showQuoteMenu, showLinkMenu, showImageMenu, showTableMenu, showCharMenu, showSnippetsMenu, showCaseMenu]);
+  }, [showHeadingMenu, showQuoteMenu, showLinkMenu, showImageMenu, showTableMenu, showMoreMenu]);
 
   // Helper function to wrap selected text or insert at cursor
   const wrapText = (prefix: string, suffix: string, placeholder: string = '') => {
@@ -546,6 +515,88 @@ export default function Toolbar({
   const handleItalic = () => toggleFormat('*', '*', 'italic text');
   const handleStrikethrough = () => toggleFormat('~~', '~~', 'strikethrough text');
 
+  const handleHighlight = () => {
+    const editor = getEditor();
+    if (!editor) return;
+
+    const currentValue = editor.getValue ? editor.getValue() : value;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+
+    // No selection: use generic toggleFormat (handles cursor word detection)
+    if (start === end) {
+      toggleFormat('==', '==', 'destaque');
+      return;
+    }
+
+    const selectedText = currentValue.substring(start, end);
+
+    // Preserve trailing newlines (e.g. triple-click selects the line break)
+    const trailingNewlines = selectedText.match(/\n+$/)?.[0] ?? '';
+    const textToProcess = trailingNewlines ? selectedText.slice(0, -trailingNewlines.length) : selectedText;
+
+    // Peel symmetric inline formatting markers from the outside in
+    // so that == ends up adjacent to the actual words
+    const MARKERS = ['***', '**', '*', '~~', '__', '_'];
+    let outerPrefix = '';
+    let outerSuffix = '';
+    let inner = textToProcess;
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const marker of MARKERS) {
+        if (
+          inner.startsWith(marker) &&
+          inner.endsWith(marker) &&
+          inner.length > marker.length * 2
+        ) {
+          outerPrefix += marker;
+          outerSuffix = marker + outerSuffix;
+          inner = inner.slice(marker.length, inner.length - marker.length);
+          changed = true;
+          break;
+        }
+      }
+    }
+
+    // Check if highlight is already applied (== adjacent to text, inside outer markers)
+    const isInnerHighlighted =
+      inner.startsWith('==') && inner.endsWith('==') && inner.length > 4;
+
+    // Check if == is outside the selection (e.g. user selected "**text**" while ==**text**== exists)
+    const beforeSel = currentValue.substring(Math.max(0, start - 2), start);
+    const afterSel = currentValue.substring(end, end + 2);
+    const isOuterHighlighted = beforeSel === '==' && afterSel === '==';
+
+    const applyChange = (from: number, to: number, replacement: string, selStart: number, selEnd: number) => {
+      if (editor.replaceRange) {
+        editor.replaceRange(from, to, replacement);
+        setTimeout(() => { editor.setSelectionRange(selStart, selEnd); editor.focus(); }, 0);
+      } else {
+        const newText = currentValue.substring(0, from) + replacement + currentValue.substring(to);
+        onChange(newText);
+        setTimeout(() => { editor.setSelectionRange(selStart, selEnd); editor.focus(); }, 0);
+      }
+    };
+
+    if (isInnerHighlighted) {
+      // Remove == from inside the outer markers: **==text==** → **text**
+      const unwrapped = inner.slice(2, inner.length - 2);
+      const replacement = outerPrefix + unwrapped + outerSuffix + trailingNewlines;
+      applyChange(start, end, replacement, start, start + replacement.length - trailingNewlines.length);
+    } else if (isOuterHighlighted) {
+      // Remove == that are outside the selection
+      applyChange(start - 2, end + 2, textToProcess + trailingNewlines, start - 2, start - 2 + textToProcess.length);
+    } else {
+      // Apply: place == inside the outer markers, adjacent to the text
+      const replacement = outerPrefix + '==' + inner + '==' + outerSuffix + trailingNewlines;
+      const selStart = start + outerPrefix.length + 2;
+      const selEnd = selStart + inner.length;
+      applyChange(start, end, replacement, selStart, selEnd);
+    }
+  };
+
   // Heading handlers with long press support
   const handleHeading = (level?: number) => {
     const editor = getEditor();
@@ -681,7 +732,6 @@ export default function Toolbar({
 
     // Prevent more than 2 levels of nesting
     if (nestingLevel >= 2) {
-      setShowAlertMenu(false);
       return;
     }
 
@@ -727,17 +777,8 @@ export default function Toolbar({
       }, 0);
     }
 
-    setShowAlertMenu(false);
   };
 
-  const handleAlertClick = () => {
-    if (alertButtonRef.current) {
-      const rect = alertButtonRef.current.getBoundingClientRect();
-      // Align to right edge since this is the last button
-      setAlertMenuPos({ top: rect.bottom + 4, left: rect.right - 180 }); // 180px is min-width
-    }
-    setShowAlertMenu(true);
-  };
 
   const alertOptions = [
     { type: 'NOTE', label: 'Note', description: t('toolbar.alertNote'), color: '#0969da' },
@@ -1970,7 +2011,6 @@ export default function Toolbar({
         editor.focus();
       }, 0);
     }
-    setShowCharMenu(false);
   };
 
   const handleCaseConversion = (type: 'sentence' | 'lower' | 'upper') => {
@@ -1986,7 +2026,7 @@ export default function Toolbar({
       let wordEnd = start;
       while (wordStart > 0 && !/\s/.test(currentValue[wordStart - 1])) wordStart--;
       while (wordEnd < currentValue.length && !/\s/.test(currentValue[wordEnd])) wordEnd++;
-      if (wordStart === wordEnd) { setShowCaseMenu(false); return; }
+      if (wordStart === wordEnd) { return; }
       start = wordStart;
       end = wordEnd;
     }
@@ -2005,37 +2045,25 @@ export default function Toolbar({
       onChange(newText);
       setTimeout(() => { editor.setSelectionRange(start, start + converted.length); editor.focus(); }, 0);
     }
-    setShowCaseMenu(false);
   };
 
-  const handleCaseClick = () => {
-    if (caseButtonRef.current) {
-      const rect = caseButtonRef.current.getBoundingClientRect();
-      setCaseMenuPos({ top: rect.bottom + 4, left: rect.left });
+  const handleMoreButtonClick = (e: React.MouseEvent) => {
+    if (showMoreMenu) {
+      setShowMoreMenu(false);
+      setMoreSubmenu(null);
+      return;
     }
-    setShowCaseMenu(!showCaseMenu);
-  };
-
-  const handleCharClick = () => {
-    if (charButtonRef.current) {
-      const rect = charButtonRef.current.getBoundingClientRect();
-      setCharMenuPos({ top: rect.bottom + 4, left: rect.left });
-    }
-    setShowCharMenu(!showCharMenu);
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setMoreMenuPos({ top: rect.bottom + 4, left: rect.left });
+    setShowMoreMenu(true);
+    setMoreSubmenu(null);
   };
 
   // Snippets handlers
-  const handleOpenSnippetsMenu = () => {
-    if (snippetsButtonRef.current) {
-      const rect = snippetsButtonRef.current.getBoundingClientRect();
-      setSnippetsMenuPos({ top: rect.bottom + 4, left: rect.left });
-    }
-    setShowSnippetsMenu(prev => !prev);
-  };
-
   const handleInsertSnippet = (content: string) => {
     insertText(content);
-    setShowSnippetsMenu(false);
+    setShowMoreMenu(false);
+    setMoreSubmenu(null);
   };
 
   const handleDeleteSnippet = (id: string, e: React.MouseEvent) => {
@@ -2068,53 +2096,31 @@ export default function Toolbar({
     setShowAddSnippetModal(false);
   };
 
-  // ESC key closes snippets modal/dropdown
+  // ESC key closes modal/dropdown
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (showAddSnippetModal) {
           setShowAddSnippetModal(false);
           setAddSnippetError('');
-        } else if (showSnippetsMenu) {
-          setShowSnippetsMenu(false);
+        } else if (showMoreMenu) {
+          setShowMoreMenu(false);
+          setMoreSubmenu(null);
         }
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showAddSnippetModal, showSnippetsMenu]);
+  }, [showAddSnippetModal, showMoreMenu]);
 
-  // Simple formatting buttons (don't create sidebar elements)
-  const simpleFormattingButtons = [
-    { icon: getIconPath('Bold_icon.svg'), translationKey: 'toolbar.bold', onClick: handleBold, shortcut: 'Ctrl+B' },
-    { icon: getIconPath('Italic_icon.svg'), translationKey: 'toolbar.italic', onClick: handleItalic, shortcut: 'Ctrl+I' },
-    { icon: getIconPath('Strike_icon.svg'), translationKey: 'toolbar.strikethrough', onClick: handleStrikethrough, shortcut: 'Ctrl+Shift+X' },
-    { icon: getIconPath('InLineCode_icon.svg'), translationKey: 'toolbar.code', onClick: handleInlineCode },
-    { icon: getIconPath('Sobrescrito_icon.svg'), translationKey: 'toolbar.superscript', onClick: handleSuperscript },
-    { icon: getIconPath('Subescrito_icon.svg'), translationKey: 'toolbar.subscript', onClick: handleSubscript },
-    { icon: getIconPath('Line_icon.svg'), translationKey: 'toolbar.horizontalRule', onClick: handleHorizontalLine },
-  ];
-
-  // Buttons that create sidebar elements (lists)
-  const listButtons = [
-    { icon: getIconPath('NumberedList_icon.svg'), translationKey: 'toolbar.orderedList', onClick: handleNumberedList },
-    { icon: getIconPath('List_icon.svg'), translationKey: 'toolbar.unorderedList', onClick: handleBulletList },
-    { icon: getIconPath('Task_icon.svg'), translationKey: 'toolbar.taskList', onClick: handleTask },
-  ];
-
-  // Other sidebar element buttons
-  const otherSidebarButtons = [
-    { icon: getIconPath('CodeBlock_icon.svg'), translationKey: 'toolbar.codeBlock', onClick: handleCodeBlock },
-    { icon: getIconPath('Footnote_icon.svg'), translationKey: 'toolbar.footnote', onClick: handleFootnote },
-    { icon: getIconPath('Details_icon.svg'), translationKey: 'toolbar.details', onClick: handleDetails },
-  ];
 
   const GRID_COLS = 10;
   const GRID_ROWS = 8;
 
-  const renderButton = (button: { icon: string; translationKey: string; onClick: () => void; shortcut?: string }, index: number) => {
+  const renderButton = (button: { icon: string; translationKey: string; onClick: () => void; shortcut?: string; iconClassName?: string; gfm?: boolean; badge?: string }, index: number) => {
     const label = t(button.translationKey);
-    const title = button.shortcut ? `${label} (${button.shortcut})` : label;
+    const badgeSuffix = button.gfm ? ' (GFM)' : button.badge ? ` (${button.badge})` : '';
+    const title = button.shortcut ? `${label}${badgeSuffix} (${button.shortcut})` : `${label}${badgeSuffix}`;
     return (
       <button
         key={index}
@@ -2123,7 +2129,7 @@ export default function Toolbar({
         aria-label={label}
         title={title}
       >
-        <img src={button.icon} alt={label} className="w-6 h-6" />
+        <img src={button.icon} alt={label} className={button.iconClassName ?? 'w-6 h-6'} />
       </button>
     );
   };
@@ -2131,10 +2137,16 @@ export default function Toolbar({
   return (
     <>
       <div className="min-h-[40px] bg-[var(--bg-secondary)] flex items-center justify-center flex-wrap px-3 py-2 gap-[5px] border-b border-[var(--border-editor)]">
-        {/* Simple formatting buttons */}
-        {simpleFormattingButtons.map(renderButton)}
+        {/* Grupo 1: Formatação inline */}
+        {renderButton({ icon: getIconPath('Bold_icon.svg'), translationKey: 'toolbar.bold', onClick: handleBold, shortcut: 'Ctrl+B' }, 0)}
+        {renderButton({ icon: getIconPath('Italic_icon.svg'), translationKey: 'toolbar.italic', onClick: handleItalic, shortcut: 'Ctrl+I' }, 1)}
+        {renderButton({ icon: getIconPath('Strike_icon.svg'), translationKey: 'toolbar.strikethrough', onClick: handleStrikethrough, shortcut: 'Ctrl+Shift+X', gfm: true }, 2)}
+        {renderButton({ icon: getIconPath('InLineCode_icon.svg'), translationKey: 'toolbar.code', onClick: handleInlineCode }, 3)}
+        {renderButton({ icon: getIconPath('Sobrescrito_icon.svg'), translationKey: 'toolbar.superscript', onClick: handleSuperscript, badge: 'HTML' }, 4)}
+        {renderButton({ icon: getIconPath('Subescrito_icon.svg'), translationKey: 'toolbar.subscript', onClick: handleSubscript, badge: 'HTML' }, 5)}
+        {renderButton({ icon: getIconPath('highlight_icon.svg'), translationKey: 'toolbar.highlight', onClick: handleHighlight, iconClassName: 'w-[22px] h-[22px]', badge: 'Markd. Extendido' }, 6)}
 
-        {/* Vertical separator */}
+        {/* Divisória 1 */}
         <div className="w-px h-5 bg-[var(--split-line)] mx-3 flex-shrink-0" />
 
         {/* Heading button with dropdown */}
@@ -2205,8 +2217,14 @@ export default function Toolbar({
           )}
         </div>
 
-        {/* List buttons */}
-        {listButtons.map((button, index) => renderButton(button, index + 100))}
+        {/* Grupo 2: Estrutura — List, OrderedList, Details, CodeBlock */}
+        {renderButton({ icon: getIconPath('List_icon.svg'), translationKey: 'toolbar.unorderedList', onClick: handleBulletList }, 7)}
+        {renderButton({ icon: getIconPath('NumberedList_icon.svg'), translationKey: 'toolbar.orderedList', onClick: handleNumberedList }, 8)}
+        {renderButton({ icon: getIconPath('Details_icon.svg'), translationKey: 'toolbar.details', onClick: handleDetails, iconClassName: 'w-[26px] h-[26px]', badge: 'HTML' }, 9)}
+        {renderButton({ icon: getIconPath('CodeBlock_icon.svg'), translationKey: 'toolbar.codeBlock', onClick: handleCodeBlock, iconClassName: 'w-[20px] h-[20px]' }, 10)}
+
+        {/* Divisória 2 */}
+        <div className="w-px h-5 bg-[var(--split-line)] mx-3 flex-shrink-0" />
 
         {/* Link button with dropdown */}
         <div className="relative flex-shrink-0" ref={linkButtonRef}>
@@ -2218,7 +2236,7 @@ export default function Toolbar({
             aria-label={t('toolbar.link')}
             title={`${t('toolbar.link')} (Ctrl+K)`}
           >
-            <img src={getIconPath('URL_icon.svg')} alt={t('toolbar.link')} className="w-6 h-6" />
+            <img src={getIconPath('URL_icon.svg')} alt={t('toolbar.link')} className="w-[26px] h-[26px]" />
           </button>
 
           {showLinkMenu && isMounted && createPortal(
@@ -2295,7 +2313,7 @@ export default function Toolbar({
             onClick={handleTableClick}
             className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
             aria-label={t('toolbar.table')}
-            title={t('toolbar.table')}
+            title={`${t('toolbar.table')} (GFM)`}
           >
             <img src={getIconPath('Table_icon.svg')} alt={t('toolbar.table')} className="w-6 h-6" />
           </button>
@@ -2354,184 +2372,215 @@ export default function Toolbar({
           )}
         </div>
 
-        {/* Other sidebar element buttons */}
-        {otherSidebarButtons.map((button, index) => renderButton(button, index + 200))}
+        {/* Grupo 3: Inserir — Footnote, Checkbox */}
+        {renderButton({ icon: getIconPath('Footnote_icon.svg'), translationKey: 'toolbar.footnote', onClick: handleFootnote, badge: 'Markd. Extendido' }, 11)}
+        {renderButton({ icon: getIconPath('Task_icon.svg'), translationKey: 'toolbar.taskList', onClick: handleTask, iconClassName: 'w-[20px] h-[20px]', gfm: true }, 12)}
 
-        {/* Snippets button with dropdown */}
-        <div ref={snippetsButtonRef} className="flex-shrink-0">
+        {/* Botão "+" — overflow menu */}
+        <div ref={moreButtonRef} className="flex-shrink-0">
           <button
-            onClick={handleOpenSnippetsMenu}
+            onClick={handleMoreButtonClick}
             className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
-            aria-label={t('toolbar.snippets')}
-            title={t('toolbar.snippets')}
+            aria-label={t('toolbar.more')}
+            title={t('toolbar.more')}
           >
-            <svg viewBox="-5 -2 24 24" fill="currentColor" className="w-6 h-6">
-              <path d="M3 2a1 1 0 0 0-1 1v15l2.978-2.717a3 3 0 0 1 4.044 0L12 18V3a1 1 0 0 0-1-1H3zm0-2h8a3 3 0 0 1 3 3v15a2 2 0 0 1-3.348 1.477L7.674 16.76a1 1 0 0 0-1.348 0l-2.978 2.717A2 2 0 0 1 0 18V3a3 3 0 0 1 3-3zm5 8h2a1 1 0 0 1 0 2H8v2a1 1 0 0 1-2 0v-2H4a1 1 0 1 1 0-2h2V6a1 1 0 1 1 2 0v2z"/>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"/>
             </svg>
           </button>
         </div>
+      </div>
 
-        {showSnippetsMenu && isMounted && createPortal(
-          <div
-            ref={snippetsMenuRef}
-            className="fixed z-[9999] w-72 bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-xl overflow-hidden"
-            style={{ top: snippetsMenuPos.top, left: snippetsMenuPos.left }}
-          >
-            <div className="max-h-[260px] overflow-y-auto">
-              {snippets.length === 0 ? (
-                <p className="text-xs text-[var(--text-secondary)] px-3 py-3 text-center">
-                  {t('toolbar.snippetsEmpty')}
-                </p>
-              ) : (
-                snippets.map(snippet => (
-                  <div
-                    key={snippet.id}
-                    className="flex items-center gap-1 px-3 py-2 hover:bg-[var(--bg-secondary)] cursor-pointer group border-b border-[var(--border-primary)] last:border-0"
-                    onClick={() => handleInsertSnippet(snippet.content)}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-[var(--text-primary)] truncate">{snippet.name}</p>
-                      <p className="text-[10px] text-[var(--text-secondary)] truncate">
-                        {snippet.content.split('\n')[0].slice(0, 40)}
-                      </p>
+      {/* Portal unificado do "+" */}
+      {showMoreMenu && isMounted && createPortal(
+        <div
+          ref={moreMenuRef}
+          style={{ top: moreMenuPos.top, left: moreMenuPos.left }}
+          className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] min-w-[200px]"
+        >
+          {moreSubmenu === null ? (
+            /* Lista principal */
+            <div className="p-1">
+              {/* Linha Horizontal — ação direta */}
+              <button
+                onClick={() => { handleHorizontalLine(); setShowMoreMenu(false); }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 rounded hover:bg-[var(--hover-bg)] text-sm text-[var(--text-primary)]"
+              >
+                <img src={getIconPath('Line_icon.svg')} alt="" className="w-5 h-5" />
+                <span>{t('toolbar.horizontalRule')}</span>
+              </button>
+
+              {/* Caracteres Especiais → submenu */}
+              <button
+                onClick={() => setMoreSubmenu('specialChars')}
+                className="flex items-center gap-2 w-full px-3 py-1.5 rounded hover:bg-[var(--hover-bg)] text-sm text-[var(--text-primary)] justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <img src={getIconPath('SpecialChar_icon.svg')} alt="" className="w-5 h-5" />
+                  {t('toolbar.specialChars')}
+                </span>
+                <span className="text-[var(--text-secondary)]">›</span>
+              </button>
+
+              {/* Converter Maiúsculas → submenu */}
+              <button
+                onClick={() => setMoreSubmenu('caseConvert')}
+                className="flex items-center gap-2 w-full px-3 py-1.5 rounded hover:bg-[var(--hover-bg)] text-sm text-[var(--text-primary)] justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <img src={getIconPath('CaseConvert_icon.svg')} alt="" className="w-5 h-5" />
+                  {t('toolbar.caseConvert')}
+                </span>
+                <span className="text-[var(--text-secondary)]">›</span>
+              </button>
+
+              {/* Alertas → submenu */}
+              <button
+                onClick={() => setMoreSubmenu('alerts')}
+                className="flex items-center gap-2 w-full px-3 py-1.5 rounded hover:bg-[var(--hover-bg)] text-sm text-[var(--text-primary)] justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <img src={getIconPath('Alerts_icon.svg')} alt="" className="w-5 h-5" />
+                  {t('toolbar.alert')} (GFM)
+                </span>
+                <span className="text-[var(--text-secondary)]">›</span>
+              </button>
+
+              {/* Snippets → submenu */}
+              <button
+                onClick={() => setMoreSubmenu('snippets')}
+                className="flex items-center gap-2 w-full px-3 py-1.5 rounded hover:bg-[var(--hover-bg)] text-sm text-[var(--text-primary)] justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <svg viewBox="-5 -2 24 24" fill="currentColor" className="w-5 h-5 flex-shrink-0">
+                    <path d="M3 2a1 1 0 0 0-1 1v15l2.978-2.717a3 3 0 0 1 4.044 0L12 18V3a1 1 0 0 0-1-1H3zm0-2h8a3 3 0 0 1 3 3v15a2 2 0 0 1-3.348 1.477L7.674 16.76a1 1 0 0 0-1.348 0l-2.978 2.717A2 2 0 0 1 0 18V3a3 3 0 0 1 3-3zm5 8h2a1 1 0 0 1 0 2H8v2a1 1 0 0 1-2 0v-2H4a1 1 0 1 1 0-2h2V6a1 1 0 1 1 2 0v2z"/>
+                  </svg>
+                  {t('toolbar.snippets')}
+                </span>
+                <span className="text-[var(--text-secondary)]">›</span>
+              </button>
+            </div>
+          ) : (
+            /* Sub-painel */
+            <div>
+              {/* Cabeçalho de voltar */}
+              <button
+                onClick={() => setMoreSubmenu(null)}
+                className="flex items-center gap-1 px-3 py-2 w-full text-sm text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] border-b border-[var(--border-primary)]"
+              >
+                <span>‹</span> {t('toolbar.back')}
+              </button>
+
+              {/* Conteúdo do sub-painel */}
+              {moreSubmenu === 'specialChars' && (
+                <div className="p-2 w-[220px]">
+                  {specialCharCategories.map((category) => (
+                    <div key={category.label}>
+                      <div className="text-[10px] text-[var(--text-muted)] px-1 pt-1 pb-0.5">{category.label}</div>
+                      <div className="grid grid-cols-6 gap-1">
+                        {category.chars.map((item) => (
+                          <button
+                            key={item.char}
+                            onClick={() => { insertSpecialChar(item.char); setShowMoreMenu(false); setMoreSubmenu(null); }}
+                            title={item.title}
+                            className="w-8 h-8 flex items-center justify-center text-base text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] rounded transition-colors"
+                          >
+                            {item.char}
+                          </button>
+                        ))}
+                      </div>
                     </div>
+                  ))}
+                </div>
+              )}
+
+              {moreSubmenu === 'caseConvert' && (
+                <div className="p-1">
+                  {[
+                    { type: 'sentence', label: t('toolbar.caseSentence'), preview: 'Aa' },
+                    { type: 'lower',    label: t('toolbar.caseLower'),    preview: 'aa' },
+                    { type: 'upper',    label: t('toolbar.caseUpper'),    preview: 'AA' },
+                  ].map(({ type, label, preview }) => (
                     <button
-                      onClick={(e) => handleDeleteSnippet(snippet.id, e)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 hover:text-red-500 text-[var(--text-secondary)] transition-opacity flex-shrink-0"
-                      title={t('toolbar.snippetsDelete')}
+                      key={type}
+                      onClick={() => { handleCaseConversion(type as 'sentence' | 'lower' | 'upper'); setShowMoreMenu(false); setMoreSubmenu(null); }}
+                      className="w-full px-3 py-1.5 text-left hover:bg-[var(--hover-bg)] flex items-center gap-2 text-sm rounded"
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3.5 h-3.5">
-                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"/>
-                      </svg>
+                      <span className="font-mono text-[var(--text-secondary)] w-6">{preview}</span>
+                      <span className="text-[var(--text-primary)]">{label}</span>
                     </button>
+                  ))}
+                </div>
+              )}
+
+              {moreSubmenu === 'alerts' && (
+                <div className="p-1">
+                  {alertOptions.map((option) => (
+                    <button
+                      key={option.type}
+                      onClick={() => { handleAlert(option.type); setShowMoreMenu(false); setMoreSubmenu(null); }}
+                      className="w-full px-3 py-1.5 text-left hover:bg-[var(--hover-bg)] flex items-center gap-2 text-sm rounded"
+                    >
+                      <span
+                        className="w-3 h-3 rounded-sm flex-shrink-0"
+                        style={{ backgroundColor: option.color }}
+                      />
+                      <span className="font-semibold text-[var(--text-secondary)]">{option.label}</span>
+                      <span className="text-[var(--text-muted)] text-xs">{option.description}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {moreSubmenu === 'snippets' && (
+                <div className="w-72">
+                  <div className="max-h-[260px] overflow-y-auto">
+                    {snippets.length === 0 ? (
+                      <p className="text-xs text-[var(--text-secondary)] px-3 py-3 text-center">
+                        {t('toolbar.snippetsEmpty')}
+                      </p>
+                    ) : (
+                      snippets.map(snippet => (
+                        <div
+                          key={snippet.id}
+                          className="flex items-center gap-1 px-3 py-2 hover:bg-[var(--bg-secondary)] cursor-pointer group border-b border-[var(--border-primary)] last:border-0"
+                          onClick={() => handleInsertSnippet(snippet.content)}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-[var(--text-primary)] truncate">{snippet.name}</p>
+                            <p className="text-[10px] text-[var(--text-secondary)] truncate">
+                              {snippet.content.split('\n')[0].slice(0, 40)}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => handleDeleteSnippet(snippet.id, e)}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 hover:text-red-500 text-[var(--text-secondary)] transition-opacity flex-shrink-0"
+                            title={t('toolbar.snippetsDelete')}
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3.5 h-3.5">
+                              <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"/>
+                            </svg>
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
-                ))
+                  <button
+                    onClick={() => { setShowMoreMenu(false); setMoreSubmenu(null); setNewSnippetName(''); setNewSnippetContent(''); setAddSnippetError(''); setShowAddSnippetModal(true); }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] border-t border-[var(--border-primary)] transition-colors"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3.5 h-3.5 flex-shrink-0">
+                      <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeWidth="1.5"/>
+                    </svg>
+                    {t('toolbar.snippetsAdd')}
+                  </button>
+                </div>
               )}
             </div>
-            <button
-              onClick={() => { setShowSnippetsMenu(false); setNewSnippetName(''); setNewSnippetContent(''); setAddSnippetError(''); setShowAddSnippetModal(true); }}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] border-t border-[var(--border-primary)] transition-colors"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3.5 h-3.5 flex-shrink-0">
-                <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeWidth="1.5"/>
-              </svg>
-              {t('toolbar.snippetsAdd')}
-            </button>
-          </div>,
-          document.body
-        )}
-
-        {/* Special characters button with dropdown */}
-        <div className="relative flex-shrink-0" ref={charButtonRef}>
-          <button
-            onClick={handleCharClick}
-            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
-            aria-label={t('toolbar.specialChars')}
-            title={t('toolbar.specialChars')}
-          >
-            <img src={getIconPath('SpecialChar_icon.svg')} alt={t('toolbar.specialChars')} className="w-6 h-6" />
-          </button>
-
-          {showCharMenu && isMounted && createPortal(
-            <div
-              ref={charMenuRef}
-              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] p-2 w-[220px]"
-              style={{ top: charMenuPos.top, left: charMenuPos.left }}
-            >
-              {specialCharCategories.map((category) => (
-                <div key={category.label}>
-                  <div className="text-[10px] text-[var(--text-muted)] px-1 pt-1 pb-0.5">{category.label}</div>
-                  <div className="grid grid-cols-6 gap-1">
-                    {category.chars.map((item) => (
-                      <button
-                        key={item.char}
-                        onClick={() => insertSpecialChar(item.char)}
-                        title={item.title}
-                        className="w-8 h-8 flex items-center justify-center text-base text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] rounded transition-colors"
-                      >
-                        {item.char}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>,
-            document.body
           )}
-        </div>
-
-        {/* Case conversion button with dropdown */}
-        <div className="relative flex-shrink-0" ref={caseButtonRef}>
-          <button
-            onClick={handleCaseClick}
-            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
-            aria-label={t('toolbar.caseConvert')}
-            title={t('toolbar.caseConvert')}
-          >
-            <img src={getIconPath('CaseConvert_icon.svg')} alt={t('toolbar.caseConvert')} className="w-6 h-6" />
-          </button>
-
-          {showCaseMenu && isMounted && createPortal(
-            <div
-              ref={caseMenuRef}
-              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] min-w-[160px] overflow-hidden"
-              style={{ top: caseMenuPos.top, left: caseMenuPos.left }}
-            >
-              {[
-                { type: 'sentence', label: t('toolbar.caseSentence'), preview: 'Aa' },
-                { type: 'lower',    label: t('toolbar.caseLower'),    preview: 'aa' },
-                { type: 'upper',    label: t('toolbar.caseUpper'),    preview: 'AA' },
-              ].map(({ type, label, preview }) => (
-                <button
-                  key={type}
-                  onClick={() => handleCaseConversion(type as 'sentence' | 'lower' | 'upper')}
-                  className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
-                >
-                  <span className="font-mono text-[var(--text-secondary)] w-6">{preview}</span>
-                  <span className="text-[var(--text-primary)]">{label}</span>
-                </button>
-              ))}
-            </div>,
-            document.body
-          )}
-        </div>
-
-        {/* Alert button with dropdown */}
-        <div className="relative flex-shrink-0" ref={alertButtonRef}>
-          <button
-            onClick={handleAlertClick}
-            className="w-[30px] h-[30px] flex items-center justify-center hover:bg-[var(--hover-bg)] rounded transition-colors"
-            aria-label={t('toolbar.alert')}
-            title={t('toolbar.alert')}
-          >
-            <img src={getIconPath('Alerts_icon.svg')} alt={t('toolbar.alert')} className="w-6 h-6" />
-          </button>
-
-          {showAlertMenu && isMounted && createPortal(
-            <div
-              ref={alertMenuRef}
-              className="fixed bg-[var(--dropdown-bg)] border border-[var(--border-primary)] rounded-lg shadow-lg z-[9999] min-w-[180px] overflow-hidden"
-              style={{ top: alertMenuPos.top, left: alertMenuPos.left }}
-            >
-              {alertOptions.map((option) => (
-                <button
-                  key={option.type}
-                  onClick={() => handleAlert(option.type)}
-                  className="w-full px-3 py-1.5 text-left hover:bg-[var(--bg-secondary)] flex items-center gap-2 text-sm"
-                >
-                  <span
-                    className="w-3 h-3 rounded-sm flex-shrink-0"
-                    style={{ backgroundColor: option.color }}
-                  />
-                  <span className="font-semibold text-[var(--text-secondary)]">{option.label}</span>
-                  <span className="text-[var(--text-muted)] text-xs">{option.description}</span>
-                </button>
-              ))}
-            </div>,
-            document.body
-          )}
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
 
       {/* Modal for linked image */}
       {showImageModal && (

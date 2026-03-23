@@ -9,7 +9,7 @@ import { ViewToggle, ViewMode } from '@/components/ViewToggle';
 import { parseMarkdownAssets, type MarkdownAssets } from '@/utils/markdownParser';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 
-type SectionId = 'headings' | 'images' | 'links' | 'alerts' | 'footnotes' | 'tables' | 'quotes' | 'orderedLists' | 'unorderedLists' | 'codeBlocks';
+type SectionId = 'headings' | 'links' | 'images' | 'quotes' | 'unorderedLists' | 'orderedLists' | 'codeBlocks' | 'tables' | 'footnotes' | 'alerts' | 'formulas';
 
 function SidebarItemText({ children }: { children: React.ReactNode }) {
   return (
@@ -75,16 +75,17 @@ export default function AssetsSidebar({
 
   // State to track which sections are open
   const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>({
-    headings: true, // Default open
-    images: false,
+    headings: true,
     links: false,
-    alerts: false,
-    footnotes: false,
-    tables: false,
+    images: false,
     quotes: false,
-    orderedLists: false,
     unorderedLists: false,
+    orderedLists: false,
     codeBlocks: false,
+    tables: false,
+    footnotes: false,
+    alerts: false,
+    formulas: false,
   });
 
   // Trigger for collapsing all files in FileBrowser
@@ -112,15 +113,16 @@ export default function AssetsSidebar({
     if (anyOpen) {
       setOpenSections({
         headings: false,
-        images: false,
         links: false,
-        alerts: false,
-        footnotes: false,
-        tables: false,
+        images: false,
         quotes: false,
-        orderedLists: false,
         unorderedLists: false,
+        orderedLists: false,
         codeBlocks: false,
+        tables: false,
+        footnotes: false,
+        alerts: false,
+        formulas: false,
       });
     }
   };
@@ -247,37 +249,6 @@ export default function AssetsSidebar({
             </AssetSection>
           )}
 
-          {/* Images Section */}
-          {assets.images.length > 0 && (
-            <AssetSection title={t('sidebar.images', 'Imagens')} count={assets.images.length} mdSymbol="![]" isOpen={openSections.images} onToggle={(isOpen) => handleSectionToggle('images', isOpen)}>
-              {assets.images.map((image, index) => {
-                const isLast = index === assets.images.length - 1;
-                return (
-                  <div
-                    key={index}
-                    onClick={() => handleItemClick(image.line)}
-                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                  >
-                    {/* Horizontal connector from vertical line to item */}
-                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
-
-                    <div className="mb-1">
-                      <SidebarItemText>{image.alt}</SidebarItemText>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="text-[10px] text-[var(--text-secondary)] truncate flex-1 min-w-0" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {image.url}
-                      </div>
-                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {image.line}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </AssetSection>
-          )}
-
           {/* Links Section */}
           {assets.links.length > 0 && (
             <AssetSection title={t('sidebar.links', 'Links')} count={assets.links.length} mdSymbol="[]()" isOpen={openSections.links} onToggle={(isOpen) => handleSectionToggle('links', isOpen)}>
@@ -318,103 +289,30 @@ export default function AssetsSidebar({
             </AssetSection>
           )}
 
-          {/* Alerts Section */}
-          {assets.alerts.length > 0 && (
-            <AssetSection title={t('sidebar.alerts', 'Alerts')} count={assets.alerts.length} mdSymbol="[!]" isOpen={openSections.alerts} onToggle={(isOpen) => handleSectionToggle('alerts', isOpen)}>
-              {assets.alerts.map((alert, index) => {
-                const isLast = index === assets.alerts.length - 1;
+          {/* Images Section */}
+          {assets.images.length > 0 && (
+            <AssetSection title={t('sidebar.images', 'Imagens')} count={assets.images.length} mdSymbol="![]" isOpen={openSections.images} onToggle={(isOpen) => handleSectionToggle('images', isOpen)}>
+              {assets.images.map((image, index) => {
+                const isLast = index === assets.images.length - 1;
                 return (
                   <div
                     key={index}
-                    onClick={() => handleItemClick(alert.line)}
+                    onClick={() => handleItemClick(image.line)}
                     className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
                   >
                     {/* Horizontal connector from vertical line to item */}
                     <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
 
-                    <div className="flex items-start gap-1.5 mb-1">
-                      <span
-                        className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                          alert.type === 'NOTE' ? 'bg-blue-100 text-blue-800' :
-                          alert.type === 'TIP' ? 'bg-green-100 text-green-800' :
-                          alert.type === 'IMPORTANT' ? 'bg-purple-100 text-purple-800' :
-                          alert.type === 'WARNING' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}
-                        style={{ fontFamily: 'Roboto Mono, monospace' }}
-                      >
-                        {alert.type}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <SidebarItemText>{alert.content}</SidebarItemText>
-                      </div>
-                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {alert.line}
-                      </span>
+                    <div className="mb-1">
+                      <SidebarItemText>{image.alt}</SidebarItemText>
                     </div>
-                  </div>
-                );
-              })}
-            </AssetSection>
-          )}
-
-          {/* Footnotes Section */}
-          {assets.footnotes.length > 0 && (
-            <AssetSection title={t('sidebar.footnotes', 'Footnotes')} count={assets.footnotes.length} mdSymbol="[^]" isOpen={openSections.footnotes} onToggle={(isOpen) => handleSectionToggle('footnotes', isOpen)}>
-              {assets.footnotes.map((footnote, index) => {
-                const isLast = index === assets.footnotes.length - 1;
-                return (
-                  <div
-                    key={index}
-                    onClick={() => handleItemClick(footnote.line)}
-                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                  >
-                    {/* Horizontal connector from vertical line to item */}
-                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
-
-                    <div className="flex items-start gap-1.5 mb-1">
-                      <span className="flex-shrink-0 text-[11px] text-[var(--text-primary)] font-medium mt-[1px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        [^{footnote.id}]
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        {footnote.definition && (
-                          <SidebarItemText>{footnote.definition}</SidebarItemText>
-                        )}
+                    <div className="flex items-center gap-1">
+                      <div className="text-[10px] text-[var(--text-secondary)] truncate flex-1 min-w-0" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {image.url}
                       </div>
-                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {footnote.line}
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {image.line}
                       </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </AssetSection>
-          )}
-
-          {/* Tables Section */}
-          {assets.tables.length > 0 && (
-            <AssetSection title={t('sidebar.tables', 'Tables')} count={assets.tables.length} mdSymbol="|" isOpen={openSections.tables} onToggle={(isOpen) => handleSectionToggle('tables', isOpen)}>
-              {assets.tables.map((table, index) => {
-                const isLast = index === assets.tables.length - 1;
-                return (
-                  <div
-                    key={index}
-                    onClick={() => handleItemClick(table.line)}
-                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                  >
-                    {/* Horizontal connector from vertical line to item */}
-                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
-
-                    <div className="flex items-start gap-1.5 mb-1">
-                      <div className="flex-1 min-w-0">
-                        <SidebarItemText>{table.header}</SidebarItemText>
-                      </div>
-                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                        {table.line}
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
-                      {table.rows} rows × {table.cols} columns
                     </div>
                   </div>
                 );
@@ -450,11 +348,11 @@ export default function AssetsSidebar({
             </AssetSection>
           )}
 
-          {/* Ordered Lists Section */}
-          {assets.orderedLists.length > 0 && (
-            <AssetSection title={t('sidebar.orderedLists', 'Numbered Lists')} count={assets.orderedLists.length} mdSymbol="1." isOpen={openSections.orderedLists} onToggle={(isOpen) => handleSectionToggle('orderedLists', isOpen)}>
-              {assets.orderedLists.map((list, index) => {
-                const isLast = index === assets.orderedLists.length - 1;
+          {/* Unordered Lists Section */}
+          {assets.unorderedLists.length > 0 && (
+            <AssetSection title={t('sidebar.unorderedLists', 'Listas')} count={assets.unorderedLists.length} mdSymbol="-" isOpen={openSections.unorderedLists} onToggle={(isOpen) => handleSectionToggle('unorderedLists', isOpen)}>
+              {assets.unorderedLists.map((list, index) => {
+                const isLast = index === assets.unorderedLists.length - 1;
                 return (
                   <div
                     key={index}
@@ -481,11 +379,11 @@ export default function AssetsSidebar({
             </AssetSection>
           )}
 
-          {/* Unordered Lists Section */}
-          {assets.unorderedLists.length > 0 && (
-            <AssetSection title={t('sidebar.unorderedLists', 'Bullet Lists')} count={assets.unorderedLists.length} mdSymbol="-" isOpen={openSections.unorderedLists} onToggle={(isOpen) => handleSectionToggle('unorderedLists', isOpen)}>
-              {assets.unorderedLists.map((list, index) => {
-                const isLast = index === assets.unorderedLists.length - 1;
+          {/* Ordered Lists Section */}
+          {assets.orderedLists.length > 0 && (
+            <AssetSection title={t('sidebar.orderedLists', 'Numbered Lists')} count={assets.orderedLists.length} mdSymbol="1." isOpen={openSections.orderedLists} onToggle={(isOpen) => handleSectionToggle('orderedLists', isOpen)}>
+              {assets.orderedLists.map((list, index) => {
+                const isLast = index === assets.orderedLists.length - 1;
                 return (
                   <div
                     key={index}
@@ -538,6 +436,141 @@ export default function AssetsSidebar({
                       </div>
                       <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                         {codeBlock.line}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </AssetSection>
+          )}
+
+          {/* Tables Section */}
+          {assets.tables.length > 0 && (
+            <AssetSection title={t('sidebar.tables', 'Tables')} count={assets.tables.length} mdSymbol="|" isOpen={openSections.tables} onToggle={(isOpen) => handleSectionToggle('tables', isOpen)}>
+              {assets.tables.map((table, index) => {
+                const isLast = index === assets.tables.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(table.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+
+                    <div className="flex items-start gap-1.5 mb-1">
+                      <div className="flex-1 min-w-0">
+                        <SidebarItemText>{table.header}</SidebarItemText>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {table.line}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-[var(--text-secondary)]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                      {table.rows} rows × {table.cols} columns
+                    </div>
+                  </div>
+                );
+              })}
+            </AssetSection>
+          )}
+
+          {/* Footnotes Section */}
+          {assets.footnotes.length > 0 && (
+            <AssetSection title={t('sidebar.footnotes', 'Footnotes')} count={assets.footnotes.length} mdSymbol="[^]" isOpen={openSections.footnotes} onToggle={(isOpen) => handleSectionToggle('footnotes', isOpen)}>
+              {assets.footnotes.map((footnote, index) => {
+                const isLast = index === assets.footnotes.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(footnote.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+
+                    <div className="flex items-start gap-1.5 mb-1">
+                      <span className="flex-shrink-0 text-[11px] text-[var(--text-primary)] font-medium mt-[1px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        [^{footnote.id}]
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        {footnote.definition && (
+                          <SidebarItemText>{footnote.definition}</SidebarItemText>
+                        )}
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {footnote.line}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </AssetSection>
+          )}
+
+          {/* Alerts Section */}
+          {assets.alerts.length > 0 && (
+            <AssetSection title={t('sidebar.alerts', 'Alerts')} count={assets.alerts.length} mdSymbol="[!]" isOpen={openSections.alerts} onToggle={(isOpen) => handleSectionToggle('alerts', isOpen)}>
+              {assets.alerts.map((alert, index) => {
+                const isLast = index === assets.alerts.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(alert.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+
+                    <div className="flex items-start gap-1.5 mb-1">
+                      <span
+                        className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                          alert.type === 'NOTE' ? 'bg-blue-100 text-blue-800' :
+                          alert.type === 'TIP' ? 'bg-green-100 text-green-800' :
+                          alert.type === 'IMPORTANT' ? 'bg-purple-100 text-purple-800' :
+                          alert.type === 'WARNING' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}
+                        style={{ fontFamily: 'Roboto Mono, monospace' }}
+                      >
+                        {alert.type}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <SidebarItemText>{alert.content}</SidebarItemText>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {alert.line}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </AssetSection>
+          )}
+
+          {/* Formulas Section */}
+          {assets.formulas.length > 0 && (
+            <AssetSection title={t('sidebar.formulas', 'Fórmulas')} count={assets.formulas.length} mdSymbol="$$" isOpen={openSections.formulas} onToggle={(isOpen) => handleSectionToggle('formulas', isOpen)}>
+              {assets.formulas.map((formula, index) => {
+                const isLast = index === assets.formulas.length - 1;
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handleItemClick(formula.line)}
+                    className={`mb-2 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
+                  >
+                    {/* Horizontal connector from vertical line to item */}
+                    <div className="absolute left-[-12px] top-[14px] w-3 h-[1px] bg-[var(--border-primary)]"></div>
+
+                    <div className="flex items-start gap-1.5">
+                      <span className="flex-shrink-0 text-[10px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {formula.type === 'block' ? '$$' : '$'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <SidebarItemText>{formula.content}</SidebarItemText>
+                      </div>
+                      <span className="flex-shrink-0 text-[9px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
+                        {formula.line}
                       </span>
                     </div>
                   </div>

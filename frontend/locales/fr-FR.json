@@ -60,7 +60,10 @@
     "caseConvert": "Casse du texte",
     "caseSentence": "Première en majuscule",
     "caseLower": "minuscules",
-    "caseUpper": "MAJUSCULES"
+    "caseUpper": "MAJUSCULES",
+    "highlight": "Surlignage",
+    "more": "Plus",
+    "back": "Retour"
   },
   "sidebar": {
     "title": "Éléments",
@@ -73,8 +76,9 @@
     "tables": "Tableaux",
     "quotes": "Citations",
     "orderedLists": "Listes Numérotées",
-    "unorderedLists": "Listes à Puces",
-    "codeBlocks": "Blocs de Code"
+    "unorderedLists": "Listes",
+    "codeBlocks": "Blocs de Code",
+    "formulas": "Formules"
   },
   "fileBrowser": {
     "title": "Fichiers",

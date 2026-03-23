@@ -60,7 +60,10 @@
     "caseConvert": "Регистр",
     "caseSentence": "Первая заглавная",
     "caseLower": "строчные",
-    "caseUpper": "ПРОПИСНЫЕ"
+    "caseUpper": "ПРОПИСНЫЕ",
+    "highlight": "Выделение",
+    "more": "Ещё",
+    "back": "Назад"
   },
   "sidebar": {
     "title": "Элементы",
@@ -73,8 +76,9 @@
     "tables": "Таблицы",
     "quotes": "Цитаты",
     "orderedLists": "Нумерованные списки",
-    "unorderedLists": "Маркированные списки",
-    "codeBlocks": "Блоки кода"
+    "unorderedLists": "Списки",
+    "codeBlocks": "Блоки кода",
+    "formulas": "Формулы"
   },
   "fileBrowser": {
     "title": "Файлы",
