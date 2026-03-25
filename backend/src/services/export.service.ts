@@ -1,5 +1,8 @@
 import { marked } from 'marked';
 import { markedEmoji } from 'marked-emoji';
+import markedFootnote from 'marked-footnote';
+import markedAlert from 'marked-alert';
+import markedKatex from 'marked-katex-extension';
 import archiver from 'archiver';
 import fs from 'fs/promises';
 import path from 'path';
@@ -17,6 +20,15 @@ marked.setOptions({
   gfm: true,
   breaks: true,
 });
+
+// Add GFM alerts ([!NOTE], [!TIP], [!WARNING], etc.)
+marked.use(markedAlert());
+
+// Add footnote support
+marked.use(markedFootnote());
+
+// Add KaTeX math support ($$...$$  and $...$)
+marked.use(markedKatex({ throwOnError: false, output: 'html' }));
 
 // Add emoji support
 marked.use(markedEmoji({
@@ -124,7 +136,34 @@ export const convertToHTML = async (markdown: string, title: string = 'Markdown 
     .task-list-item input {
       margin-right: 0.5em;
     }
+    .footnotes {
+      margin-top: 3em;
+      padding-top: 1em;
+      border-top: 1px solid #ddd;
+      font-size: 0.9em;
+      color: #555;
+    }
+    .footnotes ol { padding-left: 1.5em; }
+    .footnotes li { margin: 0.5em 0; }
+    /* GFM Alerts */
+    .markdown-alert {
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      border-left: 4px solid #888;
+      border-radius: 0 4px 4px 0;
+      background: #f6f8fa;
+    }
+    .markdown-alert-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .markdown-alert.markdown-alert-note   { border-color: #0969da; background: #ddf4ff; }
+    .markdown-alert.markdown-alert-tip    { border-color: #1a7f37; background: #dafbe1; }
+    .markdown-alert.markdown-alert-important { border-color: #8250df; background: #fbefff; }
+    .markdown-alert.markdown-alert-warning { border-color: #9a6700; background: #fff8c5; }
+    .markdown-alert.markdown-alert-caution { border-color: #cf222e; background: #ffebe9; }
   </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
 </head>
 <body>
   ${contentHtml}

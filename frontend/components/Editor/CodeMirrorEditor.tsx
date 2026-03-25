@@ -27,6 +27,7 @@ export interface CodeMirrorHandle {
   scrollToFraction: (fraction: number, isScrollingDown?: boolean) => void;
   getScrollTop: () => number;
   setScrollTop: (top: number) => void;
+  getCursorLine: () => number;
 }
 
 interface CodeMirrorEditorProps {
@@ -1250,6 +1251,12 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       if (viewRef.current) {
         viewRef.current.scrollDOM.scrollTop = top;
       }
+    },
+    getCursorLine() {
+      const view = viewRef.current;
+      if (!view) return 1;
+      const pos = view.state.selection.main.head;
+      return view.state.doc.lineAt(pos).number;
     },
   }));
 

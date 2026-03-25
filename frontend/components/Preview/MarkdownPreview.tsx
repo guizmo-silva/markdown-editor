@@ -58,7 +58,7 @@ function rehypeMark() {
 // This enables line-based scroll synchronization and click-to-source navigation.
 const blockTypes = new Set([
   'paragraph', 'heading', 'thematicBreak', 'blockquote',
-  'list', 'listItem', 'table', 'code',
+  'list', 'listItem', 'table', 'code', 'math',
 ]);
 
 const inlineTypes = new Set([
@@ -155,7 +155,7 @@ const sanitizeSchema = {
       'style', // Allow inline styles (e.g. height/width on Ko-fi banners)
     ],
     section: [
-      'data-footnotes',
+      'dataFootnotes', // rehype-raw normalizes data-* to camelCase; kebab would be stripped
       ['className', /^footnotes$/],
     ],
     li: [

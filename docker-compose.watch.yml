@@ -19,6 +19,7 @@ services:
     environment:
       - NODE_ENV=development
       - API_PORT=3011
+      - APP_VERSION=${APP_VERSION:-dev}
       # Necessário em alguns ambientes (macOS/WSL) para o Next.js detectar mudanças via polling
       # No Linux nativo pode deixar comentado
       # - WATCHPACK_POLLING=true

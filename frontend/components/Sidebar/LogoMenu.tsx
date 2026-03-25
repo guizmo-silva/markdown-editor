@@ -125,7 +125,7 @@ export default function LogoMenu({ onImportClick }: LogoMenuProps) {
           </div>
 
           {/* Dark Mode Section */}
-          <div className="p-3">
+          <div className="p-3 border-b border-[var(--border-secondary)]">
             <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-2">
               {t('menu.appearance')}
             </div>
@@ -159,6 +159,12 @@ export default function LogoMenu({ onImportClick }: LogoMenuProps) {
                 />
               </div>
             </button>
+          </div>
+          {/* Version */}
+          <div className="px-3 py-2 text-center">
+            <span className="text-[10px] text-[var(--text-muted)] font-mono">
+              {process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev'}
+            </span>
           </div>
         </div>
       </div>

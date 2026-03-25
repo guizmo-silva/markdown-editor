@@ -18,6 +18,11 @@ import { useTheme } from './ThemeProvider';
 import { useToast } from './Toast/Toast';
 import { readFile, saveFile, createFile, deleteFile, renameFile, exportToHtml, exportWithImages, exportToPdf, exportToDocx, importDocx, importZip, getVolumes, listFiles, getTrashCount } from '@/services/api';
 
+// Matches footnote definition lines: [^label]: text
+// These render at the bottom of the preview regardless of their position in source,
+// so the scroll sync must skip them to avoid jumping to the end.
+const FOOTNOTE_DEF_RE = /^\[\^([^\]]+)\]:/;
+
 const SIDEBAR_MIN_WIDTH = 230;
 const SIDEBAR_DEFAULT_WIDTH = 230;
 const SIDEBAR_MAX_WIDTH = 380;
@@ -198,6 +203,28 @@ export default function EditorLayout() {
       suppressPreviewSyncRef.current = false;
     }, 150);
     setMarkdown(content);
+
+    // Normal scroll sync is suppressed while typing (prevents tremor from text reflow).
+    // Exception: if the cursor is on a footnote definition line, scroll the preview to
+    // the rendered footnote immediately, since footnote anchors are excluded from the
+    // normal sync pool and would otherwise never be reached while typing.
+    if (!isScrollSyncedRef.current) return;
+    const cursorLine = editorRef.current?.getCursorLine() ?? 0;
+    if (cursorLine < 1) return;
+    const lineContent = markdownRef.current.split('\n')[cursorLine - 1] ?? '';
+    const footnoteMatch = lineContent.match(FOOTNOTE_DEF_RE);
+    if (!footnoteMatch) return;
+    const label = footnoteMatch[1];
+    const container = previewScrollRef.current;
+    if (!container) return;
+    const footnoteEl = (container.querySelector(`#fn-${label}`) ??
+                        container.querySelector('.footnotes')) as HTMLElement | null;
+    if (footnoteEl) {
+      const top = footnoteEl.getBoundingClientRect().top
+        - container.getBoundingClientRect().top
+        + container.scrollTop;
+      container.scrollTop = Math.max(0, Math.min(container.scrollHeight - container.clientHeight, top));
+    }
   }, [setMarkdown]);
 
   // Add a new tab or switch to existing
@@ -970,9 +997,14 @@ export default function EditorLayout() {
     }
 
     // Build sorted anchor list: { line, top }
+    // Anchors inside the footnotes section are excluded: footnote definitions always
+    // render at the bottom of the preview regardless of their source position, which
+    // would distort interpolation and cause the preview to jump to the end when the
+    // editor scrolls past footnote definition lines.
     const containerRect = container.getBoundingClientRect();
     const anchors: { line: number; top: number }[] = [];
     for (const el of elements) {
+      if ((el as HTMLElement).closest('.footnotes')) continue;
       const line = parseInt(el.getAttribute('data-source-line')!, 10);
       if (!isNaN(line)) {
         const rect = (el as HTMLElement).getBoundingClientRect();
@@ -1027,6 +1059,33 @@ export default function EditorLayout() {
 
     const container = previewScrollRef.current;
     if (!container) return;
+
+    // Special case: cursor is on a footnote definition line (e.g. "[^1]: text").
+    // Footnote definitions render at the bottom of the preview (inside [data-footnotes])
+    // regardless of their position in source. calculateTargetScroll excludes those
+    // anchors from the pool, so we handle them separately here: when the user has their
+    // cursor on a footnote def (i.e. they navigated there intentionally), scroll the
+    // preview to the corresponding rendered footnote element.
+    const lineContent = markdownRef.current.split('\n')[lineNumber - 1] ?? '';
+    const footnoteMatch = lineContent.match(FOOTNOTE_DEF_RE);
+    if (footnoteMatch) {
+      const cursorLine = editorRef.current?.getCursorLine() ?? lineNumber;
+      if (cursorLine === lineNumber) {
+        const label = footnoteMatch[1];
+        const footnoteEl = (container.querySelector(`#fn-${label}`) ??
+                            container.querySelector('.footnotes')) as HTMLElement | null;
+        if (footnoteEl) {
+          const top = footnoteEl.getBoundingClientRect().top
+            - container.getBoundingClientRect().top
+            + container.scrollTop;
+          const maxScroll = container.scrollHeight - container.clientHeight;
+          container.scrollTop = Math.max(0, Math.min(maxScroll, top));
+        }
+        return;
+      }
+      // Cursor elsewhere — fall through to normal sync (footnote anchors excluded from pool,
+      // so calculateTargetScroll will clamp to the last anchor before the footnotes section)
+    }
 
     const targetTop = calculateTargetScroll(lineNumber);
     const maxScroll = container.scrollHeight - container.clientHeight;
@@ -1110,6 +1169,10 @@ export default function EditorLayout() {
   // Scroll anchoring fires 'scroll' events but NOT 'wheel' events, so this gate
   // eliminates the entire class of spurious syncs caused by scroll anchoring adjustments
   // during React re-renders — no timing heuristics needed, works in all browsers.
+  // Additional guard: skip if the editor is actively driving (scrollingFromRef === 'editor').
+  // Without this, a rAF scheduled while the editor drives can fire after the 100ms timer
+  // expires, allowing handlePreviewScroll to run and create a feedback loop that causes
+  // the preview to oscillate ("sobe e desce") around tall elements like math formulas.
   useEffect(() => {
     const container = previewScrollRef.current;
     if (!container || viewMode !== 'split') return;
@@ -1126,6 +1189,7 @@ export default function EditorLayout() {
 
     const onScroll = () => {
       if (!userScrolling) return; // skip scroll anchoring and programmatic scrollTop changes
+      if (scrollingFromRef.current === 'editor') return; // skip when editor is actively driving
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = 0;
