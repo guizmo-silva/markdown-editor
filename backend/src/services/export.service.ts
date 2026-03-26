@@ -38,7 +38,7 @@ marked.use(markedEmoji({
 
 export const convertToHTML = async (markdown: string, title: string = 'Markdown Export'): Promise<string> => {
   // Convert markdown to HTML using marked
-  const contentHtml = await marked.parse(markdown);
+  const contentHtml = injectImageCaptions(await marked.parse(markdown));
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -122,8 +122,22 @@ export const convertToHTML = async (markdown: string, title: string = 'Markdown 
       text-decoration: underline;
     }
     img {
+      display: block;
       max-width: 100%;
       height: auto;
+      margin: 24px auto;
+    }
+    figure.img-figure {
+      margin: 24px 0;
+      text-align: center;
+    }
+    figure.img-figure img {
+      margin: 0 auto 8px;
+    }
+    figcaption {
+      font-size: 0.85em;
+      color: #555;
+      font-style: italic;
     }
     hr {
       border: none;
@@ -242,6 +256,22 @@ export const exportWithImages = async (
   return Buffer.concat(chunks);
 };
 
+/**
+ * Wraps <img title="..."> elements in <figure class="img-figure"> + <figcaption>
+ * so that the markdown image title (e.g. ![alt](url "caption")) is rendered
+ * as a visible caption below the image in the PDF.
+ * Chromium auto-corrects the invalid <figure> inside <p> by splitting the <p>,
+ * which gives us the desired block layout: text paragraph → figure → caption.
+ */
+function injectImageCaptions(html: string): string {
+  return html.replace(
+    /<img\b([^>]*?\btitle="([^"]+)"[^>]*?)(?:\s*\/)?>/g,
+    (_match, attrs, captionText) => {
+      return `<figure class="img-figure"><img ${attrs}><figcaption>${captionText}</figcaption></figure>`;
+    }
+  );
+}
+
 function buildPDFHtml(renderedHtml: string, title: string): string {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -295,12 +325,27 @@ export const convertToPDF = async (
   renderedHtml: string,
   title: string,
 ): Promise<Buffer> => {
-  const html = buildPDFHtml(renderedHtml, title);
+  const html = buildPDFHtml(injectImageCaptions(renderedHtml), title);
 
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
     await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    // Wait for all images to fully load (networkidle0 alone is not enough when
+    // images redirect or load in multiple steps — this causes layout shifts in
+    // the PDF where images appear before their surrounding text).
+    await page.evaluate(() =>
+      Promise.all(
+        Array.from(document.images)
+          .filter(img => !img.complete)
+          .map(img => new Promise<void>(resolve => {
+            img.addEventListener('load', () => resolve());
+            img.addEventListener('error', () => resolve());
+          }))
+      )
+    );
+
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,

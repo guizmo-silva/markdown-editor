@@ -10,7 +10,8 @@ RUN apk add --no-cache \
     freetype \
     harfbuzz \
     ca-certificates \
-    ttf-freefont
+    ttf-freefont \
+    font-noto-emoji
 
 ENV CHROMIUM_PATH=/usr/bin/chromium-browser
 

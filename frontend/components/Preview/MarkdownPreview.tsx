@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { RefObject, MouseEvent } from 'react';
 import type { Root, RootContent } from 'mdast';
@@ -14,6 +14,7 @@ import remarkSupersub from 'remark-supersub';
 import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import rehypeSlug from 'rehype-slug';
 import PreviewInfoBar from './PreviewInfoBar';
 import CodeBlock from './CodeBlock';
 import { getImageUrl } from '@/services/api';
@@ -108,6 +109,8 @@ const sanitizeSchema = {
     'section',
     'sup', // For footnote references and superscript
     'sub', // For subscript
+    'abbr', // For abbreviations with title tooltip
+    'kbd', // For keyboard key display
     // KaTeX math elements
     'math',
     'semantics',
@@ -255,6 +258,25 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
   const imageBasePath = filePath ? filePath.substring(0, filePath.lastIndexOf('/')) : null;
 
   const handlePreviewClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
+    // Handle anchor link clicks: scroll the preview to the target heading/element
+    const anchor = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
+    if (anchor) {
+      const href = anchor.getAttribute('href') ?? '';
+      if (href.startsWith('#')) {
+        e.preventDefault();
+        const targetId = href.slice(1);
+        const container = previewScrollRef?.current;
+        if (container && targetId) {
+          const target = container.querySelector(`#${CSS.escape(targetId)}`) as HTMLElement | null;
+          if (target) {
+            const top = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+            container.scrollTop = Math.max(0, top - 16);
+          }
+        }
+        return;
+      }
+    }
+
     if (!onClickSourcePosition) return;
 
     // Use caretPositionFromPoint (standard) or caretRangeFromPoint (WebKit fallback)
@@ -353,7 +375,7 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
       inlineEndOffset,
       wordOccurrenceIndex,
     });
-  }, [onClickSourcePosition]);
+  }, [onClickSourcePosition, previewScrollRef]);
 
   // Memoize components so their function references are stable across re-renders.
   // Without this, ReactMarkdown treats each new reference as a different component type
@@ -379,8 +401,14 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
       );
     },
     pre({ children }: React.ComponentPropsWithoutRef<'pre'>) {
-      // Just pass through children since CodeBlock handles the pre wrapper
-      return <>{children}</>;
+      // Fenced code blocks: the `code` component already renders a CodeBlock (which has its
+      // own <pre>), so we strip this wrapper to avoid nesting two <pre> elements.
+      // Raw HTML <pre> elements have no CodeBlock child — render them with proper styling.
+      const hasCodeBlock = React.Children.toArray(children).some(
+        child => React.isValidElement(child) && child.type === CodeBlock
+      );
+      if (hasCodeBlock) return <>{children}</>;
+      return <pre className="raw-pre">{children}</pre>;
     },
     img({ src, alt, ...props }: React.ComponentPropsWithoutRef<'img'>) {
       // Resolve relative image paths via the backend image endpoint
@@ -395,6 +423,65 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
     },
   }), [imageBasePath, imageRevision]);
 
+  // Animate <details> open/close so surrounding content slides smoothly
+  useEffect(() => {
+    const container = previewScrollRef?.current;
+    if (!container) return;
+
+    const cleanups: (() => void)[] = [];
+
+    container.querySelectorAll<HTMLDetailsElement>('.markdown-preview details').forEach(details => {
+      const summary = details.querySelector<HTMLElement>(':scope > summary');
+      if (!summary) return;
+
+      const handler = (e: MouseEvent) => {
+        if ((e.target as HTMLElement).closest('a')) return; // let links work normally
+        e.preventDefault();
+
+        const DURATION = 220;
+
+        if (details.open) {
+          // Closing: measure natural height first (before overflow:hidden suppresses margin
+          // collapsing), then animate down to summary height.
+          const openHeight = details.offsetHeight;
+          const closedHeight = summary.offsetHeight;
+          details.classList.add('is-closing');
+          details.style.overflow = 'hidden';
+          const anim = details.animate(
+            [{ height: `${openHeight}px` }, { height: `${closedHeight}px` }],
+            { duration: DURATION, easing: 'ease' }
+          );
+          anim.onfinish = () => {
+            details.removeAttribute('open');
+            details.classList.remove('is-closing');
+            // Separate overflow clear from open removal to avoid double layout shift
+            requestAnimationFrame(() => { details.style.overflow = ''; });
+          };
+        } else {
+          // Opening: measure natural open height BEFORE setting overflow:hidden so margin
+          // collapsing is unchanged, then animate from closed to that height.
+          const closedHeight = summary.offsetHeight;
+          details.setAttribute('open', '');
+          const openHeight = details.offsetHeight; // natural height, no overflow yet
+          details.style.overflow = 'hidden';
+          const anim = details.animate(
+            [{ height: `${closedHeight}px` }, { height: `${openHeight}px` }],
+            { duration: DURATION, easing: 'ease', fill: 'backwards' }
+          );
+          anim.onfinish = () => {
+            // Separate overflow clear from height release to avoid margin-collapsing jump
+            requestAnimationFrame(() => { details.style.overflow = ''; });
+          };
+        }
+      };
+
+      summary.addEventListener('click', handler);
+      cleanups.push(() => summary.removeEventListener('click', handler));
+    });
+
+    return () => cleanups.forEach(fn => fn());
+  }, [content, previewScrollRef]);
+
   return (
     <div className={`absolute inset-0 flex flex-col preview-container ${isDark ? 'dark' : ''}`} style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}>
       {/* Preview content area */}
@@ -406,7 +493,7 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
         >
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkGemoji, remarkMath, remarkAlert, remarkFrontmatter, remarkSupersub, remarkSourceLines]}
-            rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeMark, rehypeKatex]}
+            rehypePlugins={[rehypeRaw, rehypeSlug, [rehypeSanitize, sanitizeSchema], rehypeMark, rehypeKatex]}
             remarkRehypeOptions={{ footnoteLabel: t('sidebar.footnotes', 'Footnotes') }}
             components={markdownComponents}
           >

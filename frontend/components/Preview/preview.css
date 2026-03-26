@@ -182,6 +182,51 @@
   color: #ff8fa3;
 }
 
+/* Definition Lists */
+.markdown-preview dl {
+  margin-bottom: 16px;
+}
+
+.markdown-preview dt {
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.markdown-preview dd {
+  margin-left: 2em;
+  color: var(--text-secondary);
+}
+
+/* Abbreviations */
+.markdown-preview abbr[title] {
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+/* Keyboard keys */
+.markdown-preview kbd {
+  display: inline-block;
+  padding: 0.1em 0.4em;
+  font-size: 80%;
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  line-height: 1.4;
+  color: #24292f;
+  vertical-align: middle;
+  background-color: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-bottom-color: #b1bac4;
+  border-radius: 4px;
+  box-shadow: inset 0 -1px 0 #b1bac4;
+}
+
+.preview-container.dark .markdown-preview kbd {
+  color: #e6edf3;
+  background-color: #21262d;
+  border-color: #363e47;
+  border-bottom-color: #262c34;
+  box-shadow: inset 0 -1px 0 #262c34;
+}
+
 /* Code Blocks - styles in prism-theme.css */
 
 .markdown-preview pre {
@@ -189,8 +234,20 @@
   margin-bottom: 16px;
 }
 
-/* Tables */
+.markdown-preview pre.raw-pre {
+  padding: 16px;
+  overflow-x: auto;
+  background-color: var(--bg-code);
+  border-radius: 6px;
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 85%;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+/* Tables — restore display values overridden by Tailwind Preflight / global * reset */
 .markdown-preview table {
+  display: table;
   border-spacing: 0;
   border-collapse: collapse;
   margin-top: 0;
@@ -199,21 +256,37 @@
   overflow: auto;
 }
 
+.markdown-preview table thead {
+  display: table-header-group;
+}
+
+.markdown-preview table tbody {
+  display: table-row-group;
+}
+
+.markdown-preview table tfoot {
+  display: table-footer-group;
+}
+
+.markdown-preview table tr {
+  display: table-row;
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
+}
+
 .markdown-preview table th {
+  display: table-cell;
   font-weight: 700;
   padding: 6px 13px;
   border: 1px solid var(--border-primary);
   background-color: var(--bg-secondary);
+  text-align: left;
 }
 
 .markdown-preview table td {
+  display: table-cell;
   padding: 6px 13px;
   border: 1px solid var(--border-primary);
-}
-
-.markdown-preview table tr {
-  background-color: var(--bg-primary);
-  border-top: 1px solid var(--border-primary);
 }
 
 .markdown-preview table tr:nth-child(2n) {
@@ -228,6 +301,51 @@
 .preview-container.dark .markdown-preview table tr:nth-child(2n) {
   background-color: #1a1a1a;
 }
+
+/* Details / Summary — content spacing */
+.markdown-preview details > p:empty {
+  display: none;
+}
+
+.markdown-preview details > p,
+.markdown-preview details > ul,
+.markdown-preview details > ol,
+.markdown-preview details > pre,
+.markdown-preview details > .code-block {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+/* Details / Summary — animated flip on the disclosure marker */
+.markdown-preview summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.markdown-preview summary::-webkit-details-marker {
+  display: none;
+}
+
+.markdown-preview summary::before {
+  content: '▶';
+  font-size: 0.6em;
+  line-height: 1;
+  flex-shrink: 0;
+  transform: translateY(-2px) rotate(0deg);
+  transition: transform 220ms ease;
+}
+
+.markdown-preview details[open] > summary::before {
+  transform: translateY(-2px) rotate(90deg);
+}
+
+.markdown-preview details.is-closing > summary::before {
+  transform: translateY(-2px) rotate(0deg) !important;
+}
+
 
 /* Horizontal Rule */
 .markdown-preview hr {

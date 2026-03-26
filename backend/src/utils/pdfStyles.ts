@@ -204,10 +204,26 @@ export const PREVIEW_CSS = `
 }
 
 .markdown-preview img {
+  display: block;
   max-width: 100%;
   height: auto;
-  margin: 16px 0;
+  margin: 24px auto;
   border-radius: 6px;
+}
+
+.markdown-preview figure.img-figure {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.markdown-preview figure.img-figure img {
+  margin: 0 auto 8px;
+}
+
+.markdown-preview figcaption {
+  font-size: 0.85em;
+  color: #555;
+  font-style: italic;
 }
 
 .markdown-preview > *:first-child {
@@ -259,7 +275,6 @@ export const PRISM_CSS = `
   padding: 16px;
   background-color: #f6f8fa;
   border-radius: 6px;
-  overflow-x: auto;
   font-family: 'Roboto Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
@@ -271,9 +286,9 @@ export const PRISM_CSS = `
   margin: 0;
   font-size: inherit;
   color: #24292e;
-  white-space: pre;
-  word-break: normal;
-  word-wrap: normal;
+  white-space: pre-wrap;
+  word-break: break-all;
+  word-wrap: break-word;
 }
 
 .markdown-preview .code-block .token {
