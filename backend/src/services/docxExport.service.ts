@@ -14,6 +14,9 @@ import {
   WidthType,
   ImageRun,
   ExternalHyperlink,
+  InternalHyperlink,
+  BookmarkStart,
+  BookmarkEnd,
   BorderStyle,
   ShadingType,
   convertInchesToTwip,
@@ -121,6 +124,7 @@ interface InlineRunOptions {
   strike?: boolean;
   superScript?: boolean;
   subScript?: boolean;
+  style?: string;
 }
 
 interface FootnoteEntry {
@@ -133,6 +137,8 @@ interface DocxContext {
   footnotes: Map<string, FootnoteEntry>;
   /** Left indent (twips) and border applied when inside a regular blockquote */
   bqIndent?: number;
+  /** Maps GitHub-style heading slug → bookmark numeric ID for internal hyperlinks */
+  bookmarks: Map<string, number>;
 }
 
 type DocxImageType = 'jpg' | 'png' | 'gif' | 'bmp';
@@ -177,6 +183,64 @@ function extractFootnotes(tokens: Token[]): Map<string, FootnoteEntry> {
 }
 
 // ──────────────────────────────────────────────────────────────────
+// Heading bookmark helpers (GitHub-style slugs for anchor links)
+// ──────────────────────────────────────────────────────────────────
+
+function tokenToPlainText(tokens: Token[]): string {
+  return tokens.map((t) => {
+    if ('tokens' in t && Array.isArray((t as { tokens?: Token[] }).tokens)) {
+      return tokenToPlainText((t as { tokens: Token[] }).tokens);
+    }
+    if ('text' in t && typeof (t as { text: string }).text === 'string') {
+      return (t as { text: string }).text;
+    }
+    return '';
+  }).join('');
+}
+
+/** Converts heading text to a GitHub-style anchor slug. */
+function githubSlugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
+/** Walks top-level and blockquote tokens to collect all headings. */
+function extractHeadings(tokens: Token[]): Tokens.Heading[] {
+  const result: Tokens.Heading[] = [];
+  for (const token of tokens) {
+    if (token.type === 'heading') result.push(token as Tokens.Heading);
+    else if (token.type === 'blockquote') {
+      result.push(...extractHeadings((token as Tokens.Blockquote).tokens ?? []));
+    }
+  }
+  return result;
+}
+
+/**
+ * Builds a slug → bookmark-ID map for all headings in the document.
+ * Duplicate slugs get a numeric suffix (-1, -2, …) matching GitHub behaviour.
+ */
+function buildBookmarkMap(tokens: Token[]): Map<string, number> {
+  const map = new Map<string, number>();
+  const slugCount = new Map<string, number>();
+  let id = 1;
+
+  for (const heading of extractHeadings(tokens)) {
+    const text = heading.tokens ? tokenToPlainText(heading.tokens as Token[]) : heading.text;
+    const base = githubSlugify(text);
+    const count = slugCount.get(base) ?? 0;
+    slugCount.set(base, count + 1);
+    const slug = count === 0 ? base : `${base}-${count}`;
+    map.set(slug, id++);
+  }
+
+  return map;
+}
+
+// ──────────────────────────────────────────────────────────────────
 // Math rendering: KaTeX MathML → plain text extraction
 // ──────────────────────────────────────────────────────────────────
 
@@ -184,6 +248,7 @@ function renderMathAsText(formula: string): string {
   try {
     const ml = katex.renderToString(formula, { output: 'mathml', throwOnError: false });
     const text = ml
+      .replace(/<annotation[^>]*>[\s\S]*?<\/annotation>/g, '') // remove raw LaTeX annotation
       .replace(/<[^>]+>/g, '')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
@@ -200,32 +265,77 @@ function renderMathAsText(formula: string): string {
 // Image loading and dimensions
 // ──────────────────────────────────────────────────────────────────
 
+const DOCX_TYPE_MAP: Record<string, DocxImageType> = {
+  '.png': 'png', '.jpg': 'jpg', '.jpeg': 'jpg', '.gif': 'gif', '.bmp': 'bmp',
+};
+
+const MIME_TO_DOCX: Record<string, DocxImageType | 'svg' | 'webp'> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/bmp': 'bmp',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg',
+};
+
+async function rasterize(data: Buffer): Promise<Buffer | null> {
+  // Try @resvg/resvg-js first (pure native, works on Alpine, good for SVG)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { Resvg } = await import('@resvg/resvg-js' as any);
+    const resvg = new Resvg(data, { fitTo: { mode: 'width', value: 800 } });
+    return Buffer.from(resvg.render().asPng());
+  } catch { /* fall through */ }
+  // Fallback: sharp (handles webp/avif/other raster formats)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sharp: any = (await import('sharp' as any)).default;
+    return await sharp(data).png().toBuffer();
+  } catch {
+    return null;
+  }
+}
+
 async function loadImageBuffer(
   src: string,
   docDir?: string,
 ): Promise<{ data: Buffer; docxType: DocxImageType } | null> {
   try {
+    // ── Remote URL ────────────────────────────────────────────────
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      const res = await fetch(src);
+      if (!res.ok) return null;
+      const raw = Buffer.from(await res.arrayBuffer());
+
+      const mime = (res.headers.get('content-type') ?? '').split(';')[0].trim();
+      const extFromUrl = path.extname(new URL(src).pathname).toLowerCase();
+
+      const typeFromMime = MIME_TO_DOCX[mime];
+      const typeFromExt = DOCX_TYPE_MAP[extFromUrl];
+      const resolved = typeFromMime ?? typeFromExt;
+
+      if (!resolved) return null;
+      if (resolved === 'png' || resolved === 'jpg' || resolved === 'gif' || resolved === 'bmp') {
+        return { data: raw, docxType: resolved };
+      }
+      // webp or svg → convert to PNG via sharp
+      const png = await rasterize(raw);
+      return png ? { data: png, docxType: 'png' } : null;
+    }
+
+    // ── Local file ────────────────────────────────────────────────
     const filePath = path.isAbsolute(src) ? src : docDir ? path.join(docDir, src) : null;
     if (!filePath) return null;
 
     const ext = path.extname(filePath).toLowerCase();
     const data = await fs.readFile(filePath);
 
-    if (ext === '.webp' || ext === '.avif') {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const sharp: any = (await import('sharp' as any)).default;
-        const pngData = await sharp(data).png().toBuffer();
-        return { data: pngData, docxType: 'png' };
-      } catch {
-        return null;
-      }
+    if (ext === '.webp' || ext === '.avif' || ext === '.svg') {
+      const png = await rasterize(data);
+      return png ? { data: png, docxType: 'png' } : null;
     }
 
-    const typeMap: Record<string, DocxImageType> = {
-      '.png': 'png', '.jpg': 'jpg', '.jpeg': 'jpg', '.gif': 'gif', '.bmp': 'bmp',
-    };
-    const docxType = typeMap[ext];
+    const docxType = DOCX_TYPE_MAP[ext];
     if (!docxType) return null;
     return { data, docxType };
   } catch {
@@ -269,9 +379,9 @@ function scaleImage(w: number, h: number): { width: number; height: number } {
 // Inline tokens → TextRun / ExternalHyperlink / FootnoteReferenceRun
 // ──────────────────────────────────────────────────────────────────
 
-type InlineChild = TextRun | ExternalHyperlink | FootnoteReferenceRun;
+type InlineChild = TextRun | ExternalHyperlink | InternalHyperlink | ImageRun | FootnoteReferenceRun;
 
-function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxContext): InlineChild[] {
+async function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxContext): Promise<InlineChild[]> {
   const result: InlineChild[] = [];
 
   for (const token of tokens) {
@@ -279,7 +389,7 @@ function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxContext)
       case 'text': {
         const t = token as Tokens.Text;
         if (t.tokens && t.tokens.length > 0) {
-          result.push(...inlineToRuns(t.tokens, opts, ctx));
+          result.push(...(await inlineToRuns(t.tokens, opts, ctx)));
         } else {
           result.push(new TextRun({ text: t.text, ...opts }));
         }
@@ -287,21 +397,21 @@ function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxContext)
       }
       case 'strong': {
         const t = token as Tokens.Strong;
-        result.push(...inlineToRuns(t.tokens ?? [], { ...opts, bold: true }, ctx));
+        result.push(...(await inlineToRuns(t.tokens ?? [], { ...opts, bold: true }, ctx)));
         break;
       }
       case 'em': {
         const t = token as Tokens.Em;
-        result.push(...inlineToRuns(t.tokens ?? [], { ...opts, italics: true }, ctx));
+        result.push(...(await inlineToRuns(t.tokens ?? [], { ...opts, italics: true }, ctx)));
         break;
       }
       case 'del': {
         const t = token as Tokens.Del;
         // Single tilde (~text~) → subscript; double tilde (~~text~~) → strikethrough
         if (t.raw.startsWith('~') && !t.raw.startsWith('~~')) {
-          result.push(...inlineToRuns(t.tokens ?? [], { ...opts, subScript: true, strike: false }, ctx));
+          result.push(...(await inlineToRuns(t.tokens ?? [], { ...opts, subScript: true, strike: false }, ctx)));
         } else {
-          result.push(...inlineToRuns(t.tokens ?? [], { ...opts, strike: true }, ctx));
+          result.push(...(await inlineToRuns(t.tokens ?? [], { ...opts, strike: true }, ctx)));
         }
         break;
       }
@@ -334,6 +444,17 @@ function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxContext)
         }));
         break;
       }
+      case 'image': {
+        const t = token as Tokens.Image;
+        const img = await loadImageBuffer(t.href, ctx.docDir);
+        if (img) {
+          const dims = getImageDimensions(img.data, img.docxType);
+          result.push(new ImageRun({ data: img.data, transformation: { width: dims.width, height: dims.height }, type: img.docxType }));
+        } else if (t.text) {
+          result.push(new TextRun({ text: t.text, ...opts }));
+        }
+        break;
+      }
       case 'footnoteRef': {
         const t = token as unknown as { id: string };
         const fn = ctx.footnotes.get(t.id);
@@ -342,19 +463,31 @@ function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxContext)
       }
       case 'link': {
         const t = token as Tokens.Link;
-        const innerRuns = inlineToRuns(
-          t.tokens ?? [{ type: 'text', text: t.text, raw: t.text } as Token],
-          opts,
-          ctx,
-        );
+        if (!t.href) {
+          result.push(new TextRun({ text: t.text || '', ...opts }));
+          break;
+        }
+        const linkTokens = t.tokens ?? [{ type: 'text', text: t.text, raw: t.text } as Token];
+        const innerRuns = await inlineToRuns(linkTokens, { ...opts, style: 'Hyperlink' }, ctx);
         const textRuns = innerRuns.filter((r): r is TextRun => r instanceof TextRun);
-        if (textRuns.length > 0 && t.href) {
-          result.push(new ExternalHyperlink({
-            children: textRuns.map((r) => new TextRun({ ...r, style: 'Hyperlink' })),
-            link: t.href,
-          }));
+        if (t.href.startsWith('#')) {
+          const slug = t.href.slice(1);
+          const bookmarkId = ctx.bookmarks.get(slug);
+          if (bookmarkId !== undefined && textRuns.length > 0) {
+            result.push(new InternalHyperlink({ children: textRuns, anchor: slug }));
+          } else {
+            result.push(...(textRuns.length > 0 ? textRuns : [new TextRun({ text: t.text || '', ...opts })]));
+          }
+        } else if (textRuns.length > 0) {
+          result.push(new ExternalHyperlink({ children: textRuns, link: t.href }));
+        } else if (innerRuns.length > 0) {
+          // Inner content is non-text (e.g. ImageRun) — embed directly; docx can't wrap images in hyperlinks
+          result.push(...innerRuns);
         } else {
-          result.push(new TextRun({ text: t.text || t.href, ...opts }));
+          // Last resort: use alt text from a nested image token if t.text is raw markdown
+          const imgAlt = (t.tokens ?? []).find((tok) => tok.type === 'image')?.text;
+          const fallback = imgAlt || t.href;
+          result.push(new TextRun({ text: fallback, ...opts }));
         }
         break;
       }
@@ -398,7 +531,7 @@ async function listToElements(list: Tokens.List, ctx: DocxContext, depth: number
       }
     }
 
-    const runs = inlineToRuns(inlineTokens, {}, ctx);
+    const runs = await inlineToRuns(inlineTokens, {}, ctx);
     if (item.task) runs.unshift(new TextRun({ text: item.checked ? '\u2611 ' : '\u2610 ' }));
 
     result.push(list.ordered
@@ -417,26 +550,23 @@ async function listToElements(list: Tokens.List, ctx: DocxContext, depth: number
 // Table processing
 // ──────────────────────────────────────────────────────────────────
 
-function tableToElement(t: Tokens.Table, ctx: DocxContext): Table {
+async function tableToElement(t: Tokens.Table, ctx: DocxContext): Promise<Table> {
   const colWidth = Math.floor(8640 / t.header.length);
 
-  const headerRow = new TableRow({
-    tableHeader: true,
-    children: t.header.map((cell) => new TableCell({
-      children: [new Paragraph({ children: inlineToRuns(cell.tokens ?? [], { bold: true }, ctx) })],
-      shading: { type: ShadingType.CLEAR, fill: 'F4F4F4', color: 'auto' },
-      width: { size: colWidth, type: WidthType.DXA },
-    })),
-  });
+  const headerCells = await Promise.all(t.header.map(async (cell) => new TableCell({
+    children: [new Paragraph({ children: await inlineToRuns(cell.tokens ?? [], { bold: true }, ctx) })],
+    shading: { type: ShadingType.CLEAR, fill: 'F4F4F4', color: 'auto' },
+    width: { size: colWidth, type: WidthType.DXA },
+  })));
 
-  const bodyRows = t.rows.map((row) => new TableRow({
-    children: row.map((cell) => new TableCell({
-      children: [new Paragraph({ children: inlineToRuns(cell.tokens ?? [], {}, ctx) })],
+  const bodyRows = await Promise.all(t.rows.map(async (row) => new TableRow({
+    children: await Promise.all(row.map(async (cell) => new TableCell({
+      children: [new Paragraph({ children: await inlineToRuns(cell.tokens ?? [], {}, ctx) })],
       width: { size: colWidth, type: WidthType.DXA },
-    })),
-  }));
+    }))),
+  })));
 
-  return new Table({ rows: [headerRow, ...bodyRows], width: { size: 8640, type: WidthType.DXA } });
+  return new Table({ rows: [new TableRow({ tableHeader: true, children: headerCells }), ...bodyRows], width: { size: 8640, type: WidthType.DXA } });
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -478,7 +608,7 @@ async function blockquoteToElements(t: Tokens.Blockquote, ctx: DocxContext): Pro
         }
         paraTokens = paraTokens.slice(startIdx);
       }
-      const runs = inlineToRuns(paraTokens, {}, ctx);
+      const runs = await inlineToRuns(paraTokens, {}, ctx);
       if (runs.length === 0) continue;
       elements.push(new Paragraph({
         children: runs,
@@ -536,9 +666,16 @@ async function blockToElements(tokens: Token[], ctx: DocxContext): Promise<(Para
       case 'heading': {
         const t = token as Tokens.Heading;
         const bqLeft = ctx.bqIndent ?? 0;
+        const headingText = t.tokens ? tokenToPlainText(t.tokens as Token[]) : t.text;
+        const headingSlug = githubSlugify(headingText);
+        const bookmarkId = ctx.bookmarks.get(headingSlug);
+        const inlineRuns = await inlineToRuns(t.tokens ?? [], {}, ctx);
+        const children = bookmarkId !== undefined
+          ? [new BookmarkStart({ id: bookmarkId, name: headingSlug }), ...inlineRuns, new BookmarkEnd({ id: bookmarkId })]
+          : inlineRuns;
         elements.push(new Paragraph({
           heading: HEADING_MAP[t.depth] ?? HeadingLevel.HEADING_6,
-          children: inlineToRuns(t.tokens ?? [], {}, ctx),
+          children,
           ...(bqLeft > 0 && { indent: { left: bqLeft } }),
         }));
         break;
@@ -550,21 +687,60 @@ async function blockToElements(tokens: Token[], ctx: DocxContext): Promise<(Para
         const bqBorder = bqLeft > 0
           ? { border: { left: { style: BorderStyle.THICK, size: 12, color: 'DDDDDD', space: 4 } } }
           : {};
-        // Single image → embed
-        if (t.tokens?.length === 1 && t.tokens[0].type === 'image') {
-          const imgToken = t.tokens[0] as Tokens.Image;
-          const img = await loadImageBuffer(imgToken.href, ctx.docDir);
-          if (img) {
-            const dims = getImageDimensions(img.data, img.docxType);
-            elements.push(new Paragraph({
-              children: [new ImageRun({ data: img.data, transformation: { width: dims.width, height: dims.height }, type: img.docxType })],
-              ...(bqLeft > 0 && { indent: { left: bqLeft } }),
-            }));
-            break;
+        // If the paragraph contains any image tokens, split into separate block elements
+        // so images can be centred and captions rendered as distinct paragraphs.
+        const paraTokens = t.tokens ?? [];
+        if (paraTokens.some((tok) => tok.type === 'image')) {
+          let textBuf: Token[] = [];
+
+          const flushText = async () => {
+            // strip leading/trailing br tokens
+            while (textBuf.length && textBuf[0].type === 'br') textBuf.shift();
+            while (textBuf.length && textBuf[textBuf.length - 1].type === 'br') textBuf.pop();
+            if (textBuf.length === 0) return;
+            const runs = await inlineToRuns(textBuf, {}, ctx);
+            if (runs.length > 0) {
+              elements.push(new Paragraph({
+                children: runs,
+                ...(bqLeft > 0 && { indent: { left: bqLeft } }),
+                ...bqBorder,
+                spacing: { before: 80, after: 80 },
+              }));
+            }
+            textBuf = [];
+          };
+
+          for (const tok of paraTokens) {
+            if (tok.type === 'image') {
+              await flushText();
+              const imgToken = tok as Tokens.Image;
+              const img = await loadImageBuffer(imgToken.href, ctx.docDir);
+              if (img) {
+                const dims = getImageDimensions(img.data, img.docxType);
+                elements.push(new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [new ImageRun({ data: img.data, transformation: { width: dims.width, height: dims.height }, type: img.docxType })],
+                  ...(bqLeft > 0 && { indent: { left: bqLeft } }),
+                }));
+                if (imgToken.title) {
+                  elements.push(new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [new TextRun({ text: imgToken.title, italics: true, size: 18, color: '555555' })],
+                    spacing: { before: 40, after: 120 },
+                  }));
+                }
+              } else if (imgToken.text) {
+                textBuf.push({ type: 'text', text: imgToken.text, raw: imgToken.text } as Token);
+              }
+            } else {
+              textBuf.push(tok);
+            }
           }
+          await flushText();
+          break;
         }
         elements.push(new Paragraph({
-          children: inlineToRuns(t.tokens ?? [], {}, ctx),
+          children: await inlineToRuns(paraTokens, {}, ctx),
           ...(bqLeft > 0 && { indent: { left: bqLeft } }),
           ...bqBorder,
           spacing: { before: 80, after: 80 },
@@ -625,7 +801,7 @@ async function blockToElements(tokens: Token[], ctx: DocxContext): Promise<(Para
 
       case 'table': {
         const t = token as Tokens.Table;
-        elements.push(tableToElement(t, ctx));
+        elements.push(await tableToElement(t, ctx));
         break;
       }
 
@@ -666,7 +842,8 @@ export async function markdownToDocx(
 
   const tokens = docxMarked.lexer(markdown);
   const footnoteMap = extractFootnotes(tokens);
-  const ctx: DocxContext = { docDir, footnotes: footnoteMap };
+  const bookmarkMap = buildBookmarkMap(tokens);
+  const ctx: DocxContext = { docDir, footnotes: footnoteMap, bookmarks: bookmarkMap };
   const elements = await blockToElements(tokens, ctx);
 
   // Build footnotes record for Document

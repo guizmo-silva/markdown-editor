@@ -10,6 +10,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "archiver": "^7.0.1",
     "cors": "^2.8.5",
     "docx": "^9.6.0",
