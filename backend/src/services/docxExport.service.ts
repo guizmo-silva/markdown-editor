@@ -485,7 +485,7 @@ async function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxCo
           result.push(...innerRuns);
         } else {
           // Last resort: use alt text from a nested image token if t.text is raw markdown
-          const imgAlt = (t.tokens ?? []).find((tok) => tok.type === 'image')?.text;
+          const imgAlt = ((t.tokens ?? []).find((tok) => tok.type === 'image') as Tokens.Image | undefined)?.text;
           const fallback = imgAlt || t.href;
           result.push(new TextRun({ text: fallback, ...opts }));
         }
@@ -671,7 +671,7 @@ async function blockToElements(tokens: Token[], ctx: DocxContext): Promise<(Para
         const bookmarkId = ctx.bookmarks.get(headingSlug);
         const inlineRuns = await inlineToRuns(t.tokens ?? [], {}, ctx);
         const children = bookmarkId !== undefined
-          ? [new BookmarkStart({ id: bookmarkId, name: headingSlug }), ...inlineRuns, new BookmarkEnd({ id: bookmarkId })]
+          ? [new BookmarkStart(headingSlug, bookmarkId), ...inlineRuns, new BookmarkEnd(bookmarkId)]
           : inlineRuns;
         elements.push(new Paragraph({
           heading: HEADING_MAP[t.depth] ?? HeadingLevel.HEADING_6,
