@@ -434,7 +434,7 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
       const summary = details.querySelector<HTMLElement>(':scope > summary');
       if (!summary) return;
 
-      const handler = (e: MouseEvent) => {
+      const handler = (e: globalThis.MouseEvent) => {
         if ((e.target as HTMLElement).closest('a')) return; // let links work normally
         e.preventDefault();
 
