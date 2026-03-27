@@ -23,6 +23,7 @@ import {
   LevelFormat,
   FootnoteReferenceRun,
   HighlightColor,
+  UnderlineType,
 } from 'docx';
 import katex from 'katex';
 import { resolveVolumePath } from './volume.service.js';
@@ -90,9 +91,8 @@ docxMarked.use({
     {
       name: 'footnoteDef',
       level: 'block',
-      start: (src) => src.indexOf('[^'),
+      start: (src) => src.search(/\[\^[\w-]+\]:/),
       tokenizer(src) {
-        // Matches [^id]: text, consuming all continuation lines (indented by 4+ spaces)
         const match = /^\[\^([\w-]+)\]:\s+([\s\S]+?)(?=\n\[\^|\n\n|\n$|$)/.exec(src);
         if (match) return { type: 'footnoteDef', raw: match[0], id: match[1], text: match[2].trim() };
         return undefined;
@@ -111,12 +111,83 @@ docxMarked.use({
       },
       renderer() { return ''; },
     },
+    // HTML superscript: <sup>text</sup>
+    {
+      name: 'htmlSup',
+      level: 'inline',
+      start: (src) => src.indexOf('<sup>'),
+      tokenizer(src) {
+        const match = /^<sup>([\s\S]*?)<\/sup>/.exec(src);
+        if (match) return { type: 'htmlSup', raw: match[0], text: match[1] };
+        return undefined;
+      },
+      renderer() { return ''; },
+    },
+    // HTML subscript: <sub>text</sub>
+    {
+      name: 'htmlSub',
+      level: 'inline',
+      start: (src) => src.indexOf('<sub>'),
+      tokenizer(src) {
+        const match = /^<sub>([\s\S]*?)<\/sub>/.exec(src);
+        if (match) return { type: 'htmlSub', raw: match[0], text: match[1] };
+        return undefined;
+      },
+      renderer() { return ''; },
+    },
+    // HTML abbreviation: <abbr title="...">text</abbr>
+    {
+      name: 'abbr',
+      level: 'inline',
+      start: (src) => src.indexOf('<abbr'),
+      tokenizer(src) {
+        const match = /^<abbr\s+title="([^"]*)">([\s\S]*?)<\/abbr>/.exec(src);
+        if (match) return { type: 'abbr', raw: match[0], title: match[1], text: match[2] };
+        return undefined;
+      },
+      renderer() { return ''; },
+    },
+    // HTML mark tag: <mark>text</mark>
+    {
+      name: 'mark',
+      level: 'inline',
+      start: (src) => src.indexOf('<mark>'),
+      tokenizer(src) {
+        const match = /^<mark>([\s\S]*?)<\/mark>/.exec(src);
+        if (match) return { type: 'mark', raw: match[0], text: match[1] };
+        return undefined;
+      },
+      renderer() { return ''; },
+    },
+    // Keyboard shortcut: <kbd>text</kbd>
+    {
+      name: 'kbd',
+      level: 'inline',
+      start: (src) => src.indexOf('<kbd>'),
+      tokenizer(src) {
+        const match = /^<kbd>([\s\S]*?)<\/kbd>/.exec(src);
+        if (match) return { type: 'kbd', raw: match[0], text: match[1] };
+        return undefined;
+      },
+      renderer() { return ''; },
+    },
   ],
 });
 
 // ──────────────────────────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────────────────────────
+
+interface HtmlTableCell {
+  text: string;
+  colspan: number;
+  isHeader: boolean;
+}
+
+interface HtmlTableRow {
+  cells: HtmlTableCell[];
+  isHeader: boolean;
+}
 
 interface InlineRunOptions {
   bold?: boolean;
@@ -127,18 +198,22 @@ interface InlineRunOptions {
   style?: string;
 }
 
-interface FootnoteEntry {
-  id: number;
-  text: string;
-}
-
 interface DocxContext {
   docDir?: string;
-  footnotes: Map<string, FootnoteEntry>;
+  /** Maps markdown footnote id (e.g. "1", "nota-longa") → definition text */
+  footnoteDefs: Map<string, string>;
+  /** Accumulated docx footnote entries in reference order (each reference gets its own unique id) */
+  docxFootnoteEntries: Array<{ id: number; children: Paragraph[] }>;
+  /** Next docx footnote id to assign */
+  nextFnId: number;
+  /** Alignment override applied to text paragraphs (set when inside a <div align="..."> block) */
+  alignment?: (typeof AlignmentType)[keyof typeof AlignmentType];
   /** Left indent (twips) and border applied when inside a regular blockquote */
   bqIndent?: number;
   /** Maps GitHub-style heading slug → bookmark numeric ID for internal hyperlinks */
   bookmarks: Map<string, number>;
+  /** Shared counter for unique ordered-list numbering references (object so spreads share the same reference) */
+  orderedListCounter: { value: number };
 }
 
 type DocxImageType = 'jpg' | 'png' | 'gif' | 'bmp';
@@ -163,18 +238,20 @@ const ALERT_LABELS: Record<AlertType, string> = {
 };
 
 // ──────────────────────────────────────────────────────────────────
+const orderedListRef = (idx: number) => `ordered-list-${idx}`;
+
+// ──────────────────────────────────────────────────────────────────
 // Footnote extraction (pre-pass over block tokens)
 // ──────────────────────────────────────────────────────────────────
 
-function extractFootnotes(tokens: Token[]): Map<string, FootnoteEntry> {
-  const map = new Map<string, FootnoteEntry>();
-  let counter = 1;
+function extractFootnoteDefs(tokens: Token[]): Map<string, string> {
+  const map = new Map<string, string>();
 
   for (const token of tokens) {
     if (token.type === 'footnoteDef') {
       const t = token as unknown as { id: string; text: string };
       if (!map.has(t.id)) {
-        map.set(t.id, { id: counter++, text: t.text });
+        map.set(t.id, t.text);
       }
     }
   }
@@ -415,14 +492,33 @@ async function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxCo
         }
         break;
       }
-      case 'superscript': {
+      case 'superscript':
+      case 'htmlSup': {
         const t = token as unknown as { text: string };
         result.push(new TextRun({ text: t.text, ...opts, superScript: true, subScript: false }));
         break;
       }
-      case 'highlight': {
+      case 'htmlSub': {
+        const t = token as unknown as { text: string };
+        result.push(new TextRun({ text: t.text, ...opts, subScript: true, superScript: false }));
+        break;
+      }
+      case 'highlight':
+      case 'mark': {
         const t = token as unknown as { text: string };
         result.push(new TextRun({ text: t.text, ...opts, highlight: HighlightColor.YELLOW }));
+        break;
+      }
+      case 'abbr': {
+        const t = token as unknown as { text: string; title: string };
+        result.push(new TextRun({
+          text: t.text,
+          ...opts,
+          underline: { type: UnderlineType.DOTTED, color: 'auto' },
+        }));
+        if (t.title) {
+          result.push(new TextRun({ text: ` (${t.title})`, ...opts }));
+        }
         break;
       }
       case 'inlineMath': {
@@ -444,6 +540,17 @@ async function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxCo
         }));
         break;
       }
+      case 'kbd': {
+        const t = token as unknown as { text: string };
+        result.push(new TextRun({
+          text: t.text,
+          font: 'Courier New',
+          size: 18,
+          shading: { type: ShadingType.CLEAR, fill: 'EFEFEF', color: 'auto' },
+          border: { style: BorderStyle.SINGLE, size: 4, space: 1, color: 'AAAAAA' },
+        }));
+        break;
+      }
       case 'image': {
         const t = token as Tokens.Image;
         const img = await loadImageBuffer(t.href, ctx.docDir);
@@ -457,8 +564,17 @@ async function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxCo
       }
       case 'footnoteRef': {
         const t = token as unknown as { id: string };
-        const fn = ctx.footnotes.get(t.id);
-        if (fn) result.push(new FootnoteReferenceRun(fn.id));
+        const text = ctx.footnoteDefs.get(t.id);
+        if (text !== undefined) {
+          const id = ctx.nextFnId++;
+          const fnBlockTokens = docxMarked.lexer(text);
+          const fnInlineTokens = (fnBlockTokens[0] as Tokens.Paragraph)?.tokens ?? [];
+          const fnRuns = fnInlineTokens.length > 0
+            ? await inlineToRuns(fnInlineTokens, {}, ctx)
+            : [new TextRun({ text })];
+          ctx.docxFootnoteEntries.push({ id, children: [new Paragraph({ children: fnRuns })] });
+          result.push(new FootnoteReferenceRun(id));
+        }
         break;
       }
       case 'link': {
@@ -485,8 +601,13 @@ async function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxCo
           result.push(...innerRuns);
         } else {
           // Last resort: use alt text from a nested image token if t.text is raw markdown
+<<<<<<< Updated upstream
           const imgAlt = ((t.tokens ?? []).find((tok) => tok.type === 'image') as Tokens.Image | undefined)?.text;
           const fallback = imgAlt || t.href;
+=======
+          const imgAlt = (t.tokens ?? []).find((tok) => tok.type === 'image') as Tokens.Image | undefined;
+          const fallback = imgAlt?.text || t.href;
+>>>>>>> Stashed changes
           result.push(new TextRun({ text: fallback, ...opts }));
         }
         break;
@@ -515,8 +636,9 @@ async function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxCo
 // List processing
 // ──────────────────────────────────────────────────────────────────
 
-async function listToElements(list: Tokens.List, ctx: DocxContext, depth: number): Promise<Paragraph[]> {
+async function listToElements(list: Tokens.List, ctx: DocxContext, depth: number, listRef?: string): Promise<Paragraph[]> {
   const result: Paragraph[] = [];
+  const ref = listRef ?? orderedListRef(0);
 
   for (const item of list.items) {
     const inlineTokens: Token[] = [];
@@ -535,12 +657,13 @@ async function listToElements(list: Tokens.List, ctx: DocxContext, depth: number
     if (item.task) runs.unshift(new TextRun({ text: item.checked ? '\u2611 ' : '\u2610 ' }));
 
     result.push(list.ordered
-      ? new Paragraph({ children: runs, numbering: { reference: 'ordered-list', level: depth } })
+      ? new Paragraph({ children: runs, numbering: { reference: ref, level: depth } })
       : new Paragraph({ children: runs, bullet: { level: depth } }),
     );
 
     const nestedList = (item.tokens ?? []).find((t) => t.type === 'list') as Tokens.List | undefined;
-    if (nestedList) result.push(...(await listToElements(nestedList, ctx, depth + 1)));
+    // Nested sub-lists share the same ref (same numbering instance, different level)
+    if (nestedList) result.push(...(await listToElements(nestedList, ctx, depth + 1, ref)));
   }
 
   return result;
@@ -705,6 +828,7 @@ async function blockToElements(tokens: Token[], ctx: DocxContext): Promise<(Para
                 ...(bqLeft > 0 && { indent: { left: bqLeft } }),
                 ...bqBorder,
                 spacing: { before: 80, after: 80 },
+                ...(ctx.alignment && { alignment: ctx.alignment }),
               }));
             }
             textBuf = [];
@@ -744,6 +868,7 @@ async function blockToElements(tokens: Token[], ctx: DocxContext): Promise<(Para
           ...(bqLeft > 0 && { indent: { left: bqLeft } }),
           ...bqBorder,
           spacing: { before: 80, after: 80 },
+          ...(ctx.alignment && { alignment: ctx.alignment }),
         }));
         break;
       }
@@ -795,7 +920,8 @@ async function blockToElements(tokens: Token[], ctx: DocxContext): Promise<(Para
 
       case 'list': {
         const t = token as Tokens.List;
-        elements.push(...(await listToElements(t, ctx, 0)));
+        const ref = t.ordered ? orderedListRef(ctx.orderedListCounter.value++) : undefined;
+        elements.push(...(await listToElements(t, ctx, 0, ref)));
         break;
       }
 
@@ -808,6 +934,142 @@ async function blockToElements(tokens: Token[], ctx: DocxContext): Promise<(Para
       case 'hr':
         elements.push(new Paragraph({ children: [], thematicBreak: true }));
         break;
+
+      case 'html': {
+        const t = token as { text: string };
+        const html = t.text.trim();
+
+        const ALIGN_MAP: Record<string, (typeof AlignmentType)[keyof typeof AlignmentType]> = {
+          center: AlignmentType.CENTER, left: AlignmentType.LEFT,
+          right: AlignmentType.RIGHT, justify: AlignmentType.JUSTIFIED,
+        };
+
+        // ── <pre> ──────────────────────────────────────────────────
+        const preM = /^<pre(?:\s[^>]*)?>(\s[\s\S]*?)<\/pre>$/i.exec(html);
+        if (preM) {
+          const lines = preM[1].replace(/^\n/, '').replace(/\n$/, '').split('\n');
+          const codeRuns: TextRun[] = [];
+          lines.forEach((line, i) => {
+            if (i > 0) codeRuns.push(new TextRun({ break: 1 }));
+            codeRuns.push(new TextRun({ text: line, font: 'Courier New', size: 18 }));
+          });
+          elements.push(new Paragraph({
+            children: codeRuns,
+            shading: { type: ShadingType.CLEAR, fill: 'F4F4F4', color: 'auto' },
+            indent: { left: convertInchesToTwip(0.25), right: convertInchesToTwip(0.25) },
+            spacing: { before: 120, after: 120 },
+            border: {
+              top: { style: BorderStyle.SINGLE, size: 4, color: 'DDDDDD' },
+              bottom: { style: BorderStyle.SINGLE, size: 4, color: 'DDDDDD' },
+              left: { style: BorderStyle.SINGLE, size: 4, color: 'DDDDDD' },
+              right: { style: BorderStyle.SINGLE, size: 4, color: 'DDDDDD' },
+            },
+          }));
+          break;
+        }
+
+        // ── <dl> ──────────────────────────────────────────────────
+        // marked splits <dl> at blank lines, so we match dt/dd from any html
+        // token that contains them (complete block or partial fragment).
+        if (/<dt[\s>]|<dd[\s>]|^<dl[\s>]/i.test(html)) {
+          const itemRe = /<(dt|dd)(?:\s[^>]*)?>([\s\S]*?)<\/(dt|dd)>/gi;
+          let m: RegExpExecArray | null;
+          let found = false;
+          while ((m = itemRe.exec(html)) !== null) {
+            found = true;
+            const type = m[1].toLowerCase() as 'dt' | 'dd';
+            const text = m[2].trim();
+            const bold = type === 'dt';
+            const inlineToks = (docxMarked.lexer(text)[0] as Tokens.Paragraph)?.tokens ?? [];
+            const runs = inlineToks.length > 0
+              ? await inlineToRuns(inlineToks, { bold }, ctx)
+              : [new TextRun({ text, bold })];
+            if (type === 'dt') {
+              elements.push(new Paragraph({ children: runs, spacing: { before: 160, after: 0 } }));
+            } else {
+              elements.push(new Paragraph({
+                children: runs,
+                indent: { left: convertInchesToTwip(0.5) },
+                spacing: { before: 0, after: 80 },
+              }));
+            }
+          }
+          if (found) break;
+        }
+
+        // ── <table> ───────────────────────────────────────────────
+        const tableM = /^<table(?:\s[^>]*)?>(\s[\s\S]*?)<\/table>$/i.exec(html);
+        if (tableM) {
+          const parseRows = (rowsHtml: string, forceHeader: boolean): HtmlTableRow[] => {
+            const rows: HtmlTableRow[] = [];
+            const rowRe = /<tr(?:\s[^>]*)?>([\s\S]*?)<\/tr>/gi;
+            let rowM: RegExpExecArray | null;
+            while ((rowM = rowRe.exec(rowsHtml)) !== null) {
+              const cells: HtmlTableCell[] = [];
+              const cellRe = /<(th|td)((?:\s[^>]*)?)>([\s\S]*?)<\/(th|td)>/gi;
+              let cellM: RegExpExecArray | null;
+              while ((cellM = cellRe.exec(rowM[1])) !== null) {
+                const colspanM = /colspan="?(\d+)"?/i.exec(cellM[2]);
+                cells.push({
+                  text: cellM[3].trim(),
+                  colspan: colspanM ? parseInt(colspanM[1], 10) : 1,
+                  isHeader: forceHeader || cellM[1].toLowerCase() === 'th',
+                });
+              }
+              if (cells.length > 0) {
+                rows.push({ cells, isHeader: forceHeader || cells.every((c) => c.isHeader) });
+              }
+            }
+            return rows;
+          };
+          const content = tableM[1];
+          const tableRows: HtmlTableRow[] = [];
+          const theadM = /<thead(?:\s[^>]*)?>([\s\S]*?)<\/thead>/i.exec(content);
+          if (theadM) tableRows.push(...parseRows(theadM[1], true));
+          const tbodyM = /<tbody(?:\s[^>]*)?>([\s\S]*?)<\/tbody>/i.exec(content);
+          const bodyHtml = tbodyM
+            ? tbodyM[1]
+            : content.replace(/<t(?:head|foot)(?:\s[^>]*)?>[\s\S]*?<\/t(?:head|foot)>/gi, '');
+          tableRows.push(...parseRows(bodyHtml, false));
+
+          const totalCols = tableRows.reduce((max, row) =>
+            Math.max(max, row.cells.reduce((s, c) => s + c.colspan, 0)), 1);
+          const colWidth = Math.floor(8640 / totalCols);
+          const docxRows = await Promise.all(tableRows.map(async (row) => {
+            const docxCells = await Promise.all(row.cells.map(async (cell) => {
+              const inlineToks = (docxMarked.lexer(cell.text)[0] as Tokens.Paragraph)?.tokens ?? [];
+              const runs = inlineToks.length > 0
+                ? await inlineToRuns(inlineToks, { bold: cell.isHeader }, ctx)
+                : [new TextRun({ text: cell.text, bold: cell.isHeader })];
+              return new TableCell({
+                children: [new Paragraph({ children: runs })],
+                columnSpan: cell.colspan > 1 ? cell.colspan : undefined,
+                width: { size: colWidth * cell.colspan, type: WidthType.DXA },
+                ...(cell.isHeader && { shading: { type: ShadingType.CLEAR, fill: 'F4F4F4', color: 'auto' } }),
+              });
+            }));
+            return new TableRow({ children: docxCells, tableHeader: row.isHeader });
+          }));
+          elements.push(new Table({ rows: docxRows, width: { size: 8640, type: WidthType.DXA } }));
+          break;
+        }
+
+        // ── <div align> ───────────────────────────────────────────
+        // Complete block (no blank lines inside): handle inline
+        const divFullM = /^<div\s+align="(center|left|right|justify)">([\s\S]*)<\/div>$/i.exec(html);
+        if (divFullM) {
+          const innerCtx: DocxContext = { ...ctx, alignment: ALIGN_MAP[divFullM[1].toLowerCase()] };
+          elements.push(...(await blockToElements(docxMarked.lexer(divFullM[2].trim()), innerCtx)));
+          break;
+        }
+        // Opening tag only (blank lines inside — stateful approach)
+        const divOpenM = /^<div\s+align="(center|left|right|justify)">\s*$/i.exec(html);
+        if (divOpenM) { ctx.alignment = ALIGN_MAP[divOpenM[1].toLowerCase()]; break; }
+        // Closing tag
+        if (/^<\/div>\s*$/i.test(html)) { ctx.alignment = undefined; break; }
+
+        break;
+      }
 
       case 'space':
       case 'def':
@@ -841,25 +1103,23 @@ export async function markdownToDocx(
   }
 
   const tokens = docxMarked.lexer(markdown);
-  const footnoteMap = extractFootnotes(tokens);
+  const footnoteDefs = extractFootnoteDefs(tokens);
   const bookmarkMap = buildBookmarkMap(tokens);
-  const ctx: DocxContext = { docDir, footnotes: footnoteMap, bookmarks: bookmarkMap };
+  const ctx: DocxContext = { docDir, footnoteDefs, docxFootnoteEntries: [], nextFnId: 1, bookmarks: bookmarkMap, orderedListCounter: { value: 0 } };
   const elements = await blockToElements(tokens, ctx);
 
-  // Build footnotes record for Document
+  // Build footnotes record for Document from entries accumulated during processing
   const docxFootnotes: Record<string, { children: Paragraph[] }> = {};
-  for (const [, entry] of footnoteMap) {
-    docxFootnotes[String(entry.id)] = {
-      children: [new Paragraph({ children: [new TextRun({ text: entry.text })] })],
-    };
+  for (const entry of ctx.docxFootnoteEntries) {
+    docxFootnotes[String(entry.id)] = { children: entry.children };
   }
 
   const doc = new Document({
     title,
-    footnotes: Object.keys(docxFootnotes).length > 0 ? docxFootnotes : undefined,
+    footnotes: ctx.docxFootnoteEntries.length > 0 ? docxFootnotes : undefined,
     numbering: {
-      config: [{
-        reference: 'ordered-list',
+      config: Array.from({ length: Math.max(ctx.orderedListCounter.value, 1) }, (_, idx) => ({
+        reference: orderedListRef(idx),
         levels: Array.from({ length: 9 }, (_, level) => ({
           level,
           format: LevelFormat.DECIMAL,
@@ -874,7 +1134,7 @@ export async function markdownToDocx(
             },
           },
         })),
-      }],
+      })),
     },
     sections: [{ properties: {}, children: elements }],
   });
