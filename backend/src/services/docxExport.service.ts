@@ -601,13 +601,8 @@ async function inlineToRuns(tokens: Token[], opts: InlineRunOptions, ctx: DocxCo
           result.push(...innerRuns);
         } else {
           // Last resort: use alt text from a nested image token if t.text is raw markdown
-<<<<<<< Updated upstream
           const imgAlt = ((t.tokens ?? []).find((tok) => tok.type === 'image') as Tokens.Image | undefined)?.text;
           const fallback = imgAlt || t.href;
-=======
-          const imgAlt = (t.tokens ?? []).find((tok) => tok.type === 'image') as Tokens.Image | undefined;
-          const fallback = imgAlt?.text || t.href;
->>>>>>> Stashed changes
           result.push(new TextRun({ text: fallback, ...opts }));
         }
         break;
