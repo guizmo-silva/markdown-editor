@@ -332,3 +332,83 @@ body {
 .orientation-fade-in {
   animation: orientation-fade-in 120ms ease-in-out forwards;
 }
+
+/* ── CodeMirror Search Panel ─────────────────────────────────────── */
+.cm-search {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+}
+
+.cm-search input {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  min-width: 120px;
+}
+
+.cm-search input:focus {
+  border-color: var(--accent-color);
+}
+
+.cm-search button {
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cm-search button:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.cm-search button[name="close"] {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  padding: 2px 6px;
+  margin-left: auto;
+}
+
+.cm-search label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.cm-search label input[type="checkbox"] {
+  min-width: unset;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border-radius: 2px;
+}
+
+.cm-searchMatch {
+  background: rgba(255, 200, 0, 0.35);
+  border-radius: 2px;
+}
+
+.cm-searchMatch-selected {
+  background: rgba(255, 140, 0, 0.6);
+}

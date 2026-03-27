@@ -9,7 +9,15 @@ interface ExportModalProps {
   onExport: (format: 'html' | 'md' | 'txt' | 'pdf' | 'docx') => void;
   filename: string;
   hasImages?: boolean;
+  exportingFormat?: 'html' | 'md' | 'txt' | 'pdf' | 'docx' | null;
 }
+
+const Spinner = () => (
+  <svg className="w-8 h-8 animate-spin" viewBox="0 0 24 24" fill="none">
+    <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={2} />
+    <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V2a10 10 0 00-10 10h2z" />
+  </svg>
+);
 
 export default function ExportModal({
   isOpen,
@@ -17,6 +25,7 @@ export default function ExportModal({
   onExport,
   filename,
   hasImages = false,
+  exportingFormat = null,
 }: ExportModalProps) {
   const { t } = useTranslation();
 
@@ -184,32 +193,41 @@ export default function ExportModal({
 
         {/* Format cards */}
         <div className="grid grid-cols-2 gap-3 mb-5">
-          {formats.map((format) => (
-            <button
-              key={format.id}
-              onClick={() => handleFormatClick(format.id)}
-              className="p-4 border border-[var(--border-primary)] rounded-lg
-                         flex flex-col items-center gap-2
-                         hover:border-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]
-                         transition-all cursor-pointer group"
-            >
-              <div className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
-                {format.icon}
-              </div>
-              <span
-                className="text-[13px] font-medium text-[var(--text-primary)]"
-                style={{ fontFamily: 'Roboto Mono, monospace' }}
+          {formats.map((format) => {
+            const isLoading = exportingFormat === format.id;
+            const isDisabled = exportingFormat !== null;
+            return (
+              <button
+                key={format.id}
+                onClick={() => !isDisabled && handleFormatClick(format.id)}
+                disabled={isDisabled}
+                className={`p-4 border border-[var(--border-primary)] rounded-lg
+                           flex flex-col items-center gap-2
+                           transition-all group
+                           ${isDisabled
+                             ? 'cursor-not-allowed opacity-50'
+                             : 'hover:border-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] cursor-pointer'
+                           }
+                           ${isLoading ? 'opacity-100!' : ''}`}
               >
-                {format.name}
-              </span>
-              <span
-                className="text-[10px] text-[var(--text-muted)]"
-                style={{ fontFamily: 'Roboto Mono, monospace' }}
-              >
-                {format.extension}
-              </span>
-            </button>
-          ))}
+                <div className={`transition-colors ${isLoading ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}>
+                  {isLoading ? <Spinner /> : format.icon}
+                </div>
+                <span
+                  className="text-[13px] font-medium text-[var(--text-primary)]"
+                  style={{ fontFamily: 'Roboto Mono, monospace' }}
+                >
+                  {format.name}
+                </span>
+                <span
+                  className="text-[10px] text-[var(--text-muted)]"
+                  style={{ fontFamily: 'Roboto Mono, monospace' }}
+                >
+                  {format.extension}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Cancel button */}

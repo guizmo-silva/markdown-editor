@@ -9,6 +9,7 @@ import { languages } from '@codemirror/language-data';
 import { syntaxHighlighting, HighlightStyle, foldGutter, codeFolding, foldService, unfoldEffect, foldEffect, foldable, foldedRanges } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { autocompletion, CompletionContext, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
+import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
 import InfoBar from './InfoBar';
@@ -28,6 +29,7 @@ export interface CodeMirrorHandle {
   getScrollTop: () => number;
   setScrollTop: (top: number) => void;
   getCursorLine: () => number;
+  openSearch: () => void;
 }
 
 interface CodeMirrorEditorProps {
@@ -1258,6 +1260,10 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       const pos = view.state.selection.main.head;
       return view.state.doc.lineAt(pos).number;
     },
+    openSearch() {
+      const view = viewRef.current;
+      if (view) openSearchPanel(view);
+    },
   }));
 
   // Flush pending info bar updates in a single RAF (avoids synchronous
@@ -1354,7 +1360,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         history(),
         formatKeymap,
         closeBrackets(),
+        search(),
         keymap.of([
+          ...searchKeymap,
           ...closeBracketsKeymap,
           ...defaultKeymap,
           ...historyKeymap,

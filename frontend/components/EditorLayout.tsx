@@ -104,6 +104,7 @@ export default function EditorLayout() {
   const [tabsWithImages, setTabsWithImages] = useState<Set<string>>(new Set());
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState<'html' | 'md' | 'txt' | 'pdf' | 'docx' | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [trashCount, setTrashCount] = useState(0);
@@ -655,6 +656,7 @@ export default function EditorLayout() {
   }, [activeTabId, updateTabId]);
 
   const handleExport = async (format: 'html' | 'md' | 'txt' | 'pdf' | 'docx') => {
+    setExportingFormat(format);
     const baseName = currentFilePath?.replace(/\.md$/, '').split('/').pop() || 'documento';
     const now = new Date();
     const timestamp = now.getFullYear().toString()
@@ -685,6 +687,7 @@ export default function EditorLayout() {
         const previewEl = document.querySelector('.markdown-preview') as HTMLElement | null;
         if (!previewEl) {
           showWarning('Alterne para o modo Split ou Preview para exportar em PDF.');
+          setExportingFormat(null);
           return;
         }
 
@@ -777,6 +780,8 @@ export default function EditorLayout() {
     } catch (err) {
       console.error('Failed to export:', err);
       showError(err instanceof Error ? err.message : 'Failed to export');
+    } finally {
+      setExportingFormat(null);
     }
   };
 
@@ -871,6 +876,18 @@ export default function EditorLayout() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [tabs]);
+
+  // Intercept Ctrl+F/Cmd+F to open CodeMirror search when editor is visible
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f' && viewMode !== 'preview') {
+        e.preventDefault();
+        editorRef.current?.openSearch();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode]);
 
   // Auto-rename file based on first heading when file is auto-named
   const activeIsAutoNamed = activeTab?.isAutoNamed;
@@ -1850,6 +1867,7 @@ export default function EditorLayout() {
         onExport={handleExport}
         filename={currentFilePath?.split('/').pop()?.replace(/\.md$/, '') || 'documento'}
         hasImages={currentFilePath ? tabsWithImages.has(currentFilePath) : false}
+        exportingFormat={exportingFormat}
       />
 
       {/* Hidden input for file import */}
