@@ -167,5 +167,17 @@
     "originalPath": "Ursprünglicher Speicherort",
     "confirmEmpty": "Papierkorb endgültig leeren?",
     "expiresIn": "Läuft in {{days}} Tagen ab"
+  },
+  "searchPanel": {
+    "searchPlaceholder": "Suchen...",
+    "replacePlaceholder": "Ersetzen...",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "all": "Alle",
+    "matchCase": "Aa",
+    "regexp": ".*",
+    "wholeWord": "Wort",
+    "replace": "Ersetzen",
+    "replaceAll": "Alle ersetzen"
   }
 }

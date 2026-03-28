@@ -109,6 +109,18 @@ body {
   pointer-events: none;
 }
 
+.tree-last-heading::after {
+  content: '';
+  position: absolute;
+  left: -13px;
+  top: calc(50% + 1px);
+  bottom: -4px;
+  width: 4px;
+  background: var(--bg-primary);
+  z-index: 10;
+  pointer-events: none;
+}
+
 /* Tree lines inside modal: use dropdown background color and adjusted position */
 .welcome-modal-tree .tree-last-item::after {
   background: var(--dropdown-bg);
@@ -350,7 +362,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   border: 1px solid var(--border-primary);
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 3px 7px;
   font-family: inherit;
   font-size: 12px;
@@ -366,7 +378,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
-  border-radius: 4px;
+  border-radius: 8px !important;
   padding: 3px 8px;
   font-family: inherit;
   font-size: 11px;
@@ -382,9 +394,12 @@ body {
 .cm-search button[name="close"] {
   border: none;
   background: transparent;
-  font-size: 14px;
-  padding: 2px 6px;
+  font-size: 20px;
+  line-height: 1;
+  padding: 4px 10px;
   margin-left: auto;
+  color: var(--text-secondary);
+  border-radius: 8px;
 }
 
 .cm-search label {

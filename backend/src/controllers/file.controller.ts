@@ -162,6 +162,10 @@ export const serveImage = async (req: Request, res: Response): Promise<void> => 
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Cache-Control', 'public, max-age=3600');
+    // SVG files can contain embedded scripts — block execution via CSP
+    if (ext === '.svg') {
+      res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline';");
+    }
     res.send(buffer);
   } catch (error) {
     console.error('Error serving image:', error);

@@ -167,5 +167,17 @@
     "originalPath": "Исходное место",
     "confirmEmpty": "Очистить корзину навсегда?",
     "expiresIn": "истекает через {{days}} дн."
+  },
+  "searchPanel": {
+    "searchPlaceholder": "Найти...",
+    "replacePlaceholder": "Заменить...",
+    "next": "Далее",
+    "previous": "Назад",
+    "all": "Все",
+    "matchCase": "Aa",
+    "regexp": ".*",
+    "wholeWord": "Слово",
+    "replace": "Заменить",
+    "replaceAll": "Заменить все"
   }
 }

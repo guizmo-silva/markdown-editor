@@ -9,7 +9,7 @@ import { languages } from '@codemirror/language-data';
 import { syntaxHighlighting, HighlightStyle, foldGutter, codeFolding, foldService, unfoldEffect, foldEffect, foldable, foldedRanges } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { autocompletion, CompletionContext, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
-import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
+import { search, searchKeymap, openSearchPanel, findNext, findPrevious, closeSearchPanel, selectMatches, replaceNext, replaceAll, getSearchQuery, setSearchQuery, SearchQuery, searchPanelOpen } from '@codemirror/search';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
 import InfoBar from './InfoBar';
@@ -47,6 +47,151 @@ interface CodeMirrorEditorProps {
   onColumnWidthChange?: (value: number) => void;
 }
 
+// Module-level labels for the search panel — updated by the component on each render
+// (same pattern as unfoldLabelRef, but module-level since the factory is outside the component)
+const _searchLabels = {
+  searchPlaceholder: 'Buscar...',
+  replacePlaceholder: 'Substituir...',
+  next: 'Próximo',
+  previous: 'Anterior',
+  all: 'Todos',
+  matchCase: 'Aa',
+  regexp: '.*',
+  wholeWord: 'Palavra',
+  replace: 'Substituir',
+  replaceAll: 'Subs. todos',
+};
+
+function createLocalizedSearchPanel(view: EditorView) {
+  const query = getSearchQuery(view.state);
+  const L = _searchLabels;
+
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.className = 'cm-textfield';
+  searchInput.name = 'search';
+  searchInput.setAttribute('form', '');
+  searchInput.setAttribute('main-field', 'true');
+  searchInput.setAttribute('aria-label', L.searchPlaceholder);
+  searchInput.placeholder = L.searchPlaceholder;
+  searchInput.value = query.search;
+
+  const replaceInput = document.createElement('input');
+  replaceInput.type = 'text';
+  replaceInput.className = 'cm-textfield';
+  replaceInput.name = 'replace';
+  replaceInput.setAttribute('form', '');
+  replaceInput.setAttribute('aria-label', L.replacePlaceholder);
+  replaceInput.placeholder = L.replacePlaceholder;
+  replaceInput.value = query.replace || '';
+
+  const caseCheck = document.createElement('input');
+  caseCheck.type = 'checkbox';
+  caseCheck.name = 'case';
+  caseCheck.checked = !!query.caseSensitive;
+
+  const reCheck = document.createElement('input');
+  reCheck.type = 'checkbox';
+  reCheck.name = 're';
+  reCheck.checked = !!query.regexp;
+
+  const wordCheck = document.createElement('input');
+  wordCheck.type = 'checkbox';
+  wordCheck.name = 'word';
+  wordCheck.checked = !!query.wholeWord;
+
+  function makeLabel(text: string, input: HTMLInputElement): HTMLLabelElement {
+    const label = document.createElement('label');
+    label.appendChild(input);
+    label.appendChild(document.createTextNode('\u00A0' + text));
+    return label;
+  }
+
+  function makeButton(name: string, text: string, onClick: () => void): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.name = name;
+    btn.textContent = text;
+    btn.type = 'button';
+    btn.className = 'cm-button';
+    btn.addEventListener('click', onClick);
+    return btn;
+  }
+
+  function commit() {
+    const q = new SearchQuery({
+      search: searchInput.value,
+      caseSensitive: caseCheck.checked,
+      regexp: reCheck.checked,
+      wholeWord: wordCheck.checked,
+      replace: replaceInput.value,
+    });
+    if (!q.eq(getSearchQuery(view.state))) {
+      view.dispatch({ effects: setSearchQuery.of(q) });
+    }
+  }
+
+  searchInput.addEventListener('change', commit);
+  searchInput.addEventListener('keyup', commit);
+  replaceInput.addEventListener('change', commit);
+  replaceInput.addEventListener('keyup', commit);
+  caseCheck.addEventListener('change', commit);
+  reCheck.addEventListener('change', commit);
+  wordCheck.addEventListener('change', commit);
+
+  searchInput.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.shiftKey) findPrevious(view); else findNext(view);
+    }
+  });
+
+  replaceInput.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') { e.preventDefault(); replaceNext(view); }
+  });
+
+  const closeBtn = document.createElement('button');
+  closeBtn.name = 'close';
+  closeBtn.textContent = '✕';
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', L.replacePlaceholder);
+  closeBtn.addEventListener('click', () => { closeSearchPanel(view); view.focus(); });
+
+  const dom = document.createElement('div');
+  dom.className = 'cm-search';
+  dom.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Escape') { e.preventDefault(); closeSearchPanel(view); view.focus(); }
+  });
+
+  dom.appendChild(searchInput);
+  dom.appendChild(makeButton('next', L.next, () => findNext(view)));
+  dom.appendChild(makeButton('prev', L.previous, () => findPrevious(view)));
+  dom.appendChild(makeButton('select', L.all, () => selectMatches(view)));
+  dom.appendChild(makeLabel(L.matchCase, caseCheck));
+  dom.appendChild(makeLabel(L.regexp, reCheck));
+  dom.appendChild(makeLabel(L.wholeWord, wordCheck));
+  dom.appendChild(document.createElement('br'));
+  dom.appendChild(replaceInput);
+  dom.appendChild(makeButton('replace', L.replace, () => replaceNext(view)));
+  dom.appendChild(makeButton('replaceAll', L.replaceAll, () => replaceAll(view)));
+  dom.appendChild(closeBtn);
+
+  return {
+    dom,
+    mount() { searchInput.focus(); searchInput.select(); },
+    update(update: ViewUpdate) {
+      const q = getSearchQuery(update.state);
+      const prev = getSearchQuery(update.startState);
+      if (!q.eq(prev)) {
+        if (searchInput.value !== q.search) searchInput.value = q.search;
+        if (replaceInput.value !== (q.replace || '')) replaceInput.value = q.replace || '';
+        caseCheck.checked = !!q.caseSensitive;
+        reCheck.checked = !!q.regexp;
+        wordCheck.checked = !!q.wholeWord;
+      }
+    },
+  };
+}
+
 // Markdown syntax highlighting for light mode (bg: #D8D8D8)
 const lightHighlighting = HighlightStyle.define([
   { tag: tags.heading1, color: '#1a1a1a', fontWeight: 'bold' },
@@ -67,6 +212,13 @@ const lightHighlighting = HighlightStyle.define([
   { tag: tags.meta, color: '#7c3aed' },
   { tag: tags.content, color: '#404040' },
   { tag: tags.comment, color: '#999999', fontStyle: 'italic' },
+  // HTML tags
+  { tag: tags.angleBracket, color: '#8a9da8' },
+  { tag: tags.tagName, color: '#2e6e7e' },
+  { tag: tags.attributeName, color: '#7a6030' },
+  { tag: tags.attributeValue, color: '#6a5880' },
+  { tag: tags.definitionOperator, color: '#888888' },
+  { tag: tags.character, color: '#6a8030' },
 ]);
 
 // Markdown syntax highlighting for dark mode (bg: #272727)
@@ -89,6 +241,13 @@ const darkHighlighting = HighlightStyle.define([
   { tag: tags.meta, color: '#b084e8' },
   { tag: tags.content, color: '#BEBEBE' },
   { tag: tags.comment, color: '#777777', fontStyle: 'italic' },
+  // HTML tags
+  { tag: tags.angleBracket, color: '#7a9aaa' },
+  { tag: tags.tagName, color: '#68c0d0' },
+  { tag: tags.attributeName, color: '#c4a860' },
+  { tag: tags.attributeValue, color: '#a88ec8' },
+  { tag: tags.definitionOperator, color: '#909090' },
+  { tag: tags.character, color: '#90b040' },
 ]);
 
 // Light theme for CodeMirror
@@ -732,6 +891,19 @@ const formatKeymap = keymap.of([
   }},
 ]);
 
+// Ctrl+F / Cmd+F toggles the search panel (open if closed, close if open)
+const toggleSearchKeymap = keymap.of([
+  { key: 'Mod-f', run: (view) => {
+    if (searchPanelOpen(view.state)) {
+      closeSearchPanel(view);
+      view.focus();
+    } else {
+      openSearchPanel(view);
+    }
+    return true;
+  }},
+]);
+
 // Effect to trigger line highlight flash
 const flashLineEffect = StateEffect.define<{ from: number; to: number } | null>();
 
@@ -1135,6 +1307,20 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   const unfoldLabelRef = useRef('');
   unfoldLabelRef.current = t('tooltips.unfold', 'Expandir');
 
+  // Keep module-level search panel labels in sync with the current language.
+  // Updated every render (same pattern as unfoldLabelRef) so the panel always
+  // shows fresh labels the next time it is opened.
+  _searchLabels.searchPlaceholder  = t('searchPanel.searchPlaceholder', 'Buscar...');
+  _searchLabels.replacePlaceholder = t('searchPanel.replacePlaceholder', 'Substituir...');
+  _searchLabels.next               = t('searchPanel.next', 'Próximo');
+  _searchLabels.previous           = t('searchPanel.previous', 'Anterior');
+  _searchLabels.all                = t('searchPanel.all', 'Todos');
+  _searchLabels.matchCase          = t('searchPanel.matchCase', 'Aa');
+  _searchLabels.regexp             = t('searchPanel.regexp', '.*');
+  _searchLabels.wholeWord          = t('searchPanel.wholeWord', 'Palavra');
+  _searchLabels.replace            = t('searchPanel.replace', 'Substituir');
+  _searchLabels.replaceAll         = t('searchPanel.replaceAll', 'Subs. todos');
+
   // Deferred state update refs - batch React state updates to avoid
   // synchronous re-renders during CodeMirror transactions (prevents scroll jumps)
   const pendingCharCount = useRef<number | null>(null);
@@ -1359,8 +1545,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         tightSelectionLayer,
         history(),
         formatKeymap,
+        toggleSearchKeymap,
         closeBrackets(),
-        search(),
+        search({ createPanel: createLocalizedSearchPanel }),
         keymap.of([
           ...searchKeymap,
           ...closeBracketsKeymap,
@@ -1600,7 +1787,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           history(),
           formatKeymap,
           closeBrackets(),
+          search({ createPanel: createLocalizedSearchPanel }),
           keymap.of([
+            ...searchKeymap,
             ...closeBracketsKeymap,
             ...defaultKeymap,
             ...historyKeymap,
@@ -1667,6 +1856,11 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       (el as HTMLElement).title = label;
       el.setAttribute('aria-label', label);
     });
+    // Reopen search panel if it is currently open so labels refresh immediately
+    if (searchPanelOpen(view.state)) {
+      closeSearchPanel(view);
+      openSearchPanel(view);
+    }
   }, [i18n.language]);
 
   // Scroll to line with flash highlight effect

@@ -101,6 +101,58 @@ export default function AssetsSidebar({
     return parseMarkdownAssets(markdown);
   }, [markdown]);
 
+  // Fold state for H1 and H2 headings
+  const [collapsedHeadings, setCollapsedHeadings] = useState<Set<number>>(new Set());
+
+  // Reset fold state when headings change (document switched)
+  const headingKey = assets.headings.map(h => h.line).join(',');
+  const prevHeadingKeyRef = useRef('');
+  if (prevHeadingKeyRef.current !== headingKey) {
+    prevHeadingKeyRef.current = headingKey;
+    if (collapsedHeadings.size > 0) setCollapsedHeadings(new Set());
+  }
+
+  // Which H1/H2 indices have at least one deeper heading immediately below them
+  const foldableHeadings = useMemo(() => {
+    const result = new Set<number>();
+    for (let i = 0; i < assets.headings.length; i++) {
+      const level = assets.headings[i].level;
+      if (level !== 1 && level !== 2) continue;
+      if (i + 1 < assets.headings.length && assets.headings[i + 1].level > level) {
+        result.add(i);
+      }
+    }
+    return result;
+  }, [assets.headings]);
+
+  // Which heading indices are visible given current collapsed state
+  const visibleHeadings = useMemo(() => {
+    const result: boolean[] = [];
+    let collapsedUntilLevel: number | null = null;
+    for (let i = 0; i < assets.headings.length; i++) {
+      const { level } = assets.headings[i];
+      // A same-or-higher-hierarchy heading breaks the current collapse scope
+      if (collapsedUntilLevel !== null && level <= collapsedUntilLevel) {
+        collapsedUntilLevel = null;
+      }
+      result.push(collapsedUntilLevel === null);
+      // If this heading is collapsed and we're not already under a collapse, start hiding children
+      if ((level === 1 || level === 2) && collapsedHeadings.has(i) && collapsedUntilLevel === null) {
+        collapsedUntilLevel = level;
+      }
+    }
+    return result;
+  }, [assets.headings, collapsedHeadings]);
+
+  const toggleHeading = useCallback((index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCollapsedHeadings(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index); else next.add(index);
+      return next;
+    });
+  }, []);
+
   // Handle section toggle
   const handleSectionToggle = (sectionId: SectionId, isOpen: boolean) => {
     setOpenSections(prev => ({ ...prev, [sectionId]: isOpen }));
@@ -216,23 +268,46 @@ export default function AssetsSidebar({
           {assets.headings.length > 0 && (
             <AssetSection title={t('sidebar.headings', 'Titulo')} count={assets.headings.length} mdSymbol="#" isOpen={openSections.headings} onToggle={(isOpen) => handleSectionToggle('headings', isOpen)}>
               {assets.headings.map((heading, index) => {
+                if (!visibleHeadings[index]) return null;
                 const isLast = index === assets.headings.length - 1;
                 const indentPx = (heading.level - 1) * 8;
-                const lineWidth = 12 + indentPx; // Base 12px + extra indent
+                const lineWidth = 12 + indentPx;
+                const canFold = (heading.level === 1 || heading.level === 2) && foldableHeadings.has(index);
+                const isCollapsed = collapsedHeadings.has(index);
                 return (
                   <div
                     key={index}
                     onClick={() => handleItemClick(heading.line)}
-                    className={`mb-1 p-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors relative ${isLast ? 'tree-last-item' : ''}`}
-                    style={{ paddingLeft: `${indentPx + 8}px` }}
+                    className={`group mb-1 cursor-pointer relative ${isLast ? 'tree-last-heading' : ''}`}
+                    style={{ paddingLeft: `${indentPx + 8}px`, paddingTop: '8px', paddingBottom: '8px', paddingRight: '8px' }}
                   >
-                    {/* Horizontal connector from vertical line to item */}
+                    {/* Horizontal connector — centralizado verticalmente */}
                     <div
-                      className="absolute top-[14px] h-[1px] bg-[var(--border-primary)]"
+                      className="absolute top-1/2 -translate-y-1/2 h-[1px] bg-[var(--border-primary)]"
                       style={{ left: '-12px', width: `${lineWidth}px` }}
                     ></div>
 
-                    <div className="flex items-start gap-1.5">
+                    {/* Fundo de hover: recua menos quando há ícone de fold para incluí-lo */}
+                    <div
+                      className="absolute inset-y-[2px] right-0 rounded group-hover:bg-[var(--hover-bg)] transition-colors pointer-events-none"
+                      style={{ left: `${indentPx + 2}px` }}
+                    />
+
+                    <div className="relative flex items-start gap-1.5">
+                      {canFold && (
+                        <div className="self-stretch flex items-center flex-shrink-0">
+                          <button
+                            onClick={e => toggleHeading(index, e)}
+                            className="p-0 bg-transparent border-none cursor-pointer opacity-50 group-hover:opacity-100 transition-opacity"
+                          >
+                            <img
+                              src={getIconPath('element_fold_icon.svg')}
+                              alt=""
+                              className={`w-[9px] h-[9px] transition-transform ${isCollapsed ? '-rotate-90' : 'rotate-0'}`}
+                            />
+                          </button>
+                        </div>
+                      )}
                       <span className="flex-shrink-0 text-[10px] text-[var(--text-muted)] mt-[2px]" style={{ fontFamily: 'Roboto Mono, monospace' }}>
                         {'#'.repeat(heading.level)}
                       </span>

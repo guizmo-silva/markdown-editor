@@ -1,37 +1,16 @@
 // API service for backend communication
 
-// Cache for API base URL (evaluated lazily on first use in browser)
-let cachedApiBaseUrl: string | null = null;
-
 /**
- * Get the API base URL dynamically based on the current host
- * This allows the app to work regardless of what IP/hostname is used to access it
+ * Returns the API base path.
+ * All requests go through the Next.js reverse proxy at /api,
+ * so no port or hostname is needed — works from any origin.
+ * Override with NEXT_PUBLIC_API_URL for non-proxy setups.
  */
 function getApiBaseUrl(): string {
-  // Return cached value if available
-  if (cachedApiBaseUrl) {
-    return cachedApiBaseUrl;
-  }
-
-  // If explicitly set, use that
   if (process.env.NEXT_PUBLIC_API_URL) {
-    cachedApiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
-    return cachedApiBaseUrl;
+    return process.env.NEXT_PUBLIC_API_URL;
   }
-
-  // In browser, detect the host dynamically
-  if (typeof window !== 'undefined') {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    // Read port from runtime config (injected by Docker entrypoint) or default
-    const runtimeConfig = (window as unknown as Record<string, unknown>).__RUNTIME_CONFIG__ as { apiPort?: string } | undefined;
-    const apiPort = runtimeConfig?.apiPort || '3011';
-    cachedApiBaseUrl = `${protocol}//${hostname}:${apiPort}/api`;
-    return cachedApiBaseUrl;
-  }
-
-  // Fallback for SSR (not cached as it may change)
-  return 'http://localhost:3011/api';
+  return '/api';
 }
 
 export interface FileItem {

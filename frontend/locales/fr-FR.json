@@ -167,5 +167,17 @@
     "originalPath": "Emplacement original",
     "confirmEmpty": "Vider la corbeille définitivement?",
     "expiresIn": "Expire dans {{days}} jours"
+  },
+  "searchPanel": {
+    "searchPlaceholder": "Rechercher...",
+    "replacePlaceholder": "Remplacer...",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "all": "Tous",
+    "matchCase": "Aa",
+    "regexp": ".*",
+    "wholeWord": "Mot",
+    "replace": "Remplacer",
+    "replaceAll": "Tout remplacer"
   }
 }

@@ -167,5 +167,17 @@
     "originalPath": "Localização original",
     "confirmEmpty": "Esvaziar a lixeira permanentemente?",
     "expiresIn": "Expira em {{days}} dias"
+  },
+  "searchPanel": {
+    "searchPlaceholder": "Buscar...",
+    "replacePlaceholder": "Substituir...",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "all": "Todos",
+    "matchCase": "Aa",
+    "regexp": ".*",
+    "wholeWord": "Palavra",
+    "replace": "Substituir",
+    "replaceAll": "Subs. todos"
   }
 }

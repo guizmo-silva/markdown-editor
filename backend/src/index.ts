@@ -16,11 +16,11 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet());
-// Allow any origin since this is a self-hosted app
-// The user accesses it via their own network (localhost, LAN IP, etc.)
+// Allow any origin since this is a self-hosted app accessed via localhost/LAN.
+// credentials: false — app has no cookies or auth tokens, so no CSRF risk.
 app.use(cors({
   origin: true,
-  credentials: true,
+  credentials: false,
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

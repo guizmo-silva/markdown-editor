@@ -167,5 +167,17 @@
     "originalPath": "Original location",
     "confirmEmpty": "Empty trash permanently?",
     "expiresIn": "Expires in {{days}} days"
+  },
+  "searchPanel": {
+    "searchPlaceholder": "Search...",
+    "replacePlaceholder": "Replace...",
+    "next": "Next",
+    "previous": "Previous",
+    "all": "All",
+    "matchCase": "Aa",
+    "regexp": ".*",
+    "wholeWord": "Word",
+    "replace": "Replace",
+    "replaceAll": "Replace all"
   }
 }

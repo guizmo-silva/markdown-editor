@@ -10,6 +10,11 @@ function getAppVersion(): string {
   }
 }
 
+// Backend URL used by the Next.js server-side proxy.
+// In Docker Compose the backend service is always reachable at http://backend:3001.
+// Override with BACKEND_URL env var at build time if needed.
+const backendUrl = process.env.BACKEND_URL || "http://backend:3001";
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
@@ -18,6 +23,14 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   env: {
     NEXT_PUBLIC_APP_VERSION: getAppVersion(),
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+    ];
   },
 };
 

@@ -6,7 +6,6 @@ services:
       - "3010:3000"
     environment:
       - NODE_ENV=production
-      - API_PORT=3011
     depends_on:
       backend:
         condition: service_healthy
@@ -24,7 +23,10 @@ services:
     image: ghcr.io/guizmo-silva/markdown-editor-backend:latest
     container_name: markdown-editor-backend
     ports:
-      - "3011:3001"
+      # Bind apenas ao loopback: o backend NÃO fica acessível na rede/internet.
+      # O frontend acessa o backend via rede Docker interna; a porta 3011
+      # fica disponível somente em localhost para debug local se necessário.
+      - "127.0.0.1:3011:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001

@@ -273,10 +273,14 @@ function injectImageCaptions(html: string): string {
 }
 
 function buildPDFHtml(renderedHtml: string, title: string): string {
+  // Puppeteer runs inside the backend container, so relative image URLs
+  // (e.g. /api/files/image?path=...) must resolve to localhost on the backend port.
+  const backendPort = process.env.PORT || '3001';
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <base href="http://localhost:${backendPort}">
   <title>${escapeHTML(title)}</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
   <style>
@@ -330,6 +334,27 @@ export const convertToPDF = async (
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
+    // Block requests to private/RFC1918 ranges to prevent SSRF.
+    // data: and blob: URIs (inline images) are always allowed.
+    // Localhost is allowed so the backend can serve its own API-hosted images.
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      const url = req.url();
+      if (url.startsWith('data:') || url.startsWith('blob:')) {
+        req.continue();
+        return;
+      }
+      try {
+        const { hostname } = new URL(url);
+        const isPrivate =
+          /^10\./.test(hostname) ||
+          /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+          /^192\.168\./.test(hostname);
+        if (isPrivate) { req.abort('blockedbyclient'); return; }
+      } catch { req.abort('blockedbyclient'); return; }
+      req.continue();
+    });
+
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
     // Wait for all images to fully load (networkidle0 alone is not enough when

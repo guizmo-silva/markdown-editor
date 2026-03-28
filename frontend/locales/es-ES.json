@@ -167,5 +167,17 @@
     "originalPath": "Ubicación original",
     "confirmEmpty": "¿Vaciar papelera permanentemente?",
     "expiresIn": "Expira en {{days}} días"
+  },
+  "searchPanel": {
+    "searchPlaceholder": "Buscar...",
+    "replacePlaceholder": "Reemplazar...",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "all": "Todos",
+    "matchCase": "Aa",
+    "regexp": ".*",
+    "wholeWord": "Palabra",
+    "replace": "Reemplazar",
+    "replaceAll": "Reemplazar todo"
   }
 }
