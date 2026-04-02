@@ -1049,6 +1049,26 @@ async function blockToElements(tokens: Token[], ctx: DocxContext): Promise<(Para
           break;
         }
 
+        // ── <details> / <summary> ────────────────────────────────
+        // marked captures everything from <details> to the first blank line
+        // as one html token (CommonMark type-6 block). The accordion body
+        // follows naturally as normal tokens. We extract the <summary> text
+        // and render it as a bold paragraph; bare </details> is dropped.
+        if (/^<details[\s>]/i.test(html) || /^<summary[\s>]/i.test(html)) {
+          const summaryM = /<summary[^>]*>([\s\S]*?)<\/summary>/i.exec(html);
+          if (summaryM) {
+            const plainText = summaryM[1].replace(/<[^>]+>/g, '').trim();
+            if (plainText) {
+              elements.push(new Paragraph({
+                children: [new TextRun({ text: plainText, bold: true })],
+                spacing: { before: 160, after: 80 },
+              }));
+            }
+          }
+          break;
+        }
+        if (/^<\/details[\s>]|^<\/details>$/i.test(html)) break;
+
         // ── <div align> ───────────────────────────────────────────
         // Complete block (no blank lines inside): handle inline
         const divFullM = /^<div\s+align="(center|left|right|justify)">([\s\S]*)<\/div>$/i.exec(html);

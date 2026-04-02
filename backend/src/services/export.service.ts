@@ -272,6 +272,18 @@ function injectImageCaptions(html: string): string {
   );
 }
 
+/**
+ * Converts <details>/<summary> elements to static equivalents for PDF export.
+ * Since PDFs don't support interactivity, the accordion content would be hidden.
+ * This replaces them with a styled <div>/<p> so all content is always visible.
+ */
+function expandDetailsForPDF(html: string): string {
+  return html
+    .replace(/<details[^>]*>/gi, '<div class="pdf-details">')
+    .replace(/<\/details>/gi, '</div>')
+    .replace(/<summary[^>]*>([\s\S]*?)<\/summary>/gi, '<p class="pdf-summary"><strong>$1</strong></p>');
+}
+
 function buildPDFHtml(renderedHtml: string, title: string): string {
   // Puppeteer runs inside the backend container, so relative image URLs
   // (e.g. /api/files/image?path=...) must resolve to localhost on the backend port.
@@ -293,6 +305,14 @@ function buildPDFHtml(renderedHtml: string, title: string): string {
     }
     ${PREVIEW_CSS}
     ${PRISM_CSS}
+    .pdf-details {
+      border-left: 3px solid #ddd;
+      padding-left: 1rem;
+      margin: 0.75rem 0;
+    }
+    .pdf-summary {
+      margin: 0 0 0.5rem 0;
+    }
     @media print {
       pre { page-break-inside: avoid; }
       h1, h2, h3 { page-break-after: avoid; }
@@ -329,7 +349,7 @@ export const convertToPDF = async (
   renderedHtml: string,
   title: string,
 ): Promise<Buffer> => {
-  const html = buildPDFHtml(injectImageCaptions(renderedHtml), title);
+  const html = buildPDFHtml(injectImageCaptions(expandDetailsForPDF(renderedHtml)), title);
 
   const browser = await getBrowser();
   const page = await browser.newPage();
