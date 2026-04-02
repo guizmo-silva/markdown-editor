@@ -2,15 +2,24 @@ import { Request, Response } from 'express';
 import * as exportService from '../services/export.service.js';
 import { markdownToDocx } from '../services/docxExport.service.js';
 
-// Sanitize a user-supplied name for use in Content-Disposition filename=
-// Removes control characters (prevents CR/LF header injection) and
-// characters that break filename="..." parsing.
-function sanitizeFilename(name: string): string {
-  return name
+// Build a Content-Disposition header value that supports UTF-8 filenames via RFC 5987.
+// Returns a header string with both a safe ASCII fallback (filename="...") and
+// the properly percent-encoded UTF-8 name (filename*=UTF-8''...).
+function contentDispositionHeader(name: string, ext: string): string {
+  const cleaned = name
     .replace(/[\x00-\x1f\x7f]/g, '')  // strip control chars (CR, LF, NUL…)
-    .replace(/["\\/]/g, '_')            // replace Content-Disposition-breaking chars
     .trim()
     .substring(0, 200) || 'document';
+
+  // ASCII-only fallback: replace non-ASCII and filename-breaking chars with '_'
+  const asciiName = cleaned.replace(/[^\x20-\x7e]/g, '_').replace(/["\\/]/g, '_');
+
+  // RFC 5987 percent-encode: encode everything except unreserved chars
+  const rfc5987Name = encodeURIComponent(cleaned + ext).replace(/['()!*]/g, c =>
+    '%' + c.charCodeAt(0).toString(16).toUpperCase()
+  );
+
+  return `attachment; filename="${asciiName}${ext}"; filename*=UTF-8''${rfc5987Name}`;
 }
 
 export const exportToHTML = async (req: Request, res: Response): Promise<void> => {
@@ -23,7 +32,7 @@ export const exportToHTML = async (req: Request, res: Response): Promise<void> =
 
     const html = await exportService.convertToHTML(content, title);
     res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Content-Disposition', `attachment; filename="${sanitizeFilename(title)}.html"`);
+    res.setHeader('Content-Disposition', contentDispositionHeader(title, '.html'));
     res.send(html);
   } catch (error) {
     console.error('Error exporting to HTML:', error);
@@ -40,7 +49,7 @@ export const exportToPDF = async (req: Request, res: Response): Promise<void> =>
     }
     const pdfBuffer = await exportService.convertToPDF(renderedHtml, title);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${sanitizeFilename(title)}.pdf"`);
+    res.setHeader('Content-Disposition', contentDispositionHeader(title, '.pdf'));
     res.send(pdfBuffer);
   } catch (error) {
     console.error('Error exporting to PDF:', error);
@@ -58,7 +67,7 @@ export const exportToDocx = async (req: Request, res: Response): Promise<void> =
 
     const buffer = await markdownToDocx(content, title, documentPath);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', `attachment; filename="${sanitizeFilename(title)}.docx"`);
+    res.setHeader('Content-Disposition', contentDispositionHeader(title, '.docx'));
     res.send(buffer);
   } catch (error) {
     console.error('Error exporting to DOCX:', error);
@@ -80,7 +89,7 @@ export const exportDocumentWithImages = async (req: Request, res: Response): Pro
 
     const zipBuffer = await exportService.exportWithImages(documentPath, format as 'html' | 'md' | 'txt', title);
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${sanitizeFilename(title)}.zip"`);
+    res.setHeader('Content-Disposition', contentDispositionHeader(title, '.zip'));
     res.send(zipBuffer);
   } catch (error) {
     console.error('Error exporting with images:', error);
