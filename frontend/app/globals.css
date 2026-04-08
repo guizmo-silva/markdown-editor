@@ -32,6 +32,10 @@
   --dropdown-bg: #FFFFFF;
   --accent-color: #3b82f6;
 
+  /* Back button (floating, over editor) */
+  --back-btn-bg: #FFFFFF;
+  --back-btn-color: #000000;
+
   /* Legacy compatibility */
   --background: #ffffff;
   --foreground: #0a0a0a;
@@ -69,6 +73,10 @@
   --hover-bg-subtle: #2a2a2a;
   --dropdown-bg: #1e1e1e;
   --accent-color: #60a5fa;
+
+  /* Back button (floating, over editor) */
+  --back-btn-bg: #676767;
+  --back-btn-color: #FFFFFF;
 
   /* Legacy compatibility */
   --background: #121212;

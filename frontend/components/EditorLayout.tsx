@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useLayoutEffect, useReducer } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CodeMirrorEditor, type CodeMirrorHandle } from './Editor';
 import { MarkdownPreview, PreviewInfoBar, PREVIEW_ZOOM_LEVELS, PREVIEW_DEFAULT_ZOOM, type PreviewClickInfo } from './Preview';
@@ -97,6 +97,13 @@ export default function EditorLayout() {
   // Pending navigation: set in preview-only mode, applied when editor becomes visible
   const pendingCursorOffset = useRef<number | null>(null);
   const pendingScrollLine = useRef<number | null>(null);
+  // Back button: float on editor bottom-right after sidebar navigation
+  const savedScrollTopRef = useRef<number | null>(null);
+  const showBackButtonRef = useRef(false);
+  const backButtonReadyRef = useRef(false);
+  const backButtonTargetLineRef = useRef<number | null>(null);
+  const [, forceBackButtonUpdate] = useReducer((x: number) => x + 1, 0);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
@@ -321,6 +328,17 @@ export default function EditorLayout() {
     return null;
   }, []);
 
+  const handleBackButtonClick = () => {
+    if (savedScrollTopRef.current !== null) {
+      editorRef.current?.setScrollTop(savedScrollTopRef.current);
+      savedScrollTopRef.current = null;
+    }
+    showBackButtonRef.current = false;
+    backButtonReadyRef.current = false;
+    backButtonTargetLineRef.current = null;
+    forceBackButtonUpdate();
+  };
+
   const handleNavigateToLine = (line: number) => {
     if (viewMode === 'preview') {
       // In preview-only mode, scroll the preview directly
@@ -333,6 +351,18 @@ export default function EditorLayout() {
       // Save line so the editor scrolls to match when it becomes visible
       pendingScrollLine.current = line;
     } else {
+      // Save current position and show back button
+      savedScrollTopRef.current = editorRef.current?.getScrollTop() ?? 0;
+      showBackButtonRef.current = true;
+      backButtonReadyRef.current = false;
+      backButtonTargetLineRef.current = null;
+      forceBackButtonUpdate();
+      // After scroll settles, capture the actual top-visible line as baseline
+      setTimeout(() => {
+        backButtonReadyRef.current = true;
+        backButtonTargetLineRef.current = lastEditorLineRef.current;
+      }, 400);
+
       setScrollToLine(line);
       // Reset after navigation to allow re-navigation to same line
       setTimeout(() => setScrollToLine(undefined), 100);
@@ -1061,6 +1091,18 @@ export default function EditorLayout() {
   // Scroll sync callback — editor scrolls → preview follows
   const handleEditorScrollLineChange = useCallback((lineNumber: number) => {
     lastEditorLineRef.current = lineNumber;
+
+    // Dismiss back button only after user scrolls ≥6 lines away from settled position
+    if (backButtonReadyRef.current && showBackButtonRef.current && backButtonTargetLineRef.current !== null) {
+      const lineDiff = Math.abs(lineNumber - backButtonTargetLineRef.current);
+      if (lineDiff >= 12) {
+        showBackButtonRef.current = false;
+        backButtonReadyRef.current = false;
+        backButtonTargetLineRef.current = null;
+        forceBackButtonUpdate();
+      }
+    }
+
     if (!isScrollSyncedRef.current) return;
     if (suppressEditorSyncRef.current) return;
     if (scrollingFromRef.current === 'preview') {
@@ -1733,7 +1775,7 @@ export default function EditorLayout() {
                     />
                   </div>
                   <div
-                    className={isAnySplit ? 'flex-1 overflow-hidden' : 'flex-1 min-h-0'}
+                    className={isAnySplit ? 'flex-1 overflow-hidden relative' : 'flex-1 min-h-0 relative'}
                     style={viewMode === 'code' ? { maxWidth: `${columnWidth}%`, margin: '0 auto', width: '100%' } : undefined}
                   >
                     <CodeMirrorEditor
@@ -1749,6 +1791,39 @@ export default function EditorLayout() {
                       columnWidth={!isAnySplit ? columnWidth : undefined}
                       onColumnWidthChange={!isAnySplit ? setColumnWidth : undefined}
                     />
+                    {/* Floating back button — appears after sidebar navigation */}
+                    <button
+                      onClick={handleBackButtonClick}
+                      title={t('tooltips.backToPosition')}
+                      aria-label={t('tooltips.backToPosition')}
+                      style={{
+                        position: 'absolute',
+                        bottom: '48px',
+                        right: '16px',
+                        zIndex: 50,
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'var(--back-btn-bg)',
+                        color: 'var(--back-btn-color)',
+                        borderRadius: '4px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                        opacity: showBackButtonRef.current ? 1 : 0,
+                        transform: showBackButtonRef.current ? 'translateY(0)' : 'translateY(8px)',
+                        transition: 'opacity 200ms ease-out, transform 200ms ease-out',
+                        pointerEvents: showBackButtonRef.current ? 'auto' : 'none',
+                      }}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 14 4 9 9 4" />
+                        <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
 

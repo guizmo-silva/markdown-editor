@@ -136,7 +136,8 @@
     "hideSidebar": "Esconder barra lateral",
     "unfold": "Expandir",
     "splitResizer": "(Dois cliques para centralizar)",
-    "collapseAll": "Clique para recolher tudo"
+    "collapseAll": "Clique para recolher tudo",
+    "backToPosition": "Voltar para onde estava"
   },
   "welcomeModal": {
     "newDocument": "Novo Documento",

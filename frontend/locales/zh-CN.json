@@ -136,7 +136,8 @@
     "hideSidebar": "隐藏侧边栏",
     "unfold": "展开",
     "splitResizer": "(双击居中)",
-    "collapseAll": "点击折叠全部"
+    "collapseAll": "点击折叠全部",
+    "backToPosition": "返回上一位置"
   },
   "welcomeModal": {
     "newDocument": "新建文档",

@@ -136,7 +136,8 @@
     "hideSidebar": "Hide sidebar",
     "unfold": "Expand",
     "splitResizer": "(Double-click to center)",
-    "collapseAll": "Click to collapse all"
+    "collapseAll": "Click to collapse all",
+    "backToPosition": "Back to where you were"
   },
   "welcomeModal": {
     "newDocument": "New Document",

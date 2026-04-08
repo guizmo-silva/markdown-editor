@@ -136,7 +136,8 @@
     "hideSidebar": "Seitenleiste ausblenden",
     "unfold": "Ausklappen",
     "splitResizer": "(Doppelklick zum Zentrieren)",
-    "collapseAll": "Klicken zum Alles einklappen"
+    "collapseAll": "Klicken zum Alles einklappen",
+    "backToPosition": "Zurück zur vorherigen Position"
   },
   "welcomeModal": {
     "newDocument": "Neues Dokument",

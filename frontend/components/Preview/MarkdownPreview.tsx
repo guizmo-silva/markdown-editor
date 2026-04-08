@@ -264,7 +264,7 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
       const href = anchor.getAttribute('href') ?? '';
       if (href.startsWith('#')) {
         e.preventDefault();
-        const targetId = href.slice(1);
+        const targetId = decodeURIComponent(href.slice(1));
         const container = previewScrollRef?.current;
         if (container && targetId) {
           const target = container.querySelector(`#${CSS.escape(targetId)}`) as HTMLElement | null;

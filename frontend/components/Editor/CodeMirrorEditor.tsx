@@ -506,6 +506,40 @@ const codeBlockAutocomplete = autocompletion({
 const isUrl = (text: string): boolean =>
   /^https?:\/\/\S+$/.test(text);
 
+// GitHub-style slug matching rehype-slug/github-slugger behavior in the preview.
+// Order matters: spaces → hyphens FIRST, then strip unsupported chars so that
+// "Links 🔗" → "links-🔗" → "links-" (trailing hyphen preserved, matching the DOM id).
+function headingSlugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, '-')             // spaces → hyphens first
+    .replace(/[^\p{L}\p{N}-]/gu, '')  // strip unsupported chars (emoji, punctuation…), keep hyphens
+    .replace(/-{2,}/g, '-');          // collapse consecutive hyphens (e.g. two adjacent emoji)
+}
+
+function extractHeadingText(text: string): string | null {
+  const match = text.match(/^#{1,6}\s+(.+)$/);
+  return match ? match[1].trim() : null;
+}
+
+// Returns true if cursor at `pos` is inside the URL part of a markdown link [text](|)
+function isCursorInLinkUrl(view: EditorView, pos: number): boolean {
+  const before = view.state.sliceDoc(Math.max(0, pos - 500), pos);
+  let depth = 0;
+  for (let i = before.length - 1; i >= 0; i--) {
+    const ch = before[i];
+    if (ch === ')') {
+      depth++;
+    } else if (ch === '(') {
+      if (depth === 0) {
+        return i > 0 && before[i - 1] === ']';
+      }
+      depth--;
+    }
+  }
+  return false;
+}
+
 // Smart typography: auto-replace --- → em dash (inline) and ... → ellipsis
 const smartTypography = EditorView.inputHandler.of((view, from, to, text) => {
   // Don't interfere with IME composition (dead keys, accents, etc.)
@@ -567,6 +601,22 @@ const pasteLinkHandler = EditorView.domEventHandlers({
         selection: { anchor: from + clipboardText.length },
       });
       return true;
+    }
+
+    // Heading pasted inside link URL position → convert to anchor slug
+    const headingText = extractHeadingText(clipboardText);
+    if (headingText !== null) {
+      const { from, to } = view.state.selection.main;
+      if (isCursorInLinkUrl(view, from)) {
+        event.preventDefault();
+        const anchor = `#${headingSlugify(headingText)}`;
+        view.dispatch({
+          changes: { from, to, insert: anchor },
+          selection: { anchor: from + anchor.length },
+        });
+        return true;
+      }
+      return false;
     }
 
     if (!isUrl(clipboardText)) return false;
@@ -693,7 +743,7 @@ function tightSelectionMarkers(view: EditorView): readonly RectangleMarker[] {
       return {
         left:   fc.left  - base.left,
         top:    fc.top   - base.top,
-        right:  Math.max(fc.left - base.left + 2, tc.right - base.left + 4),
+        right:  Math.max(fc.left - base.left + 2, tc.right - base.left),
         height, // already the visual-line height from blocks building step
         empty:  false,
       };
