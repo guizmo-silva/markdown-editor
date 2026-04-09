@@ -276,6 +276,15 @@ body {
 .cm-sel-first.cm-sel-last { border-radius: 3px; }      /* single line: all corners */
 
 
+/* Onboarding language ticker */
+@keyframes onboarding-ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.onboarding-ticker {
+  animation: onboarding-ticker 28s linear infinite;
+}
+
 /* CodeMirror fold/unfold animations */
 @keyframes cm-fold-placeholder-in {
   from { opacity: 0; transform: scaleX(0.4); }

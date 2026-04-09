@@ -19,6 +19,7 @@ const languages: Language[] = [
   { code: 'de-DE', name: 'Deutsch', flag: '🇩🇪' },
   { code: 'ru-RU', name: 'Русский', flag: '🇷🇺' },
   { code: 'zh-CN', name: '简体中文', flag: '🇨🇳' },
+  { code: 'hi-IN', name: 'हिन्दी', flag: '🇮🇳' },
 ];
 
 interface LogoMenuProps {

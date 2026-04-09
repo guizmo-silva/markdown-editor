@@ -10,6 +10,7 @@ import { ViewToggle, type ViewMode } from './ViewToggle';
 import { Tabs } from './Tabs';
 import { Toolbar } from './Toolbar';
 import { WelcomeModal } from './WelcomeModal';
+import { OnboardingModal } from './OnboardingModal';
 import { ExportModal } from './ExportModal';
 import { ImportModal } from './ImportModal';
 import { TrashModal } from './TrashModal';
@@ -109,7 +110,8 @@ export default function EditorLayout() {
   const [fileRefreshTrigger, setFileRefreshTrigger] = useState(0);
   // Track which open tabs belong to a document folder (have images)
   const [tabsWithImages, setTabsWithImages] = useState<Set<string>>(new Set());
-  const [showWelcomeModal, setShowWelcomeModal] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<'html' | 'md' | 'txt' | 'pdf' | 'docx' | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -117,6 +119,22 @@ export default function EditorLayout() {
   const [trashCount, setTrashCount] = useState(0);
   const [imageRevision, setImageRevision] = useState(0);
   const [previewZoom, setPreviewZoom] = useState(PREVIEW_DEFAULT_ZOOM);
+
+  // Onboarding: show once on first launch, then skip forever
+  useEffect(() => {
+    if (localStorage.getItem('mkd_onboarding_done')) {
+      setShowWelcomeModal(true);
+    } else {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  const handleOnboardingConfirm = useCallback(() => {
+    localStorage.setItem('mkd_onboarding_done', '1');
+    setShowOnboarding(false);
+    setShowWelcomeModal(true);
+  }, []);
+
   const handlePreviewZoomIn = useCallback(() => {
     setPreviewZoom(prev => {
       const idx = PREVIEW_ZOOM_LEVELS.indexOf(prev);
@@ -1925,6 +1943,12 @@ export default function EditorLayout() {
           })()}
         </div>
       </div>
+
+      {/* Onboarding Modal — shown only on first launch */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onConfirm={handleOnboardingConfirm}
+      />
 
       {/* Welcome Modal */}
       <WelcomeModal

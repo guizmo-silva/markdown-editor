@@ -295,7 +295,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
         onMouseEnter={handleMouseEnter}
         draggable={item.type === 'image' && !!isDocumentChild}
         onDragStart={item.type === 'image' && !!isDocumentChild ? handleImageDragStart : undefined}
-        className={`relative overflow-hidden group flex items-center gap-1 py-1 pr-2 cursor-pointer transition-colors ${
+        className={`relative overflow-hidden group flex items-center gap-1 py-1 pr-2 rounded cursor-pointer transition-colors ${
           isDragSource ? 'opacity-30' : 'hover:bg-[var(--hover-bg)]'
         } ${isDragTarget ? 'bg-[var(--accent-color)]/25 ring-2 ring-[var(--accent-color)] ring-inset' : ''}`}
         style={{ paddingLeft: '8px' }}
@@ -909,7 +909,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
           onClick={onToggle}
           onMouseEnter={() => handleRootMouseEnter(`__${rootKey}__`)}
           onMouseLeave={() => handleRootMouseLeave(`__${rootKey}__`)}
-          className={`relative overflow-hidden group flex items-center justify-between pl-[20px] pr-3 py-2 cursor-pointer transition-colors ${
+          className={`relative overflow-hidden group flex items-center justify-between mx-1 pl-2 pr-3 py-2 rounded cursor-pointer transition-colors ${
             isDragTarget ? 'bg-[var(--accent-color)]/25 ring-2 ring-[var(--accent-color)] ring-inset' : 'hover:bg-[var(--hover-bg)]'
           }`}
         >

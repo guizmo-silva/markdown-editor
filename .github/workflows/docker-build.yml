@@ -42,7 +42,8 @@ jobs:
           if [ "$REF_TYPE" = "tag" ]; then
             echo "value=$REF_NAME" >> "$GITHUB_OUTPUT"
           else
-            echo "value=dev" >> "$GITHUB_OUTPUT"
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
+            echo "value=$LATEST_TAG" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Extract metadata for Frontend

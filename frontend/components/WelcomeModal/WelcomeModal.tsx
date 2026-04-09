@@ -334,7 +334,7 @@ export default function WelcomeModal({
                 {/* Single volume: Workspace root node */}
                 <div
                   onClick={() => setIsWorkspaceExpanded(!isWorkspaceExpanded)}
-                  className="flex items-center gap-2 py-1.5 pr-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors"
+                  className="flex items-center gap-2 py-1.5 pl-2 pr-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors"
                 >
                   <svg className="w-4 h-4 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
                     {isWorkspaceExpanded ? (
@@ -391,7 +391,7 @@ export default function WelcomeModal({
                           }
                           setExpandedVolumes(newSet);
                         }}
-                        className="flex items-center gap-2 py-1.5 pr-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors"
+                        className="flex items-center gap-2 py-1.5 pl-2 pr-2 hover:bg-[var(--hover-bg)] cursor-pointer rounded transition-colors"
                       >
                         <svg className="w-4 h-4 flex-shrink-0 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20">
                           {isExpanded ? (
@@ -552,7 +552,7 @@ function FileTreeItem({
         onClick={handleClick}
         className="flex items-center gap-2 py-1 pr-2 hover:bg-[var(--hover-bg)]
                    cursor-pointer rounded transition-colors"
-        style={{ paddingLeft: '8px' }}
+        style={{ paddingLeft: '12px' }}
       >
         {/* Folder/File icon */}
         {isFolder ? (
