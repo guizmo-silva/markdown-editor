@@ -47,28 +47,6 @@ Abra o navegador em: <http://localhost:3010>
 
 ---
 
-## Instalação no ZimaOS
-
-O MKD é compatível com ZimaOS. Use o arquivo [`docker-compose.zimaos.yml`](./docker-compose.zimaos.yml) desta pasta, que já vem pré-configurado com o caminho padrão do ZimaOS (`/DATA/AppData/mkd/workspace`).
-
-```bash
-docker compose -f docker-compose.zimaos.yml up -d
-```
-
----
-
-## Variáveis de ambiente
-
-| Variável | Padrão | Descrição |
-| --- | --- | --- |
-| `PORT` | `3001` | Porta interna da API |
-| `PUID` | `1000` | UID do usuário para permissões de arquivo |
-| `PGID` | `1000` | GID do grupo para permissões de arquivo |
-| `WORKSPACE_ROOT` | `/workspace` | Caminho interno do volume principal |
-| `EXTRA_VOLUMES` | — | Volumes adicionais: `nome:/caminho,nome2:/caminho2` |
-
----
-
 ## Portas
 
 | Serviço | Porta externa | Porta interna |
@@ -88,3 +66,31 @@ Para atualizar para a versão mais recente:
 docker compose pull
 docker compose up -d
 ```
+
+---
+
+## Instalação no ZimaOS
+
+O MKD possui um compose específico para instalação no ZimaOS.
+
+Use o arquivo [`docker-compose.zimaos.yml`](./docker-compose.zimaos.yml) desta pasta, que já vem pré-configurado com o caminho padrão (`/DATA/AppData/mkd/workspace`).
+
+```bash
+docker compose -f docker-compose.zimaos.yml up -d
+```
+
+### Adicionando novos volumes no ZimaOS
+
+Para adicionar um novo volume (seja no disco local ou outro disco mapeado) vá em "Volumes" e na seção "ZimaOS" procure ou escreva o caminho da pasta desejada. Na seção "MKD" dê um apelido para esse volume, sempre começanco com a barra `/`
+
+---
+
+## Variáveis de ambiente
+
+| Variável | Padrão | Descrição |
+| --- | --- | --- |
+| `PORT` | `3001` | Porta interna da API |
+| `PUID` | `1000` | UID do usuário para permissões de arquivo |
+| `PGID` | `1000` | GID do grupo para permissões de arquivo |
+| `WORKSPACE_ROOT` | `/workspace` | Caminho interno do volume principal |
+| `EXTRA_VOLUMES` | — | Volumes adicionais: `nome_personalizado:/apelido_caminho (como escrito na seção "MKD")`,`nome2:/apelido_caminho2` |

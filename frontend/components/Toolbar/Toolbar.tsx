@@ -1291,6 +1291,7 @@ export default function Toolbar({
   };
 
   const handleInlineCode = () => toggleFormat('`', '`', 'code');
+  const handleComment = () => wrapText('<!-- ', ' -->', 'comentário');
   const handleCodeBlock = () => {
     const editor = getEditor();
     if (!editor) return;
@@ -2401,6 +2402,18 @@ export default function Toolbar({
           {moreSubmenu === null ? (
             /* Lista principal */
             <div className="p-1">
+              {/* Comentário HTML — ação direta */}
+              <button
+                onClick={() => { handleComment(); setShowMoreMenu(false); }}
+                className="flex items-center justify-between gap-2 w-full px-3 py-1.5 rounded hover:bg-[var(--hover-bg)] text-sm text-[var(--text-primary)]"
+              >
+                <span className="flex items-center gap-2">
+                  <img src={getIconPath('code-comment_icon.svg')} alt="" className="w-5 h-5" />
+                  {t('toolbar.comment')}
+                </span>
+                <span className="text-xs text-[var(--text-secondary)]">Ctrl+/</span>
+              </button>
+
               {/* Linha Horizontal — ação direta */}
               <button
                 onClick={() => { handleHorizontalLine(); setShowMoreMenu(false); }}

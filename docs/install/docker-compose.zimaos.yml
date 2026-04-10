@@ -60,4 +60,6 @@ networks:
     driver: bridge
 
 x-casaos:
+  title:
+    en_us: MKD
   icon: https://raw.githubusercontent.com/guizmo-silva/markdown-editor/refs/heads/main/docs/logo/mkd-zimaos-icon.png

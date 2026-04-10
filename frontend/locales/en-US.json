@@ -24,6 +24,7 @@
     "image": "Image",
     "table": "Table",
     "horizontalRule": "Horizontal rule",
+    "comment": "Comment",
     "subscript": "Subscript",
     "footnote": "Footnote",
     "superscript": "Superscript",

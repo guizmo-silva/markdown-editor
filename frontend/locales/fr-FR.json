@@ -24,6 +24,7 @@
     "image": "Image",
     "table": "Tableau",
     "horizontalRule": "Ligne horizontale",
+    "comment": "Commentaire",
     "subscript": "Indice",
     "footnote": "Note de bas de page",
     "superscript": "Exposant",

@@ -932,6 +932,7 @@ const formatKeymap = keymap.of([
   { key: 'Mod-i', run: createFormatCommand('*', '*') },     // Italic
   { key: 'Mod-Shift-x', run: createFormatCommand('~~', '~~') }, // Strikethrough
   { key: 'Mod-k', run: linkCommand },                        // Link
+  { key: 'Mod-/', run: createFormatCommand('<!-- ', ' -->') }, // Comment
   { key: 'Mod-Shift-v', run: () => {
     // Let the browser fire a native paste event with clipboardData (no permission UI).
     // Chrome/Edge: works silently. Firefox: may show a non-blocking post-paste notification.
