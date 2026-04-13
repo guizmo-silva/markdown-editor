@@ -1808,6 +1808,8 @@ export default function EditorLayout() {
                       onScrollLineChange={handleEditorScrollLineChange}
                       columnWidth={!isAnySplit ? columnWidth : undefined}
                       onColumnWidthChange={!isAnySplit ? setColumnWidth : undefined}
+                      documentPath={currentFilePath}
+                      onImagePasted={handleImageImported}
                     />
                     {/* Floating back button — appears after sidebar navigation */}
                     <button

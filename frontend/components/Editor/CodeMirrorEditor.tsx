@@ -13,6 +13,7 @@ import { search, searchKeymap, openSearchPanel, findNext, findPrevious, closeSea
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
 import InfoBar from './InfoBar';
+import { importImage } from '@/services/api';
 
 // Interface to expose textarea-like API for compatibility with Toolbar
 export interface CodeMirrorHandle {
@@ -45,6 +46,8 @@ interface CodeMirrorEditorProps {
   onScrollLineChange?: (line: number) => void;
   columnWidth?: number;
   onColumnWidthChange?: (value: number) => void;
+  documentPath?: string | null;
+  onImagePasted?: (newDocPath: string, imageName: string) => void;
 }
 
 // Module-level labels for the search panel — updated by the component on each render
@@ -588,6 +591,36 @@ const pasteLinkHandler = EditorView.domEventHandlers({
     return true;
   },
   paste(event, view) {
+    // Image paste: detect image/* data in clipboard and import to document folder
+    const items = Array.from(event.clipboardData?.items ?? []);
+    const imageItem = items.find(item => item.type.startsWith('image/'));
+    if (imageItem && _pasteImageDocPath) {
+      event.preventDefault();
+      const file = imageItem.getAsFile();
+      if (file) {
+        const { from, to } = view.state.selection.main;
+        const selectedText = view.state.sliceDoc(from, to).replace(/\n+$/, '').trim();
+        const placeholder = 'descrição da imagem';
+        const docPath = _pasteImageDocPath;
+        const callback = _pasteImageCallback;
+        importImage(docPath, file).then(({ newDocumentPath, imageName }) => {
+          const altText = selectedText || placeholder;
+          const markdown = `![${altText}](${imageName})`;
+          view.dispatch({
+            changes: { from, to, insert: markdown },
+            selection: selectedText
+              ? { anchor: from + markdown.length }
+              : { anchor: from + 2, head: from + 2 + placeholder.length },
+          });
+          view.focus();
+          callback?.(newDocumentPath, imageName);
+        }).catch(err => {
+          console.error('Erro ao importar imagem do clipboard:', err);
+        });
+      }
+      return true;
+    }
+
     const clipboardText = event.clipboardData?.getData('text/plain')?.trim() ?? '';
 
     // Ctrl+Shift+V: paste as plain text, no URL conversion
@@ -925,6 +958,10 @@ const linkCommand = (view: EditorView): boolean => {
 
 // Flag set by Ctrl+Shift+V keydown; consumed by pasteLinkHandler
 let plainPasteMode = false;
+
+// Module-level state for clipboard image paste — updated by the component on each render
+let _pasteImageDocPath: string | null = null;
+let _pasteImageCallback: ((newDocPath: string, imageName: string) => void) | null = null;
 
 // Keymap for formatting shortcuts (Mod = Ctrl on Windows/Linux, Cmd on macOS)
 const formatKeymap = keymap.of([
@@ -1338,6 +1375,8 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   onScrollLineChange,
   columnWidth,
   onColumnWidthChange,
+  documentPath,
+  onImagePasted,
 }, ref) => {
   const { i18n, t } = useTranslation();
   const { theme: globalTheme } = useTheme();
@@ -1357,6 +1396,10 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   // Updated every render so placeholderDOM always reads the latest language.
   const unfoldLabelRef = useRef('');
   unfoldLabelRef.current = t('tooltips.unfold', 'Expandir');
+
+  // Sync module-level vars used by the paste handler (same pattern as plainPasteMode)
+  _pasteImageDocPath = documentPath ?? null;
+  _pasteImageCallback = onImagePasted ?? null;
 
   // Keep module-level search panel labels in sync with the current language.
   // Updated every render (same pattern as unfoldLabelRef) so the panel always
