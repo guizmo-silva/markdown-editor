@@ -410,7 +410,7 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
       if (hasCodeBlock) return <>{children}</>;
       return <pre className="raw-pre">{children}</pre>;
     },
-    img({ src, alt, ...props }: React.ComponentPropsWithoutRef<'img'>) {
+    img({ src, alt, title, ...props }: React.ComponentPropsWithoutRef<'img'>) {
       // Resolve relative image paths via the backend image endpoint
       const srcStr = typeof src === 'string' ? src : undefined;
       let resolvedSrc: string | undefined = srcStr;
@@ -419,7 +419,16 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
         resolvedSrc = imageRevision ? `${base}&v=${imageRevision}` : base;
       }
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={resolvedSrc} alt={alt || ''} {...props} />;
+      const img = <img src={resolvedSrc} alt={alt || ''} title={title} {...props} />;
+      if (title) {
+        return (
+          <figure>
+            {img}
+            <figcaption>{title}</figcaption>
+          </figure>
+        );
+      }
+      return img;
     },
   }), [imageBasePath, imageRevision]);
 

@@ -372,6 +372,25 @@
   height: auto;
 }
 
+.markdown-preview figure {
+  margin: 16px 0;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.markdown-preview figure img {
+  margin: 0;
+  display: block;
+}
+
+.markdown-preview figcaption {
+  margin-top: 6px;
+  font-size: 0.85em;
+  color: var(--color-text-muted, #6b7280);
+  text-align: center;
+  font-style: italic;
+}
+
 /* First and last child margins */
 .markdown-preview > *:first-child {
   margin-top: 0 !important;
