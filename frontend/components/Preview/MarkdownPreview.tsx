@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { RefObject, MouseEvent } from 'react';
 import type { Root, RootContent } from 'mdast';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkGemoji from 'remark-gemoji';
 import remarkMath from 'remark-math';
@@ -409,12 +409,12 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
         </CodeBlock>
       );
     },
-    p({ children, node, ...props }: React.ComponentPropsWithoutRef<'p'> & { node?: { children?: Array<{ tagName?: string }> } }) {
+    p({ children, node, ...props }: React.JSX.IntrinsicElements['p'] & ExtraProps) {
       // react-markdown wraps images in <p>; when the img component returns a <figure>
       // that would produce invalid HTML (<figure> inside <p>). Check the raw HAST node
       // children (not the rendered React elements) to detect block-level replacements.
-      const hasBlock = node?.children?.some(child =>
-        ['img', 'figure', 'div', 'table', 'blockquote', 'pre'].includes(child.tagName ?? ''),
+      const hasBlock = node?.children?.some((child: { type: string; tagName?: string }) =>
+        'tagName' in child && ['img', 'figure', 'div', 'table', 'blockquote', 'pre'].includes(child.tagName ?? ''),
       );
       if (hasBlock) return <>{children}</>;
       return <p {...props}>{children}</p>;
