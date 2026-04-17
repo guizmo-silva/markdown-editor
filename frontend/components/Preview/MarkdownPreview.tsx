@@ -267,7 +267,16 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
         const targetId = decodeURIComponent(href.slice(1));
         const container = previewScrollRef?.current;
         if (container && targetId) {
-          const target = container.querySelector(`#${CSS.escape(targetId)}`) as HTMLElement | null;
+          // Scan all elements with an id attribute and compare raw string values.
+          // This avoids CSS selector parsing failures for IDs that contain trailing
+          // hyphens, double hyphens, variation selectors, or other CSS-invalid sequences.
+          let target: HTMLElement | null = null;
+          for (const el of container.querySelectorAll('[id]')) {
+            if (el.getAttribute('id') === targetId) {
+              target = el as HTMLElement;
+              break;
+            }
+          }
           if (target) {
             const top = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
             container.scrollTop = Math.max(0, top - 16);
@@ -399,6 +408,16 @@ function MarkdownPreview({ content, viewTheme, onToggleTheme, previewScrollRef, 
           {String(children).replace(/\n$/, '')}
         </CodeBlock>
       );
+    },
+    p({ children, node, ...props }: React.ComponentPropsWithoutRef<'p'> & { node?: { children?: Array<{ tagName?: string }> } }) {
+      // react-markdown wraps images in <p>; when the img component returns a <figure>
+      // that would produce invalid HTML (<figure> inside <p>). Check the raw HAST node
+      // children (not the rendered React elements) to detect block-level replacements.
+      const hasBlock = node?.children?.some(child =>
+        ['img', 'figure', 'div', 'table', 'blockquote', 'pre'].includes(child.tagName ?? ''),
+      );
+      if (hasBlock) return <>{children}</>;
+      return <p {...props}>{children}</p>;
     },
     pre({ children }: React.ComponentPropsWithoutRef<'pre'>) {
       // Fenced code blocks: the `code` component already renders a CodeBlock (which has its

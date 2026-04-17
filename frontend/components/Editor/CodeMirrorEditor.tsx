@@ -10,6 +10,7 @@ import { syntaxHighlighting, HighlightStyle, foldGutter, codeFolding, foldServic
 import { tags } from '@lezer/highlight';
 import { autocompletion, CompletionContext, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { search, searchKeymap, openSearchPanel, findNext, findPrevious, closeSearchPanel, selectMatches, replaceNext, replaceAll, getSearchQuery, setSearchQuery, SearchQuery, searchPanelOpen } from '@codemirror/search';
+import { slug as githubSlug } from 'github-slugger';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
 import InfoBar from './InfoBar';
@@ -509,15 +510,11 @@ const codeBlockAutocomplete = autocompletion({
 const isUrl = (text: string): boolean =>
   /^https?:\/\/\S+$/.test(text);
 
-// GitHub-style slug matching rehype-slug/github-slugger behavior in the preview.
-// Order matters: spaces → hyphens FIRST, then strip unsupported chars so that
-// "Links 🔗" → "links-🔗" → "links-" (trailing hyphen preserved, matching the DOM id).
+// Uses the same github-slugger library as rehype-slug in the preview,
+// guaranteeing identical slug generation (including edge cases like variation
+// selectors, emoji sequences, and non-ASCII punctuation).
 function headingSlugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/\s+/g, '-')             // spaces → hyphens first
-    .replace(/[^\p{L}\p{N}-]/gu, '')  // strip unsupported chars (emoji, punctuation…), keep hyphens
-    .replace(/-{2,}/g, '-');          // collapse consecutive hyphens (e.g. two adjacent emoji)
+  return githubSlug(text);
 }
 
 function extractHeadingText(text: string): string | null {
@@ -637,6 +634,7 @@ const pasteLinkHandler = EditorView.domEventHandlers({
     }
 
     // Heading pasted inside link URL position → convert to anchor slug
+    // Or, if there's a non-empty selection, wrap it as [selected](#slug)
     const headingText = extractHeadingText(clipboardText);
     if (headingText !== null) {
       const { from, to } = view.state.selection.main;
@@ -646,6 +644,18 @@ const pasteLinkHandler = EditorView.domEventHandlers({
         view.dispatch({
           changes: { from, to, insert: anchor },
           selection: { anchor: from + anchor.length },
+        });
+        return true;
+      }
+      // Selection over paragraph text → wrap as anchor link
+      if (from !== to) {
+        event.preventDefault();
+        const anchor = `#${headingSlugify(headingText)}`;
+        const selectedText = view.state.sliceDoc(from, to);
+        const replacement = `[${selectedText}](${anchor})`;
+        view.dispatch({
+          changes: { from, to, insert: replacement },
+          selection: { anchor: from + replacement.length },
         });
         return true;
       }

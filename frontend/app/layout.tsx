@@ -31,8 +31,8 @@ export const metadata: Metadata = {
   description: "Self-hosted markdown editor with advanced features",
   icons: {
     icon: [
-      { url: '/favicon-32x32.svg', sizes: '32x32', type: 'image/svg+xml' },
-      { url: '/favicon-16x16.svg', sizes: '16x16', type: 'image/svg+xml' },
+      { url: '/favicon-32x32.svg', sizes: 'any', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '48x48', type: 'image/x-icon' },
     ],
   },
 };
