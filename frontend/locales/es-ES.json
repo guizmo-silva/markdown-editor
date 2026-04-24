@@ -168,7 +168,8 @@
     "restoreTo": "Restaurar en...",
     "originalPath": "Ubicación original",
     "confirmEmpty": "¿Vaciar papelera permanentemente?",
-    "expiresIn": "Expira en {{days}} días"
+    "expiresIn": "Expira en {{days}} días",
+    "restoreCheatSheet": "Restaurar el archivo markdown-cheat-sheet"
   },
   "searchPanel": {
     "searchPlaceholder": "Buscar...",

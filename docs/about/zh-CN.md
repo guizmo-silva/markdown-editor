@@ -4,16 +4,18 @@
 专为个人使用设计的自托管 Markdown 编辑器，通过 Docker 运行在家庭服务器、NAS 设备及 ZimaOS 等平台上。
 
 ---
+![MKD - 自托管 Markdown 编辑器](../../docs/screens/main_interface.png "编辑器主界面")
 
 ## 功能特性
 
 - **侧边栏** — 文档元素导航（标题、引用、链接、图片、表格、提示框和脚注）及内置文件管理器
 - **视图模式** — 纯代码、纯预览或并排分屏视图
-- **导入** `.md`、`.docx`、`.zip`（.md + 图片）和 `.txt` 文件
-- **导出** 为 `.txt`、`.md`、`.pdf`、`.html` 及含本地链接图片的 `.zip` 压缩包
+- **导入** `.md`、`.docx`、`.zip`（`.md` + 图片）和 `.txt` 文件
+- **导出** 为 `.txt`、`.md`、`.pdf`、`.html`、`.docx` 及含本地链接图片的 `.zip` 压缩包；
+  - 若要准确了解元素在 `.docx` 和 `.pdf` 等格式中的渲染效果，请导出默认 *workspace* 中附带的 `markdown-cheat-sheet.md` 文件。
 - **自动保存**
 - **标签页** — 同时编辑多个文档
-- **多语言界面与拼写检查** — 葡萄牙语、英语、西班牙语、法语、德语、俄语和简体中文
+- **多语言界面与拼写检查** — 葡萄牙语、英语、西班牙语、法语、德语、俄语、印地语和简体中文
 - **图片支持** — 导入外部或链接图片
 - **明暗主题**
 - **内置回收站**
@@ -62,7 +64,7 @@ docker compose up -d
 
 #### 前端
 
-- [Next.js 15](https://nextjs.org/) + React 19 + TypeScript
+- [Next.js 16](https://nextjs.org/) + React 19 + TypeScript
 - [Tailwind CSS](https://tailwindcss.com/)
 - [CodeMirror 6](https://codemirror.net/) — 编辑器核心
 - [react-markdown](https://github.com/remarkjs/react-markdown) + remark/rehype 插件 — 预览渲染

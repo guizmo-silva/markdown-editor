@@ -54,12 +54,12 @@ for vol_path in $VOLUME_PATHS; do
   fi
 done
 
-# Copy Welcome.md to workspace if it doesn't exist and workspace is empty
+# Copy markdown-cheat-sheet.md to workspace if it doesn't exist and workspace is empty
 if [ -d "$WORKSPACE_ROOT" ] && [ -z "$(ls -A "$WORKSPACE_ROOT" 2>/dev/null)" ]; then
-  if [ -f /app/defaults/Welcome.md ]; then
-    cp /app/defaults/Welcome.md "$WORKSPACE_ROOT/Welcome.md"
-    chown node:node "$WORKSPACE_ROOT/Welcome.md"
-    echo "Welcome.md copied to workspace"
+  if [ -f /app/defaults/markdown-cheat-sheet.md ]; then
+    cp /app/defaults/markdown-cheat-sheet.md "$WORKSPACE_ROOT/markdown-cheat-sheet.md"
+    chown node:node "$WORKSPACE_ROOT/markdown-cheat-sheet.md"
+    echo "markdown-cheat-sheet.md copied to workspace"
   fi
 fi
 

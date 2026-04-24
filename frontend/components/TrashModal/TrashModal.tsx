@@ -12,6 +12,8 @@ import {
   emptyTrash,
   listFiles,
   getVolumes,
+  getCheatSheetStatus,
+  restoreCheatSheetDefault,
   type TrashItem,
   type FileItem,
   type VolumeInfo,
@@ -37,10 +39,9 @@ interface FolderSelectorProps {
   onSelect: (path: string) => void;
   files: FileItem[];
   volumes: VolumeInfo[];
-  folderContents: Map<string, FileItem[]>;
 }
 
-function FolderSelector({ selectedFolder, onSelect, files, volumes, folderContents }: FolderSelectorProps) {
+function FolderSelector({ selectedFolder, onSelect, files, volumes }: FolderSelectorProps) {
   const { getIconPath } = useThemedIcon();
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
@@ -60,9 +61,7 @@ function FolderSelector({ selectedFolder, onSelect, files, volumes, folderConten
       for (const item of items) {
         if (item.type === 'folder') {
           add(item.path, item.name, level);
-          const subContents = folderContents.get(item.path);
-          if (subContents) extractFolders(subContents, level + 1);
-          else if (item.children) extractFolders(item.children, level + 1);
+          if (item.children) extractFolders(item.children, level + 1);
         } else if (item.type === 'file') {
           // Detect document folder: parent dir name slug matches file basename slug
           const lastSlash = item.path.lastIndexOf('/');
@@ -90,7 +89,7 @@ function FolderSelector({ selectedFolder, onSelect, files, volumes, folderConten
     }
 
     return folders;
-  }, [files, folderContents, isMultiVolume]);
+  }, [files, isMultiVolume]);
 
   const allFolders = getAllFolders();
 
@@ -196,8 +195,8 @@ function formatDate(isoDate: string): string {
 }
 
 // Build the destination path for restore: folder + originalName
-function buildDestinationPath(folder: string, originalName: string): string {
-  if (folder === '/') return `workspace/${originalName}`;
+function buildDestinationPath(folder: string, originalName: string, volumes: VolumeInfo[]): string {
+  if (folder === '/') return `${volumes[0]?.name ?? 'workspace'}/${originalName}`;
   return `${folder}/${originalName}`;
 }
 
@@ -219,14 +218,13 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
   // Folder selector state (loaded once when modal opens)
   const [files, setFiles] = useState<FileItem[]>([]);
   const [volumes, setVolumes] = useState<VolumeInfo[]>([]);
-  const [folderContents] = useState<Map<string, FileItem[]>>(new Map());
-
   // Per-item state: restore expanded / delete confirm / folder selection
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [restoreFolder, setRestoreFolder] = useState<string>('/');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmEmpty, setConfirmEmpty] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [cheatSheetInWorkspace, setCheatSheetInWorkspace] = useState(true);
 
   // Animation: open
   useEffect(() => {
@@ -264,14 +262,16 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [trashItems, volumeList, fileList] = await Promise.all([
+      const [trashItems, volumeList, fileList, cheatSheetStatus] = await Promise.all([
         getTrashItems(),
         getVolumes(),
         listFiles('/'),
+        getCheatSheetStatus(),
       ]);
       setItems(trashItems);
       setVolumes(volumeList);
       setFiles(fileList);
+      setCheatSheetInWorkspace(cheatSheetStatus.existsInWorkspace);
       if (volumeList.length > 1) {
         setRestoreFolder(volumeList[0].name);
       } else {
@@ -297,7 +297,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
   const handleRestore = async (item: TrashItem) => {
     setBusyId(item.id);
     try {
-      const dest = buildDestinationPath(restoreFolder, item.originalName);
+      const dest = buildDestinationPath(restoreFolder, item.originalName, volumes);
       await restoreTrashItem(item.id, dest);
       setRestoringId(null);
       onChanged();
@@ -329,6 +329,16 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
     }
   };
 
+  const handleRestoreCheatSheet = async () => {
+    try {
+      await restoreCheatSheetDefault();
+      setCheatSheetInWorkspace(true);
+      onChanged();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Failed to restore cheat-sheet');
+    }
+  };
+
   const handleEmptyTrash = async () => {
     setBusyId('empty');
     try {
@@ -344,6 +354,9 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
   };
 
   if (!shouldRender) return null;
+
+  const cheatSheetInTrash = items.some(i => i.originalName === 'markdown-cheat-sheet.md');
+  const showRestoreCheatSheet = !cheatSheetInWorkspace && !cheatSheetInTrash;
 
   return (
     <div
@@ -370,6 +383,18 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
           >
             {t('trash.title', 'Lixeira')}
           </h2>
+          {showRestoreCheatSheet && (
+            <button
+              onClick={handleRestoreCheatSheet}
+              title={t('trash.restoreCheatSheet', 'Restaurar o arquivo markdown-cheat-sheet')}
+              className="ml-auto p-1.5 rounded hover:bg-[var(--hover-bg)] transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            >
+              <svg className="w-6 h-6" viewBox="0 0 24 24">
+                <text x="12" y="11" textAnchor="middle" fontSize="10" fontFamily="monospace" fontWeight="700" fill="currentColor">.md</text>
+                <path d="M17 17H3m5-4-5 4 5 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Content */}
@@ -468,12 +493,21 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
                       >
                         {t('trash.deletedOn', 'Deletado em')} {formatDate(item.deletedAt)}
                       </span>
-                      <span
-                        className={`text-[10px] ${days <= 3 ? 'text-red-500' : 'text-[var(--text-muted)]'}`}
-                        style={{ fontFamily: 'Roboto Mono, monospace' }}
-                      >
-                        {t('trash.expiresIn', 'Expira em {{days}} dias', { days })}
-                      </span>
+                      {days <= 3 ? (
+                        <span
+                          className="text-[9px] font-semibold bg-red-600 text-white px-1.5 py-0.5 rounded"
+                          style={{ fontFamily: 'Roboto Mono, monospace' }}
+                        >
+                          {t('trash.expiresIn', 'Expira em {{days}} dias', { days })}
+                        </span>
+                      ) : (
+                        <span
+                          className="text-[9px] font-semibold bg-gray-600 text-white px-1.5 py-0.5 rounded"
+                          style={{ fontFamily: 'Roboto Mono, monospace' }}
+                        >
+                          {t('trash.expiresIn', 'Expira em {{days}} dias', { days })}
+                        </span>
+                      )}
                     </div>
 
                     {/* Restore sub-panel */}
@@ -488,7 +522,6 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
                           onSelect={setRestoreFolder}
                           files={files}
                           volumes={volumes}
-                          folderContents={folderContents}
                         />
                         <div className="flex gap-2 mt-2">
                           <button
@@ -548,7 +581,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
           {items.length > 0 && !confirmEmpty && (
             <button
               onClick={() => setConfirmEmpty(true)}
-              className="text-[11px] text-[var(--text-muted)] hover:text-red-500 transition-colors"
+              className="px-4 py-1.5 text-[11px] text-[var(--text-muted)] hover:text-red-500 hover:bg-[var(--hover-bg)] rounded transition-colors"
               style={{ fontFamily: 'Roboto Mono, monospace' }}
             >
               {t('trash.emptyTrash', 'Esvaziar lixeira')}

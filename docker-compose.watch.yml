@@ -39,7 +39,7 @@ services:
       dockerfile: docker/Dockerfile.backend.dev
     container_name: mkd-backend-watch
     ports:
-      - "3011:3001"
+      - "127.0.0.1:3011:3001"
     environment:
       - NODE_ENV=development
       - PORT=3001
@@ -50,10 +50,13 @@ services:
     volumes:
       - ./backend:/app:z          # código-fonte do host (:z necessário para SELinux/Fedora)
       - /app/node_modules        # preserva node_modules da imagem
+      - ./defaults:/app/defaults:z # arquivos padrão (cheat-sheet, etc.)
       - ./workspace:/workspace:z
       - /home/guizmo/Teste:/teste:z
     networks:
       - mkd-watch
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
       interval: 15s

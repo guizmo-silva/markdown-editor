@@ -168,7 +168,8 @@
     "restoreTo": "Восстановить в...",
     "originalPath": "Исходное место",
     "confirmEmpty": "Очистить корзину навсегда?",
-    "expiresIn": "истекает через {{days}} дн."
+    "expiresIn": "истекает через {{days}} дн.",
+    "restoreCheatSheet": "Восстановить файл markdown-cheat-sheet"
   },
   "searchPanel": {
     "searchPlaceholder": "Найти...",

@@ -19,6 +19,7 @@ export async function extractZip(buffer: Buffer): Promise<ZipExtractResult> {
 
   for (const entry of directory.files) {
     if (entry.type === 'Directory') continue;
+    if (entry.path.includes('..') || path.isAbsolute(entry.path)) continue;
     const name = path.basename(entry.path);
     const ext = path.extname(name).toLowerCase();
 

@@ -1546,6 +1546,11 @@ export default function EditorLayout() {
     setShowDividerTooltip(false);
   }, []);
 
+  // Updates CSS variable directly — avoids React re-render during slider drag
+  const handleColumnWidthLive = useCallback((v: number) => {
+    splitContainerRef.current?.style.setProperty('--column-width', `${v}%`);
+  }, []);
+
   useEffect(() => {
     if (isResizingSplit) {
       document.addEventListener('mousemove', handleSplitResizeMove);
@@ -1757,7 +1762,7 @@ export default function EditorLayout() {
             orientationPhase === 'fade-out' ? 'orientation-fade-out' :
             orientationPhase === 'fade-in'  ? 'orientation-fade-in'  : ''
           }`}
-          style={{ display: 'flex', width: '100%' }}
+          style={{ display: 'flex', width: '100%', '--column-width': `${columnWidth}%` } as React.CSSProperties}
         >
 
           {/* Unified always-mounted layout — evita remontagem de CodeMirror e MarkdownPreview */}
@@ -1783,6 +1788,10 @@ export default function EditorLayout() {
                   }}
                   onTransitionEnd={isSplit ? () => setIsSplitAnimating(false) : undefined}
                 >
+                  <div
+                    className="flex-1 min-h-0 flex flex-col overflow-hidden"
+                    style={isHorizontal ? { maxWidth: 'var(--column-width)', margin: '0 auto', width: '100%' } : undefined}
+                  >
                   <div ref={toolbarWrapperRef}>
                     <Toolbar
                       textareaRef={editorRef}
@@ -1845,6 +1854,7 @@ export default function EditorLayout() {
                       </svg>
                     </button>
                   </div>
+                  </div>
                 </div>
 
                 {/* Vertical split resize handle */}
@@ -1900,7 +1910,7 @@ export default function EditorLayout() {
                 >
                   <div
                     className="flex-1 min-h-0 flex flex-col overflow-hidden"
-                    style={isHorizontal ? { maxWidth: `${columnWidth}%`, margin: '0 auto', width: '100%' } : undefined}
+                    style={isHorizontal ? { maxWidth: 'var(--column-width)', margin: '0 auto', width: '100%' } : undefined}
                   >
                     <div className="flex-1 min-h-0 relative overflow-hidden">
                       <MarkdownPreview
@@ -1931,6 +1941,7 @@ export default function EditorLayout() {
                         onToggleScrollSync={toggleScrollSync}
                         columnWidth={columnWidth}
                         onColumnWidthChange={setColumnWidth}
+                        onColumnWidthLiveChange={handleColumnWidthLive}
                         previewZoom={previewZoom}
                         onPreviewZoomIn={handlePreviewZoomIn}
                         onPreviewZoomOut={handlePreviewZoomOut}

@@ -168,7 +168,8 @@
     "restoreTo": "Wiederherstellen in...",
     "originalPath": "Ursprünglicher Speicherort",
     "confirmEmpty": "Papierkorb endgültig leeren?",
-    "expiresIn": "Läuft in {{days}} Tagen ab"
+    "expiresIn": "Läuft in {{days}} Tagen ab",
+    "restoreCheatSheet": "Die Datei markdown-cheat-sheet wiederherstellen"
   },
   "searchPanel": {
     "searchPlaceholder": "Suchen...",

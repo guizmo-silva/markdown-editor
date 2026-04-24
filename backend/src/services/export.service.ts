@@ -267,7 +267,7 @@ function injectImageCaptions(html: string): string {
   return html.replace(
     /<img\b([^>]*?\btitle="([^"]+)"[^>]*?)(?:\s*\/)?>/g,
     (_match, attrs, captionText) => {
-      return `<figure class="img-figure"><img ${attrs}><figcaption>${captionText}</figcaption></figure>`;
+      return `<figure class="img-figure"><img ${attrs}><figcaption>${escapeHTML(captionText)}</figcaption></figure>`;
     }
   );
 }
@@ -349,6 +349,7 @@ export const convertToPDF = async (
   renderedHtml: string,
   title: string,
 ): Promise<Buffer> => {
+  const backendPort = process.env.PORT || '3001';
   const html = buildPDFHtml(injectImageCaptions(expandDetailsForPDF(renderedHtml)), title);
 
   const browser = await getBrowser();
@@ -356,16 +357,25 @@ export const convertToPDF = async (
   try {
     // Block requests to private/RFC1918 ranges to prevent SSRF.
     // data: and blob: URIs (inline images) are always allowed.
-    // Localhost is allowed so the backend can serve its own API-hosted images.
+    // Localhost is allowed only for our own image-serving endpoint.
     await page.setRequestInterception(true);
+    const backendImagePrefix = `http://localhost:${backendPort}/api/files/image`;
     page.on('request', (req) => {
       const url = req.url();
       if (url.startsWith('data:') || url.startsWith('blob:')) {
         req.continue();
         return;
       }
+      // Block file:// to prevent reading container filesystem
+      if (url.startsWith('file://')) { req.abort('blockedbyclient'); return; }
       try {
         const { hostname } = new URL(url);
+        // Allow localhost only for our own image-serving endpoint
+        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+          if (!url.startsWith(backendImagePrefix)) { req.abort('blockedbyclient'); return; }
+          req.continue();
+          return;
+        }
         const isPrivate =
           /^10\./.test(hostname) ||
           /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||

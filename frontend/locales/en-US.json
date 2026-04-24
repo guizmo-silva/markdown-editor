@@ -168,7 +168,8 @@
     "restoreTo": "Restore to...",
     "originalPath": "Original location",
     "confirmEmpty": "Empty trash permanently?",
-    "expiresIn": "Expires in {{days}} days"
+    "expiresIn": "Expires in {{days}} days",
+    "restoreCheatSheet": "Restore the markdown-cheat-sheet file"
   },
   "searchPanel": {
     "searchPlaceholder": "Search...",

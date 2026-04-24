@@ -168,7 +168,8 @@
     "restoreTo": "Restaurar para...",
     "originalPath": "Localização original",
     "confirmEmpty": "Esvaziar a lixeira permanentemente?",
-    "expiresIn": "Expira em {{days}} dias"
+    "expiresIn": "Expira em {{days}} dias",
+    "restoreCheatSheet": "Restaurar o arquivo markdown-cheat-sheet"
   },
   "searchPanel": {
     "searchPlaceholder": "Buscar...",

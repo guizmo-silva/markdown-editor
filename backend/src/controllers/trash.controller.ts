@@ -12,11 +12,13 @@ export const getTrashItems = async (_req: Request, res: Response): Promise<void>
   }
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export const deleteTrashItem = async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
-    if (!id) {
-      res.status(400).json({ error: 'Missing id' });
+    if (!id || !UUID_RE.test(id)) {
+      res.status(400).json({ error: 'Invalid id' });
       return;
     }
     await permanentlyDelete(id);
@@ -31,8 +33,8 @@ export const restoreTrashItem = async (req: Request, res: Response): Promise<voi
     const id = req.params.id as string;
     const { destinationPath } = req.body;
 
-    if (!id || !destinationPath) {
-      res.status(400).json({ error: 'Missing id or destinationPath' });
+    if (!id || !UUID_RE.test(id) || !destinationPath) {
+      res.status(400).json({ error: 'Missing or invalid id or destinationPath' });
       return;
     }
 

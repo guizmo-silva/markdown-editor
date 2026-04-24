@@ -139,6 +139,29 @@ export async function renameFile(oldPath: string, newPath: string): Promise<void
 }
 
 /**
+ * Check if markdown-cheat-sheet.md exists in the workspace
+ */
+export async function getCheatSheetStatus(): Promise<{ existsInWorkspace: boolean }> {
+  const response = await fetch(`${getApiBaseUrl()}/defaults/cheat-sheet/status`);
+  if (!response.ok) return { existsInWorkspace: true }; // fail safe: don't show button on error
+  return response.json();
+}
+
+/**
+ * Restore markdown-cheat-sheet.md from the bundled defaults to the workspace
+ */
+export async function restoreCheatSheetDefault(): Promise<{ path: string }> {
+  const response = await fetch(`${getApiBaseUrl()}/defaults/cheat-sheet/restore`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to restore cheat-sheet' }));
+    throw new Error(error.error || 'Failed to restore cheat-sheet');
+  }
+  return response.json();
+}
+
+/**
  * Volume info
  */
 export interface VolumeInfo {

@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import fileRoutes from './routes/file.routes.js';
 import exportRoutes from './routes/export.routes.js';
 import trashRoutes from './routes/trash.routes.js';
+import defaultsRoutes from './routes/defaults.routes.js';
 import { validateVolumes } from './services/volume.service.js';
 import { cleanupExpired } from './services/trash.service.js';
 
@@ -16,10 +17,17 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet());
-// Allow any origin since this is a self-hosted app accessed via localhost/LAN.
-// credentials: false — app has no cookies or auth tokens, so no CSRF risk.
+// Restrict CORS to the configured origin.
+// Set ALLOWED_ORIGIN to your tunnel/LAN URL in docker-compose (e.g. https://xxx.trycloudflare.com).
+// Falls back to allowing all origins only when explicitly set to '*' for backward compat.
+const allowedOrigin = process.env.ALLOWED_ORIGIN;
 app.use(cors({
-  origin: true,
+  origin: allowedOrigin && allowedOrigin !== '*'
+    ? (origin, cb) => {
+        if (!origin || origin === allowedOrigin) cb(null, true);
+        else cb(new Error('Not allowed by CORS'));
+      }
+    : true,
   credentials: false,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -34,10 +42,20 @@ app.use('/api/', rateLimit({
   message: { error: 'Too many requests, please try again later.' },
 }));
 
+// Stricter rate limit for PDF export (each call launches Chromium)
+app.use('/api/export/pdf', rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many PDF export requests, please try again later.' },
+}));
+
 // Routes
 app.use('/api/files', fileRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/trash', trashRoutes);
+app.use('/api/defaults', defaultsRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

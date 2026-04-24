@@ -4,16 +4,18 @@
 Self-hosted Markdown editor designed for personal use, running via Docker on home servers, NAS devices, and platforms like ZimaOS.
 
 ---
+![MKD - Self-hosted Markdown Editor](../../docs/screens/main_interface.png "Editor main screen")
 
 ## Features
 
 - **Sidebar** with document element navigator (headings, quotes, links, images, tables, alerts, and footnotes) and integrated file explorer
 - **View modes** — code only, preview only, or side-by-side split view
-- **Import** `.md`, `.docx`, `.zip` (.md + images) and `.txt` files
-- **Export** to `.txt`, `.md`, `.pdf`, `.html` and `.zip` with locally linked images
+- **Import** `.md`, `.docx`, `.zip` (`.md` + images) and `.txt` files
+- **Export** to `.txt`, `.md`, `.pdf`, `.html`, `.docx` and `.zip` with locally linked images;
+  - For an accurate idea of how elements render in formats like `.docx` and `.pdf`, export the `markdown-cheat-sheet.md` file included in the default *workspace*.
 - **Auto-save**
 - **Tabs** — edit multiple documents at the same time
-- **Interface and spellcheck in multiple languages** — Portuguese, English, Spanish, French, German, Russian, and Simplified Chinese
+- **Interface and spellcheck in multiple languages** — Portuguese, English, Spanish, French, German, Russian, Hindi, and Simplified Chinese
 - **Image support** — import external or linked images
 - **Light and dark modes**
 - **Internal trash**
@@ -62,7 +64,7 @@ docker compose up -d
 
 #### Frontend
 
-- [Next.js 15](https://nextjs.org/) + React 19 + TypeScript
+- [Next.js 16](https://nextjs.org/) + React 19 + TypeScript
 - [Tailwind CSS](https://tailwindcss.com/)
 - [CodeMirror 6](https://codemirror.net/) — editor core
 - [react-markdown](https://github.com/remarkjs/react-markdown) + remark/rehype plugins — preview rendering

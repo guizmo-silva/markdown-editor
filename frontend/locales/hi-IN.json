@@ -168,7 +168,8 @@
     "restoreTo": "यहाँ पुनर्स्थापित करें...",
     "originalPath": "मूल स्थान",
     "confirmEmpty": "ट्रैश स्थायी रूप से खाली करें?",
-    "expiresIn": "{{days}} दिनों में समाप्त होगा"
+    "expiresIn": "{{days}} दिनों में समाप्त होगा",
+    "restoreCheatSheet": "markdown-cheat-sheet फ़ाइल पुनर्स्थापित करें"
   },
   "searchPanel": {
     "searchPlaceholder": "खोजें...",

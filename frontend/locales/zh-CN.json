@@ -168,7 +168,8 @@
     "restoreTo": "恢复到...",
     "originalPath": "原始位置",
     "confirmEmpty": "永久清空回收站?",
-    "expiresIn": "{{days}}天后过期"
+    "expiresIn": "{{days}}天后过期",
+    "restoreCheatSheet": "恢复 markdown-cheat-sheet 文件"
   },
   "searchPanel": {
     "searchPlaceholder": "搜索...",

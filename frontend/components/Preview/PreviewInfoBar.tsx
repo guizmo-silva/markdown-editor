@@ -12,6 +12,7 @@ interface PreviewInfoBarProps {
   onToggleScrollSync?: () => void;
   columnWidth?: number;
   onColumnWidthChange?: (value: number) => void;
+  onColumnWidthLiveChange?: (value: number) => void;
   previewZoom?: number;
   onPreviewZoomIn?: () => void;
   onPreviewZoomOut?: () => void;
@@ -21,10 +22,12 @@ interface PreviewInfoBarProps {
 
 const COMPACT_THRESHOLD = 500;
 
-export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isScrollSynced, onToggleScrollSync, columnWidth, onColumnWidthChange, previewZoom, onPreviewZoomIn, onPreviewZoomOut, onPreviewZoomReset, animateIn }: PreviewInfoBarProps) {
+export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isScrollSynced, onToggleScrollSync, columnWidth, onColumnWidthChange, onColumnWidthLiveChange, previewZoom, onPreviewZoomIn, onPreviewZoomOut, onPreviewZoomReset, animateIn }: PreviewInfoBarProps) {
   const { t } = useTranslation();
 
   const [isCompact, setIsCompact] = useState(false);
+  const [localSliderValue, setLocalSliderValue] = useState(() => 100 - (columnWidth ?? 100));
+  const isDraggingSliderRef = useRef(false);
   const [showStatsMenu, setShowStatsMenu] = useState(false);
   const [statsMenuPos, setStatsMenuPos] = useState({ top: 0, left: 0 });
   const [isMounted, setIsMounted] = useState(false);
@@ -34,6 +37,13 @@ export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isSc
   const statsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setIsMounted(true); }, []);
+
+  // Sync slider from parent only when not dragging
+  useEffect(() => {
+    if (!isDraggingSliderRef.current && columnWidth !== undefined) {
+      setLocalSliderValue(100 - columnWidth);
+    }
+  }, [columnWidth]);
 
   useEffect(() => {
     const container = infoBarRef.current;
@@ -167,15 +177,24 @@ export default function PreviewInfoBar({ content, viewTheme, onToggleTheme, isSc
             </svg>
             <input
               type="range" min={0} max={60} step={1}
-              value={100 - columnWidth}
-              onChange={(e) => onColumnWidthChange(100 - Number(e.target.value))}
+              value={localSliderValue}
+              onPointerDown={() => { isDraggingSliderRef.current = true; }}
+              onChange={(e) => {
+                const raw = Number(e.target.value);
+                setLocalSliderValue(raw);
+                onColumnWidthLiveChange?.(100 - raw);
+              }}
+              onPointerUp={(e) => {
+                isDraggingSliderRef.current = false;
+                onColumnWidthChange?.(100 - Number((e.target as HTMLInputElement).value));
+              }}
               className="column-width-slider"
               style={{
                 width: '80px', height: '2px', appearance: 'none', WebkitAppearance: 'none',
                 background: isDark ? '#AAAAAA' : '#999999', borderRadius: '1px',
                 outline: 'none', cursor: 'pointer', accentColor: textColor,
               }}
-              title={`${columnWidth}%`}
+              title={`${100 - localSliderValue}%`}
             />
           </div>
         )}

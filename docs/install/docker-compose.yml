@@ -12,6 +12,10 @@ services:
     restart: unless-stopped
     networks:
       - markdown-editor
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000"]
       interval: 30s
@@ -33,6 +37,9 @@ services:
       - PUID=1000
       - PGID=1000
       - WORKSPACE_ROOT=/workspace
+      # Se usar Cloudflare Tunnel ou outro túnel, defina a URL do frontend aqui
+      # para restringir o CORS apenas à origem correta:
+      # - ALLOWED_ORIGIN=https://seu-tunel.trycloudflare.com
       # Volumes adicionais além do workspace principal
       # Formato: nome1:/caminho1,nome2:/caminho2
       # Exemplo: EXTRA_VOLUMES=documentos:/docs,projetos:/projetos
@@ -45,6 +52,10 @@ services:
     restart: unless-stopped
     networks:
       - markdown-editor
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
       interval: 30s

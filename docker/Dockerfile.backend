@@ -43,8 +43,8 @@ RUN mkdir -p /workspace && chown node:node /workspace
 # Create defaults directory for template files
 RUN mkdir -p /app/defaults
 
-# Copy Welcome.md tutorial file to defaults (will be copied to workspace on first run)
-COPY --chown=node:node defaults/Welcome.md /app/defaults/Welcome.md
+# Copy cheat sheet to defaults (will be copied to workspace on first run)
+COPY --chown=node:node defaults/markdown-cheat-sheet.md /app/defaults/markdown-cheat-sheet.md
 
 # Copy entrypoint script (needs root to change UID/GID)
 COPY docker/entrypoint-backend.sh /app/entrypoint.sh

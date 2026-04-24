@@ -168,7 +168,8 @@
     "restoreTo": "Restaurer dans...",
     "originalPath": "Emplacement original",
     "confirmEmpty": "Vider la corbeille définitivement?",
-    "expiresIn": "Expire dans {{days}} jours"
+    "expiresIn": "Expire dans {{days}} jours",
+    "restoreCheatSheet": "Restaurer le fichier markdown-cheat-sheet"
   },
   "searchPanel": {
     "searchPlaceholder": "Rechercher...",

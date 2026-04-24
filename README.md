@@ -1,21 +1,24 @@
 ![Imagem](https://raw.githubusercontent.com/guizmo-silva/markdown-editor/refs/heads/main/docs/logo/mkd-zimaos-icon.png)
 # MKD — Editor de Markdown auto-hospedado
 
-[English](docs/about/en-US.md) · [Español](docs/about/es-ES.md) · [Français](docs/about/fr-FR.md) · [Deutsch](docs/about/de-DE.md) · [Русский](docs/about/ru-RU.md) · [中文](docs/about/zh-CN.md)
+[English](docs/about/en-US.md) · [Español](docs/about/es-ES.md) · [Français](docs/about/fr-FR.md) · [Deutsch](docs/about/de-DE.md) · [Русский](docs/about/ru-RU.md) · [हिन्दी](docs/about/hi-IN.md) · [中文](docs/about/zh-CN.md)
 
 Editor de Markdown self-hosted pensado para uso pessoal, rodando via Docker em servidores domésticos, NAS e plataformas como ZimaOS.
 
 ---
+![MKD - Editor de markdown auto-hospedado](/docs/screens/main_interface.png "Tela principal do editor")
+
 
 ## Funcionalidades
 
 - **Barra lateral** com navegador de elementos do documento (títulos, citações, links, imagens, tabelas, alertas e notas de rodapé) e explorador de arquivos integrado
 - **Modos de visualização** — apenas código, apenas preview ou tela dividida lado a lado
-- **Importação** de arquivos `.md`, `.docx`, `.zip` (.md + imagens) e `.txt`
-- **Exportação** em `.txt`, `.md`, `.pdf` `.html` e `.zip` com imagens linkadas localmente;
+- **Importação** de arquivos `.md`, `.docx`, `.zip` (`.md` + imagens) e `.txt`
+- **Exportação** em `.txt`, `.md`, `.pdf` `.html`, `.docx` e `.zip` com imagens linkadas localmente;
+  - Para ter uma noção precisa de como os elementos são renderizados em formatos como `.docx` e `.pdf`, exporte o arquivo `markdown-cheat-sheet.md` que vem no *workspace* padrão.
 - **Salvamento automático**
 - **Abas** — edite múltiplos documentos ao mesmo tempo
-- **Interface e correção ortográfica em vários idiomas** — Português, Inglês, Espanhol, Francês, Alemão, Russo e Chinês Simplificado
+- **Interface e correção ortográfica em vários idiomas** — Português, Inglês, Espanhol, Francês, Alemão, Russo, Hindi e Chinês Simplificado
 - **Suporte a imagens** — importação de imagem externa ou linkada
 - **Modos claro e escuro**
 - **Lixeira interna**
@@ -64,7 +67,7 @@ docker compose up -d
 
 #### Frontend
 
-- [Next.js 15](https://nextjs.org/) + React 19 + TypeScript
+- [Next.js 16](https://nextjs.org/) + React 19 + TypeScript
 - [Tailwind CSS](https://tailwindcss.com/)
 - [CodeMirror 6](https://codemirror.net/) — núcleo do editor
 - [react-markdown](https://github.com/remarkjs/react-markdown) + plugins remark/rehype — renderização do preview
