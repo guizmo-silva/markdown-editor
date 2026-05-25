@@ -194,7 +194,8 @@
     "failedToImportImage": "Failed to import image",
     "filenameTooLong": "Filename too long (max 255 bytes)",
     "exportPdfModeWarning": "Switch to Split or Preview mode to export as PDF.",
-    "failedToDuplicate": "Failed to duplicate file"
+    "failedToDuplicate": "Failed to duplicate file",
+    "failedToSavePermission": "Cannot save: permission denied. Check file ownership on the server."
   },
   "contextMenu": {
     "duplicate": "Duplicate",

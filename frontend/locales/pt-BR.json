@@ -194,7 +194,8 @@
     "failedToImportImage": "Falha ao importar imagem",
     "filenameTooLong": "Nome de arquivo muito longo (máx. 255 bytes)",
     "exportPdfModeWarning": "Alterne para o modo Dividido ou Visualização para exportar em PDF.",
-    "failedToDuplicate": "Falha ao duplicar arquivo"
+    "failedToDuplicate": "Falha ao duplicar arquivo",
+    "failedToSavePermission": "Não foi possível salvar: permissão negada. Verifique o dono do arquivo no servidor."
   },
   "contextMenu": {
     "duplicate": "Duplicar",

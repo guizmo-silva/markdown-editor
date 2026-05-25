@@ -51,9 +51,13 @@ export const saveFile = async (req: Request, res: Response): Promise<void> => {
 
     await fileService.writeFileContent(path, content);
     res.json({ success: true, path });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving file:', error);
-    res.status(500).json({ error: 'Failed to save file' });
+    if (error.code === 'EACCES' || error.code === 'EPERM') {
+      res.status(403).json({ error: 'Permission denied: cannot write to file', code: 'EACCES' });
+    } else {
+      res.status(500).json({ error: 'Failed to save file' });
+    }
   }
 };
 

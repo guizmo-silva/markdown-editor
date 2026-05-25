@@ -194,7 +194,8 @@
     "failedToImportImage": "导入图片失败",
     "filenameTooLong": "文件名过长（最多 255 字节）",
     "exportPdfModeWarning": "请切换到分屏或预览模式以导出为 PDF。",
-    "failedToDuplicate": "复制文件失败"
+    "failedToDuplicate": "复制文件失败",
+    "failedToSavePermission": "无法保存：权限被拒绝。请检查服务器上的文件所有者。"
   },
   "contextMenu": {
     "duplicate": "复制",

@@ -898,8 +898,13 @@ export default function EditorLayout() {
             : tab
         ));
         console.log('Autosaved:', tabIdToSave);
-      } catch (err) {
-        console.error('Failed to autosave:', err);
+      } catch (err: any) {
+        if (err?.code === 'EACCES') {
+          console.error('Failed to autosave (permission denied):', tabIdToSave);
+          showError(t('errors.failedToSavePermission'));
+        } else {
+          console.error('Failed to autosave:', err);
+        }
         setTabs(prevTabs => prevTabs.map(tab =>
           tab.id === tabIdToSave ? { ...tab, saveStatus: 'error' } : tab
         ));

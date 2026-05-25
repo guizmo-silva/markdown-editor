@@ -66,7 +66,9 @@ export async function saveFile(path: string, content: string): Promise<void> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to save file' }));
-    throw new Error(error.error || 'Failed to save file');
+    const err = new Error(error.error || 'Failed to save file') as Error & { code?: string };
+    err.code = error.code;
+    throw err;
   }
 }
 

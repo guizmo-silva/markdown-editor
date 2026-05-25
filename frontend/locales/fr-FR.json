@@ -194,7 +194,8 @@
     "failedToImportImage": "Échec de l'importation de l'image",
     "filenameTooLong": "Nom de fichier trop long (max. 255 octets)",
     "exportPdfModeWarning": "Passez en mode Divisé ou Aperçu pour exporter en PDF.",
-    "failedToDuplicate": "Échec de la duplication du fichier"
+    "failedToDuplicate": "Échec de la duplication du fichier",
+    "failedToSavePermission": "Impossible d'enregistrer : permission refusée. Vérifiez le propriétaire du fichier sur le serveur."
   },
   "contextMenu": {
     "duplicate": "Dupliquer",

@@ -194,7 +194,8 @@
     "failedToImportImage": "Bild konnte nicht importiert werden",
     "filenameTooLong": "Dateiname zu lang (max. 255 Bytes)",
     "exportPdfModeWarning": "Wechseln Sie in den Teilen- oder Vorschau-Modus, um als PDF zu exportieren.",
-    "failedToDuplicate": "Datei konnte nicht dupliziert werden"
+    "failedToDuplicate": "Datei konnte nicht dupliziert werden",
+    "failedToSavePermission": "Speichern fehlgeschlagen: Zugriff verweigert. Überprüfen Sie den Dateibesitzer auf dem Server."
   },
   "contextMenu": {
     "duplicate": "Duplizieren",

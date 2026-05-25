@@ -194,7 +194,8 @@
     "failedToImportImage": "Error al importar imagen",
     "filenameTooLong": "Nombre de archivo demasiado largo (máx. 255 bytes)",
     "exportPdfModeWarning": "Cambie al modo Dividido o Vista previa para exportar en PDF.",
-    "failedToDuplicate": "Error al duplicar el archivo"
+    "failedToDuplicate": "Error al duplicar el archivo",
+    "failedToSavePermission": "No se pudo guardar: permiso denegado. Compruebe el propietario del archivo en el servidor."
   },
   "contextMenu": {
     "duplicate": "Duplicar",

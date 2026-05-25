@@ -194,7 +194,8 @@
     "failedToImportImage": "छवि आयात करने में विफल",
     "filenameTooLong": "फ़ाइल का नाम बहुत लंबा है (अधिकतम 255 बाइट्स)",
     "exportPdfModeWarning": "PDF के रूप में निर्यात करने के लिए विभाजित या पूर्वावलोकन मोड पर स्विच करें।",
-    "failedToDuplicate": "फ़ाइल डुप्लिकेट करने में विफल"
+    "failedToDuplicate": "फ़ाइल डुप्लिकेट करने में विफल",
+    "failedToSavePermission": "सहेजा नहीं जा सका: अनुमति अस्वीकृत। सर्वर पर फ़ाइल के स्वामी की जांच करें।"
   },
   "contextMenu": {
     "duplicate": "डुप्लिकेट करें",
