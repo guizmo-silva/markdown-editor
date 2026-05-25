@@ -171,6 +171,36 @@
     "expiresIn": "Expires in {{days}} days",
     "restoreCheatSheet": "Restore the markdown-cheat-sheet file"
   },
+  "errors": {
+    "failedToLoadFile": "Failed to load file",
+    "failedToDeleteFile": "Failed to delete file",
+    "failedToRenameFile": "Failed to rename file",
+    "failedToCreateFile": "Failed to create file",
+    "failedToCreateFileVolume": "Failed to create file. Check volume permissions.",
+    "failedToMoveFile": "Failed to move file",
+    "failedToCrossVolume": "Cannot move files between different volumes",
+    "failedToCreateFolder": "Failed to create folder",
+    "failedToRenameItem": "Failed to rename item",
+    "failedToLoadFolders": "Failed to load folders",
+    "failedToLoadTrash": "Failed to load trash",
+    "failedToRestore": "Failed to restore",
+    "failedToDelete": "Failed to delete",
+    "failedToRestoreCheatSheet": "Failed to restore cheat-sheet",
+    "failedToEmptyTrash": "Failed to empty trash",
+    "failedToExport": "Failed to export",
+    "failedToImportDocx": "Failed to import .docx",
+    "failedToImportZip": "Failed to import .zip",
+    "failedToImportFile": "Failed to import file",
+    "failedToImportImage": "Failed to import image",
+    "filenameTooLong": "Filename too long (max 255 bytes)",
+    "exportPdfModeWarning": "Switch to Split or Preview mode to export as PDF.",
+    "failedToDuplicate": "Failed to duplicate file"
+  },
+  "contextMenu": {
+    "duplicate": "Duplicate",
+    "rename": "Rename",
+    "delete": "Delete"
+  },
   "searchPanel": {
     "searchPlaceholder": "Search...",
     "replacePlaceholder": "Replace...",

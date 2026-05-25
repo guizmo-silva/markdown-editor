@@ -279,7 +279,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
       }
     } catch (err) {
       console.error('Failed to load trash:', err);
-      showError(err instanceof Error ? err.message : 'Failed to load trash');
+      showError(t('errors.failedToLoadTrash'));
     } finally {
       setIsLoading(false);
     }
@@ -309,7 +309,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
       }
       await loadData();
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to restore');
+      showError(t('errors.failedToRestore'));
     } finally {
       setBusyId(null);
     }
@@ -323,7 +323,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
       onChanged();
       await loadData();
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to delete');
+      showError(t('errors.failedToDelete'));
     } finally {
       setBusyId(null);
     }
@@ -335,7 +335,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
       setCheatSheetInWorkspace(true);
       onChanged();
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to restore cheat-sheet');
+      showError(t('errors.failedToRestoreCheatSheet'));
     }
   };
 
@@ -347,7 +347,7 @@ export default function TrashModal({ isOpen, onClose, onChanged, onImageRestored
       setItems([]);
       onChanged();
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to empty trash');
+      showError(t('errors.failedToEmptyTrash'));
     } finally {
       setBusyId(null);
     }

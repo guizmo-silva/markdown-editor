@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 import { useToast } from '@/components/Toast/Toast';
-import { listFiles, createFolder, getVolumes, type FileItem, type VolumeInfo } from '@/services/api';
+import { listFiles, createFolder, getVolumes, duplicateFile, type FileItem, type VolumeInfo } from '@/services/api';
 
 interface FileBrowserProps {
   onFileSelect?: (filePath: string) => void;
@@ -18,6 +18,12 @@ interface DragState {
   item: FileItem;
   initialX: number;
   initialY: number;
+}
+
+interface ContextMenuState {
+  item: FileItem;
+  x: number;
+  y: number;
 }
 
 function DeleteConfirmModal({ isOpen, fileName, onConfirm, onCancel }: { isOpen: boolean; fileName: string; onConfirm: () => void; onCancel: () => void }) {
@@ -90,6 +96,105 @@ function DeleteConfirmModal({ isOpen, fileName, onConfirm, onCancel }: { isOpen:
   );
 }
 
+function ContextMenu({
+  item,
+  x,
+  y,
+  onDuplicate,
+  onRename,
+  onDelete,
+  onClose,
+}: {
+  item: FileItem;
+  x: number;
+  y: number;
+  onDuplicate: () => void;
+  onRename: () => void;
+  onDelete: () => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ left: x, top: y });
+
+  useEffect(() => {
+    const handlePointerDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!menuRef.current) return;
+    const { offsetWidth: w, offsetHeight: h } = menuRef.current;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    setPos({
+      left: x + w > vw ? Math.max(0, vw - w - 8) : x,
+      top:  y + h > vh ? Math.max(0, vh - h - 8) : y,
+    });
+  }, [x, y]);
+
+  return (
+    <div
+      ref={menuRef}
+      className="fixed z-[200] min-w-[140px] py-1
+                 bg-[var(--dropdown-bg)] border border-[var(--border-primary)]
+                 rounded-lg shadow-lg overflow-hidden
+                 text-[12px] text-[var(--text-primary)]"
+      style={{ left: pos.left, top: pos.top }}
+    >
+      <button
+        className="w-full flex items-center gap-2 px-3 py-1.5
+                   hover:bg-[var(--hover-bg-subtle)] transition-colors text-left"
+        onClick={() => { onDuplicate(); onClose(); }}
+      >
+        <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        {t('contextMenu.duplicate')}
+      </button>
+
+      <button
+        className="w-full flex items-center gap-2 px-3 py-1.5
+                   hover:bg-[var(--hover-bg-subtle)] transition-colors text-left"
+        onClick={() => { onRename(); onClose(); }}
+      >
+        <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        {t('contextMenu.rename')}
+      </button>
+
+      <div className="my-1 border-t border-[var(--border-secondary)]" />
+
+      <button
+        className="w-full flex items-center gap-2 px-3 py-1.5
+                   hover:bg-[var(--hover-bg-subtle)] transition-colors text-left text-red-500"
+        onClick={() => { onDelete(); onClose(); }}
+      >
+        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        {t('contextMenu.delete')}
+      </button>
+    </div>
+  );
+}
+
 interface FileTreeItemProps {
   item: FileItem;
   level: number;
@@ -116,9 +221,10 @@ interface FileTreeItemProps {
   onDragOverFolder?: (folderPath: string | null) => void;
   getParentFolder?: (path: string) => string;
   isDocumentChild?: boolean;
+  onContextMenu?: (item: FileItem, x: number, y: number) => void;
 }
 
-function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, creatingFolderIn, onStartCreateFolder, onConfirmCreateFolder, onCancelCreateFolder, editingItemPath, onStartEditItem, onConfirmEditItem, onCancelEditItem, editItemValue, onEditItemValueChange, sidebarWidth, expandedFolders, onToggleExpand, draggedItem, dragOverTarget, onDragStart, onDragOverFolder, getParentFolder, isDocumentChild }: FileTreeItemProps) {
+function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, creatingFolderIn, onStartCreateFolder, onConfirmCreateFolder, onCancelCreateFolder, editingItemPath, onStartEditItem, onConfirmEditItem, onCancelEditItem, editItemValue, onEditItemValueChange, sidebarWidth, expandedFolders, onToggleExpand, draggedItem, dragOverTarget, onDragStart, onDragOverFolder, getParentFolder, isDocumentChild, onContextMenu }: FileTreeItemProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -212,7 +318,15 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
         onDragOverFolder(item.path);
       } else if (getParentFolder) {
         const parentPath = getParentFolder(item.path);
-        onDragOverFolder(parentPath || '__workspace__');
+        if (isDocumentFile || isDocumentChild) {
+          // Document folder items live inside their own directory (e.g. meu-artigo/meu-artigo.md).
+          // Use the grandparent so drops land at the level where the item is visually displayed,
+          // not inside the document folder's internal directory.
+          const grandParentPath = getParentFolder(parentPath);
+          onDragOverFolder(grandParentPath || '__workspace__');
+        } else {
+          onDragOverFolder(parentPath || '__workspace__');
+        }
       }
     }
   };
@@ -282,6 +396,13 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
     onCancelCreateFolder();
   };
 
+  const handleContextMenuEvent = (e: React.MouseEvent) => {
+    if (item.type !== 'file') return;
+    e.preventDefault();
+    e.stopPropagation();
+    onContextMenu?.(item, e.clientX, e.clientY);
+  };
+
   return (
     <div className={`relative ${isLast && !isCreatingHere ? 'tree-last-item' : ''}`}>
       {/* Horizontal connector from vertical line to item */}
@@ -293,6 +414,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
         onDoubleClick={handleDoubleClick}
         onMouseDown={handleMouseDown}
         onMouseEnter={handleMouseEnter}
+        onContextMenu={handleContextMenuEvent}
         draggable={item.type === 'image' && !!isDocumentChild}
         onDragStart={item.type === 'image' && !!isDocumentChild ? handleImageDragStart : undefined}
         className={`relative overflow-hidden group flex items-center gap-1 py-1 pr-2 rounded cursor-pointer transition-colors ${
@@ -457,6 +579,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
                   onDragOverFolder={onDragOverFolder}
                   getParentFolder={getParentFolder}
                   isDocumentChild={isDocumentFile}
+                  onContextMenu={onContextMenu}
                 />
               ))}
 
@@ -514,6 +637,9 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
   const dragStateRef = useRef<DragState | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [deletingFromContext, setDeletingFromContext] = useState<FileItem | null>(null);
+
   // Get parent folder path from a file path
   const getParentFolder = useCallback((filePath: string): string => {
     const lastSlash = filePath.lastIndexOf('/');
@@ -534,6 +660,9 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
       initialX: e.clientX,
       initialY: e.clientY
     };
+    // Apply cursor immediately (before state update triggers re-render)
+    document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
     setDraggedItem(item);
     setGhostPosition({ x: e.clientX, y: e.clientY });
     setIsDragging(true);
@@ -579,7 +708,8 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
           setInternalRefresh(prev => prev + 1);
         } catch (err) {
           console.error('Failed to move file:', err);
-          showError(err instanceof Error ? err.message : 'Failed to move file');
+          const msg = err instanceof Error ? err.message : '';
+          showError(msg.includes('between different volumes') ? t('errors.failedToCrossVolume') : t('errors.failedToMoveFile'));
         }
       }
     }
@@ -604,9 +734,11 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
       const handleMouseMove = (e: MouseEvent) => handleDragMove(e);
       const handleMouseUp = () => handleDragEnd();
 
-      // Apply grabbing cursor globally during drag
-      document.body.style.cursor = 'grabbing';
-      document.body.style.userSelect = 'none';
+      // Override cursor on all elements — child elements with cursor:pointer would otherwise win
+      const styleEl = document.createElement('style');
+      styleEl.dataset.dragCursor = '1';
+      styleEl.textContent = '*{cursor:grabbing!important}';
+      document.head.appendChild(styleEl);
 
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -614,6 +746,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        styleEl.remove();
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
       };
@@ -692,7 +825,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
       setInternalRefresh((prev) => prev + 1);
     } catch (err) {
       console.error('Failed to create folder:', err);
-      showError(err instanceof Error ? err.message : 'Failed to create folder');
+      showError(t('errors.failedToCreateFolder'));
     }
   };
 
@@ -750,7 +883,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
       setInternalRefresh((prev) => prev + 1);
     } catch (err) {
       console.error('Failed to rename item:', err);
-      showError(err instanceof Error ? err.message : 'Failed to rename item');
+      showError(t('errors.failedToRenameItem'));
     } finally {
       setEditingItemPath(null);
       setEditItemValue('');
@@ -761,6 +894,39 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
     setEditingItemPath(null);
     setEditItemValue('');
   };
+
+  const handleContextMenu = useCallback((item: FileItem, x: number, y: number) => {
+    setContextMenu({ item, x, y });
+  }, []);
+
+  const handleContextDuplicate = useCallback(async (item: FileItem) => {
+    try {
+      await duplicateFile(item.path);
+      setInternalRefresh(prev => prev + 1);
+    } catch (err) {
+      console.error('Failed to duplicate:', err);
+      showError(t('errors.failedToDuplicate'));
+    }
+  }, [showError, t]);
+
+  const handleContextRename = useCallback((item: FileItem) => {
+    const displayName = item.name.replace(/\.md$/, '');
+    handleStartEditItem(item.path, displayName);
+  }, [handleStartEditItem]);
+
+  const handleContextDelete = useCallback((item: FileItem) => {
+    setDeletingFromContext(item);
+  }, []);
+
+  const handleConfirmContextDelete = useCallback(async () => {
+    if (!deletingFromContext || !onDeleteFile) return;
+    try {
+      await onDeleteFile(deletingFromContext.path);
+    } finally {
+      setDeletingFromContext(null);
+      setInternalRefresh(prev => prev + 1);
+    }
+  }, [deletingFromContext, onDeleteFile]);
 
   const handleWorkspaceAddFolder = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -873,6 +1039,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
           onDragStart={handleDragStart}
           onDragOverFolder={handleDragOverFolder}
           getParentFolder={getParentFolder}
+          onContextMenu={handleContextMenu}
         />
       ))}
 
@@ -991,6 +1158,27 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
           )}
           <span className="text-[11px] font-medium text-white max-w-[160px] truncate">{draggedItem.name}</span>
         </div>
+      )}
+
+      {contextMenu && (
+        <ContextMenu
+          item={contextMenu.item}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onDuplicate={() => handleContextDuplicate(contextMenu.item)}
+          onRename={() => handleContextRename(contextMenu.item)}
+          onDelete={() => handleContextDelete(contextMenu.item)}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {deletingFromContext && (
+        <DeleteConfirmModal
+          isOpen={true}
+          fileName={deletingFromContext.name}
+          onConfirm={handleConfirmContextDelete}
+          onCancel={() => setDeletingFromContext(null)}
+        />
       )}
 
       <div className="py-2">

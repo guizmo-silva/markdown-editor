@@ -171,6 +171,36 @@
     "expiresIn": "{{days}} दिनों में समाप्त होगा",
     "restoreCheatSheet": "markdown-cheat-sheet फ़ाइल पुनर्स्थापित करें"
   },
+  "errors": {
+    "failedToLoadFile": "फ़ाइल लोड करने में विफल",
+    "failedToDeleteFile": "फ़ाइल हटाने में विफल",
+    "failedToRenameFile": "फ़ाइल का नाम बदलने में विफल",
+    "failedToCreateFile": "फ़ाइल बनाने में विफल",
+    "failedToCreateFileVolume": "फ़ाइल बनाने में विफल। वॉल्यूम की अनुमतियाँ जाँचें।",
+    "failedToMoveFile": "फ़ाइल स्थानांतरित करने में विफल",
+    "failedToCrossVolume": "अलग-अलग वॉल्यूम के बीच फ़ाइलें नहीं ले जाई जा सकतीं",
+    "failedToCreateFolder": "फ़ोल्डर बनाने में विफल",
+    "failedToRenameItem": "आइटम का नाम बदलने में विफल",
+    "failedToLoadFolders": "फ़ोल्डर लोड करने में विफल",
+    "failedToLoadTrash": "ट्रैश लोड करने में विफल",
+    "failedToRestore": "पुनर्स्थापित करने में विफल",
+    "failedToDelete": "हटाने में विफल",
+    "failedToRestoreCheatSheet": "cheat-sheet पुनर्स्थापित करने में विफल",
+    "failedToEmptyTrash": "ट्रैश खाली करने में विफल",
+    "failedToExport": "निर्यात करने में विफल",
+    "failedToImportDocx": ".docx आयात करने में विफल",
+    "failedToImportZip": ".zip आयात करने में विफल",
+    "failedToImportFile": "फ़ाइल आयात करने में विफल",
+    "failedToImportImage": "छवि आयात करने में विफल",
+    "filenameTooLong": "फ़ाइल का नाम बहुत लंबा है (अधिकतम 255 बाइट्स)",
+    "exportPdfModeWarning": "PDF के रूप में निर्यात करने के लिए विभाजित या पूर्वावलोकन मोड पर स्विच करें।",
+    "failedToDuplicate": "फ़ाइल डुप्लिकेट करने में विफल"
+  },
+  "contextMenu": {
+    "duplicate": "डुप्लिकेट करें",
+    "rename": "नाम बदलें",
+    "delete": "हटाएँ"
+  },
   "searchPanel": {
     "searchPlaceholder": "खोजें...",
     "replacePlaceholder": "बदलें...",

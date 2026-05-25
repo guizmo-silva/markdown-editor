@@ -917,7 +917,16 @@ const createFormatCommand = (prefix: string, suffix: string) => {
     const beforeText = view.state.sliceDoc(Math.max(0, from - prefix.length), from);
     const afterText = view.state.sliceDoc(to, to + suffix.length);
 
-    if (beforeText === prefix && afterText === suffix) {
+    // For italic (*): distinguish from bold (**) by counting consecutive stars.
+    // Odd count (1=italic, 3=bold+italic) → format is present; even (2=bold) → it's not italic.
+    let isAlreadyFormatted = beforeText === prefix && afterText === suffix;
+    if (isAlreadyFormatted && prefix === '*' && suffix === '*') {
+      let starsBefore = 0;
+      while (from - starsBefore - 1 >= 0 && view.state.sliceDoc(from - starsBefore - 1, from - starsBefore) === '*') starsBefore++;
+      isAlreadyFormatted = starsBefore % 2 === 1;
+    }
+
+    if (isAlreadyFormatted) {
       // Remove formatting (markers are outside the selection)
       view.dispatch({
         changes: [
@@ -934,13 +943,21 @@ const createFormatCommand = (prefix: string, suffix: string) => {
         selection: { anchor: from, head: from + unwrapped.length }
       });
     } else {
-      // Add formatting — trim trailing newlines from triple-click selection
+      // Add formatting — trim trailing newlines and leading/trailing spaces
       const trailingNewlines = selectedText.match(/\n+$/)?.[0] ?? '';
-      const trimmedText = trailingNewlines ? selectedText.slice(0, -trailingNewlines.length) : selectedText;
-      const trimmedTo = from + trimmedText.length;
+      const withoutNewlines = trailingNewlines ? selectedText.slice(0, -trailingNewlines.length) : selectedText;
+      // Strip leading/trailing spaces so markers hug the words, not the surrounding whitespace
+      const trimmedFromStart = withoutNewlines.trimStart();
+      const leadingSpaces = withoutNewlines.slice(0, withoutNewlines.length - trimmedFromStart.length);
+      const coreText = trimmedFromStart.trimEnd();
+      const trailingSpaces = trimmedFromStart.slice(coreText.length);
+      const innerText = coreText || withoutNewlines;
+      const insert = leadingSpaces + prefix + innerText + suffix + trailingSpaces + trailingNewlines;
+      const innerFrom = from + leadingSpaces.length + prefix.length;
+      const innerTo = innerFrom + innerText.length;
       view.dispatch({
-        changes: { from, to, insert: prefix + trimmedText + suffix + trailingNewlines },
-        selection: { anchor: from + prefix.length, head: trimmedTo + prefix.length }
+        changes: { from, to, insert },
+        selection: { anchor: innerFrom, head: innerTo }
       });
     }
     return true;

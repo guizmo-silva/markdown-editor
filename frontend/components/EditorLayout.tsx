@@ -103,6 +103,14 @@ export default function EditorLayout() {
   const showBackButtonRef = useRef(false);
   const backButtonReadyRef = useRef(false);
   const backButtonTargetLineRef = useRef<number | null>(null);
+
+  // Refs for direct-DOM resize (bypasses React state during drag)
+  const sidebarContainerRef = useRef<HTMLDivElement>(null);
+  const sidebarInnerRef = useRef<HTMLDivElement>(null);
+  const sidebarWidthLive = useRef(SIDEBAR_MIN_WIDTH);
+  const editorPanelRef = useRef<HTMLDivElement>(null);
+  const previewPanelRef = useRef<HTMLDivElement>(null);
+  const splitPositionLive = useRef(50);
   const [, forceBackButtonUpdate] = useReducer((x: number) => x + 1, 0);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -437,7 +445,7 @@ export default function EditorLayout() {
       }
     } catch (err) {
       console.error('Failed to load file:', err);
-      showError(err instanceof Error ? err.message : 'Failed to load file');
+      showError(t('errors.failedToLoadFile'));
     } finally {
       setIsLoading(false);
     }
@@ -515,7 +523,7 @@ export default function EditorLayout() {
       getTrashCount().then(setTrashCount).catch(() => {});
     } catch (err) {
       console.error('Failed to delete file:', err);
-      showError(err instanceof Error ? err.message : 'Failed to delete file');
+      showError(t('errors.failedToDeleteFile'));
     }
   };
 
@@ -533,7 +541,7 @@ export default function EditorLayout() {
       updateTabId(oldPath, newPath);
     } catch (err) {
       console.error('Failed to rename file:', err);
-      showError(err instanceof Error ? err.message : 'Failed to rename file');
+      throw err;
     }
   };
 
@@ -568,7 +576,7 @@ export default function EditorLayout() {
     if (result === 'ok') {
       setShowWelcomeModal(false);
     } else if (result === 'error') {
-      showError('Failed to create file. Check volume permissions.');
+      showError(t('errors.failedToCreateFileVolume'));
     }
   };
 
@@ -582,7 +590,7 @@ export default function EditorLayout() {
     // Validate filename length (255 bytes max)
     const nameBytes = new TextEncoder().encode(newName).length;
     if (nameBytes > 255) {
-      showWarning('Filename too long (max 255 bytes)');
+      showWarning(t('errors.filenameTooLong'));
       return;
     }
 
@@ -602,7 +610,7 @@ export default function EditorLayout() {
       setFileRefreshTrigger(prev => prev + 1);
     } catch (err) {
       console.error('Failed to rename file:', err);
-      showError(err instanceof Error ? err.message : 'Failed to rename file');
+      showError(t('errors.failedToRenameFile'));
     }
   };
 
@@ -627,7 +635,7 @@ export default function EditorLayout() {
         await handleFileSelect(filePath);
         setFileRefreshTrigger(t => t + 1);
       } catch (err) {
-        showError(err instanceof Error ? err.message : 'Erro ao importar .docx');
+        showError(t('errors.failedToImportDocx'));
       }
       return;
     }
@@ -639,7 +647,7 @@ export default function EditorLayout() {
         await handleFileSelect(filePath);
         setFileRefreshTrigger(t => t + 1);
       } catch (err) {
-        showError(err instanceof Error ? err.message : 'Erro ao importar .zip');
+        showError(t('errors.failedToImportZip'));
       }
       return;
     }
@@ -669,7 +677,7 @@ export default function EditorLayout() {
           if (msg.toLowerCase().includes('already exists')) {
             counter++;
           } else {
-            showError(msg || 'Erro ao importar arquivo');
+            showError(t('errors.failedToImportFile'));
             return;
           }
         }
@@ -734,7 +742,7 @@ export default function EditorLayout() {
       if (format === 'pdf') {
         const previewEl = document.querySelector('.markdown-preview') as HTMLElement | null;
         if (!previewEl) {
-          showWarning('Alterne para o modo Split ou Preview para exportar em PDF.');
+          showWarning(t('errors.exportPdfModeWarning'));
           setExportingFormat(null);
           return;
         }
@@ -827,7 +835,7 @@ export default function EditorLayout() {
       setShowExportModal(false);
     } catch (err) {
       console.error('Failed to export:', err);
-      showError(err instanceof Error ? err.message : 'Failed to export');
+      showError(t('errors.failedToExport'));
     } finally {
       setExportingFormat(null);
     }
@@ -1435,19 +1443,17 @@ export default function EditorLayout() {
 
   const handleResizeMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return;
-
-    const newWidth = e.clientX;
-    if (newWidth >= SIDEBAR_MIN_WIDTH && newWidth <= SIDEBAR_MAX_WIDTH) {
-      setSidebarWidth(newWidth);
-    } else if (newWidth < SIDEBAR_MIN_WIDTH) {
-      setSidebarWidth(SIDEBAR_MIN_WIDTH);
-    } else if (newWidth > SIDEBAR_MAX_WIDTH) {
-      setSidebarWidth(SIDEBAR_MAX_WIDTH);
-    }
+    let newWidth = e.clientX;
+    newWidth = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, newWidth));
+    sidebarWidthLive.current = newWidth;
+    // Direct DOM update — avoids React re-render on every mousemove
+    if (sidebarContainerRef.current) sidebarContainerRef.current.style.width = `${newWidth}px`;
+    if (sidebarInnerRef.current) sidebarInnerRef.current.style.width = `${newWidth}px`;
   }, [isResizing]);
 
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
+    setSidebarWidth(sidebarWidthLive.current);
   }, []);
 
   // Split resize handlers
@@ -1464,23 +1470,21 @@ export default function EditorLayout() {
     const containerRect = container.getBoundingClientRect();
     const containerWidth = containerRect.width;
     const relativeX = e.clientX - containerRect.left;
-    const percentage = (relativeX / containerWidth) * 100;
+    let percentage = (relativeX / containerWidth) * 100;
 
-    // Calculate minimum percentage based on pixel constraint
     const minPercentFromPixels = (CODE_VIEW_MIN_WIDTH / containerWidth) * 100;
     const effectiveMinPercent = Math.max(SPLIT_MIN_PERCENT, minPercentFromPixels);
+    percentage = Math.max(effectiveMinPercent, Math.min(SPLIT_MAX_PERCENT, percentage));
 
-    if (percentage >= effectiveMinPercent && percentage <= SPLIT_MAX_PERCENT) {
-      setSplitPosition(percentage);
-    } else if (percentage < effectiveMinPercent) {
-      setSplitPosition(effectiveMinPercent);
-    } else if (percentage > SPLIT_MAX_PERCENT) {
-      setSplitPosition(SPLIT_MAX_PERCENT);
-    }
+    splitPositionLive.current = percentage;
+    // Direct DOM update — avoids React re-render on every mousemove
+    if (editorPanelRef.current) editorPanelRef.current.style.width = `${percentage}%`;
+    if (previewPanelRef.current) previewPanelRef.current.style.width = `calc(${100 - percentage}% - 5px)`;
   }, [isResizingSplit]);
 
   const handleSplitResizeEnd = useCallback(() => {
     setIsResizingSplit(false);
+    setSplitPosition(splitPositionLive.current);
   }, []);
 
   const handleSplitDoubleClick = useCallback(() => {
@@ -1629,11 +1633,13 @@ export default function EditorLayout() {
     >
       {/* Sidebar Container - Animated width (only when not resizing) */}
       <div
+        ref={sidebarContainerRef}
         className={`relative flex-shrink-0 ${isResizing ? '' : 'transition-[width] duration-300 ease-in-out'}`}
         style={{ width: isSidebarCollapsed ? 60 : sidebarWidth }}
       >
         {/* Expanded Sidebar */}
         <div
+          ref={sidebarInnerRef}
           className={`absolute inset-0 flex transition-opacity duration-300 ease-in-out ${
             isSidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
@@ -1775,6 +1781,7 @@ export default function EditorLayout() {
 
                 {/* Editor panel */}
                 <div
+                  ref={editorPanelRef}
                   className="flex-shrink-0 flex flex-col overflow-hidden"
                   style={{
                     ...(isHorizontal
@@ -1895,6 +1902,7 @@ export default function EditorLayout() {
 
                 {/* Preview panel */}
                 <div
+                  ref={previewPanelRef}
                   className="flex flex-col flex-shrink-0 overflow-hidden"
                   style={{
                     ...(isHorizontal

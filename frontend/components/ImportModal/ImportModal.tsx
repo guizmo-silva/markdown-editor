@@ -76,7 +76,7 @@ export default function ImportModal({ isOpen, onClose, onConfirm }: ImportModalP
       }
     } catch (error) {
       console.error('Failed to load folders:', error);
-      showError(error instanceof Error ? error.message : 'Failed to load folders');
+      showError(t('errors.failedToLoadFolders'));
     }
   }, []);
 

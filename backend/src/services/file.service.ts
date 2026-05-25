@@ -415,3 +415,83 @@ export const addImageToDocumentFolder = async (
   await fs.writeFile(path.join(docFolder, finalName), imageBuffer);
   return finalName;
 };
+
+/**
+ * Copies a file or document folder to the same directory with a `-copy` suffix
+ * (or `-copy-2`, `-copy-3`, etc. until a free name is found).
+ *
+ * For document folders (.md inside a same-slug parent folder), the entire
+ * parent folder is copied and the internal .md is renamed to match the new
+ * folder name.
+ *
+ * Returns the volume-prefixed path of the new .md file (or new file).
+ */
+export const copyFileOrDirectory = async (relativePath: string): Promise<{ newPath: string }> => {
+  const { volume, relativePath: volRelativePath } = resolveVolumePath(relativePath);
+  const safePath = await validatePath(volRelativePath, volume.mountPath);
+
+  const parentDir = path.dirname(safePath);
+  const parentName = path.basename(parentDir);
+  const docInfo = path.extname(safePath).toLowerCase() === '.md'
+    ? await isDocumentFolder(parentDir, parentName)
+    : null;
+
+  // Helper: check if a path exists
+  const pathExists = async (p: string): Promise<boolean> => {
+    try {
+      await fs.access(p);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  if (docInfo) {
+    // Copy the entire parent folder with a -copy suffix
+    const grandParentDir = path.dirname(parentDir);
+    const baseNewFolderName = `${parentName}-copy`;
+
+    // Find a free folder name
+    let newFolderName = baseNewFolderName;
+    let counter = 2;
+    while (await pathExists(path.join(grandParentDir, newFolderName))) {
+      if (counter > 1000) throw new Error('Too many copies exist');
+      newFolderName = `${parentName}-copy-${counter}`;
+      counter++;
+    }
+
+    const destFolderPath = path.join(grandParentDir, newFolderName);
+    await fs.cp(parentDir, destFolderPath, { recursive: true });
+
+    // Rename the internal .md to match the new folder name
+    const newMdName = `${newFolderName}.md`;
+    const oldMdPathInCopy = path.join(destFolderPath, docInfo.mdFile);
+    const newMdPathInCopy = path.join(destFolderPath, newMdName);
+    await fs.rename(oldMdPathInCopy, newMdPathInCopy);
+
+    const newRelativeToVolume = path.relative(volume.mountPath, newMdPathInCopy)
+      .split(path.sep).join('/');
+    return { newPath: `${volume.name}/${newRelativeToVolume}` };
+  } else {
+    // Simple file copy with -copy suffix
+    const ext = path.extname(safePath);
+    const base = path.basename(safePath, ext);
+    const baseNewName = `${base}-copy`;
+
+    // Find a free file name
+    let newFileName = `${baseNewName}${ext}`;
+    let counter = 2;
+    while (await pathExists(path.join(parentDir, newFileName))) {
+      if (counter > 1000) throw new Error('Too many copies exist');
+      newFileName = `${baseNewName}-${counter}${ext}`;
+      counter++;
+    }
+
+    const destPath = path.join(parentDir, newFileName);
+    await fs.cp(safePath, destPath, { recursive: true });
+
+    const newRelativeToVolume = path.relative(volume.mountPath, destPath)
+      .split(path.sep).join('/');
+    return { newPath: `${volume.name}/${newRelativeToVolume}` };
+  }
+};

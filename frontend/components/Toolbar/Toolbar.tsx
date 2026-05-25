@@ -328,7 +328,14 @@ export default function Toolbar({
     const beforeSelection = currentValue.substring(Math.max(0, start - prefix.length), start);
     const afterSelection = currentValue.substring(end, end + suffix.length);
 
-    const isAlreadyFormatted = beforeSelection === prefix && afterSelection === suffix;
+    // For italic (*): distinguish from bold (**) by counting consecutive stars.
+    // Odd count (1=italic, 3=bold+italic) → format is present; even (2=bold) → it's not italic.
+    let isAlreadyFormatted = beforeSelection === prefix && afterSelection === suffix;
+    if (isAlreadyFormatted && prefix === '*' && suffix === '*') {
+      let starsBefore = 0;
+      while (start - starsBefore - 1 >= 0 && currentValue[start - starsBefore - 1] === '*') starsBefore++;
+      isAlreadyFormatted = starsBefore % 2 === 1;
+    }
 
     if (isAlreadyFormatted) {
       // Remove formatting
@@ -370,28 +377,27 @@ export default function Toolbar({
         const textToInsert = selectedText || placeholder;
         // Strip trailing newline(s) from selection (e.g. triple-click selects the line break)
         const trailingNewlines = textToInsert.match(/\n+$/)?.[0] ?? '';
-        const trimmedText = trailingNewlines ? textToInsert.slice(0, -trailingNewlines.length) : textToInsert;
-        const replacement = prefix + trimmedText + suffix + trailingNewlines;
-        const selectionEnd = start + prefix.length + trimmedText.length;
+        const withoutNewlines = trailingNewlines ? textToInsert.slice(0, -trailingNewlines.length) : textToInsert;
+        // Strip leading/trailing spaces so markers hug the words, not the surrounding whitespace
+        const trimmedFromStart = withoutNewlines.trimStart();
+        const leadingSpaces = withoutNewlines.slice(0, withoutNewlines.length - trimmedFromStart.length);
+        const coreText = trimmedFromStart.trimEnd();
+        const trailingSpaces = trimmedFromStart.slice(coreText.length);
+        const innerText = coreText || placeholder;
+        const replacement = leadingSpaces + prefix + innerText + suffix + trailingSpaces + trailingNewlines;
+        const innerStart = start + leadingSpaces.length + prefix.length;
+        const innerEnd = innerStart + innerText.length;
         if (editor.replaceRange) {
           editor.replaceRange(start, end, replacement);
           setTimeout(() => {
-            if (selectedText) {
-              editor.setSelectionRange(start + prefix.length, selectionEnd);
-            } else {
-              editor.setSelectionRange(start + prefix.length, start + prefix.length + trimmedText.length);
-            }
+            editor.setSelectionRange(innerStart, innerEnd);
             editor.focus();
           }, 0);
         } else {
           const newText = currentValue.substring(0, start) + replacement + currentValue.substring(end);
           onChange(newText);
           setTimeout(() => {
-            if (selectedText) {
-              editor.setSelectionRange(start + prefix.length, selectionEnd);
-            } else {
-              editor.setSelectionRange(start + prefix.length, start + prefix.length + trimmedText.length);
-            }
+            editor.setSelectionRange(innerStart, innerEnd);
             editor.focus();
           }, 0);
         }
@@ -535,12 +541,18 @@ export default function Toolbar({
     const trailingNewlines = selectedText.match(/\n+$/)?.[0] ?? '';
     const textToProcess = trailingNewlines ? selectedText.slice(0, -trailingNewlines.length) : selectedText;
 
+    // Strip leading/trailing spaces so == always ends up adjacent to words, not whitespace
+    const trimmedFromStart = textToProcess.trimStart();
+    const leadingSpaces = textToProcess.slice(0, textToProcess.length - trimmedFromStart.length);
+    const coreText = trimmedFromStart.trimEnd();
+    const trailingSpaces = trimmedFromStart.slice(coreText.length);
+
     // Peel symmetric inline formatting markers from the outside in
-    // so that == ends up adjacent to the actual words
+    // so that == ends up adjacent to the actual words, inside any existing markers
     const MARKERS = ['***', '**', '*', '~~', '__', '_'];
     let outerPrefix = '';
     let outerSuffix = '';
-    let inner = textToProcess;
+    let inner = coreText;
 
     let changed = true;
     while (changed) {
@@ -560,11 +572,44 @@ export default function Toolbar({
       }
     }
 
+    // Compute document positions of inner content (after symmetric peel, before orphan stripping)
+    const coreStartInDoc = start + leadingSpaces.length;
+    const coreEndInDoc = end - trailingSpaces.length;
+    const innerStartInDoc = coreStartInDoc + outerPrefix.length;
+    const innerEndInDoc = coreEndInDoc - outerSuffix.length;
+
+    // Strip orphan leading marker: user selected starting mid-span (e.g. "*texto" from "***texto***")
+    // Confirmed orphan when the same marker appears in the doc just before or just after the inner region
+    for (const marker of MARKERS) {
+      if (inner.startsWith(marker)) {
+        const docBefore = currentValue.substring(Math.max(0, innerStartInDoc - marker.length), innerStartInDoc);
+        const docAfter = currentValue.substring(innerEndInDoc, innerEndInDoc + marker.length);
+        if (docBefore === marker || docAfter === marker) {
+          outerPrefix += marker;
+          inner = inner.slice(marker.length);
+        }
+        break;
+      }
+    }
+
+    // Strip orphan trailing marker: user selected ending mid-span (e.g. "texto*" from "***texto***")
+    for (const marker of MARKERS) {
+      if (inner.endsWith(marker)) {
+        const docBefore = currentValue.substring(Math.max(0, innerStartInDoc - marker.length), innerStartInDoc);
+        const docAfter = currentValue.substring(innerEndInDoc, innerEndInDoc + marker.length);
+        if (docBefore === marker || docAfter === marker) {
+          outerSuffix = marker + outerSuffix;
+          inner = inner.slice(0, inner.length - marker.length);
+        }
+        break;
+      }
+    }
+
     // Check if highlight is already applied (== adjacent to text, inside outer markers)
     const isInnerHighlighted =
       inner.startsWith('==') && inner.endsWith('==') && inner.length > 4;
 
-    // Check if == is outside the selection (e.g. user selected "**text**" while ==**text**== exists)
+    // Check if == is outside the full selection (user selected inner content while == wraps outside)
     const beforeSel = currentValue.substring(Math.max(0, start - 2), start);
     const afterSel = currentValue.substring(end, end + 2);
     const isOuterHighlighted = beforeSel === '==' && afterSel === '==';
@@ -581,19 +626,19 @@ export default function Toolbar({
     };
 
     if (isInnerHighlighted) {
-      // Remove == from inside the outer markers: **==text==** → **text**
+      // Remove ==: leadingSpaces + outerPrefix + ==text== + outerSuffix + trailingSpaces → remove ==
       const unwrapped = inner.slice(2, inner.length - 2);
-      const replacement = outerPrefix + unwrapped + outerSuffix + trailingNewlines;
-      applyChange(start, end, replacement, start, start + replacement.length - trailingNewlines.length);
+      const replacement = leadingSpaces + outerPrefix + unwrapped + outerSuffix + trailingSpaces + trailingNewlines;
+      const selStart = start + leadingSpaces.length + outerPrefix.length;
+      applyChange(start, end, replacement, selStart, selStart + unwrapped.length);
     } else if (isOuterHighlighted) {
       // Remove == that are outside the selection
       applyChange(start - 2, end + 2, textToProcess + trailingNewlines, start - 2, start - 2 + textToProcess.length);
     } else {
-      // Apply: place == inside the outer markers, adjacent to the text
-      const replacement = outerPrefix + '==' + inner + '==' + outerSuffix + trailingNewlines;
-      const selStart = start + outerPrefix.length + 2;
-      const selEnd = selStart + inner.length;
-      applyChange(start, end, replacement, selStart, selEnd);
+      // Apply: leadingSpaces + outerPrefix + == + inner + == + outerSuffix + trailingSpaces
+      const replacement = leadingSpaces + outerPrefix + '==' + inner + '==' + outerSuffix + trailingSpaces + trailingNewlines;
+      const selStart = start + leadingSpaces.length + outerPrefix.length + 2;
+      applyChange(start, end, replacement, selStart, selStart + inner.length);
     }
   };
 
@@ -1637,7 +1682,7 @@ export default function Toolbar({
           onImageImported?.(newDocumentPath, imageName);
         } catch (err) {
           console.error('Failed to import image:', err);
-          showError(err instanceof Error ? err.message : 'Erro ao importar imagem');
+          showError(t('errors.failedToImportImage'));
         }
       } else {
         // Fallback when no file is open: just insert the reference

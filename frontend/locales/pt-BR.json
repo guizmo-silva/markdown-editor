@@ -171,6 +171,36 @@
     "expiresIn": "Expira em {{days}} dias",
     "restoreCheatSheet": "Restaurar o arquivo markdown-cheat-sheet"
   },
+  "errors": {
+    "failedToLoadFile": "Falha ao carregar arquivo",
+    "failedToDeleteFile": "Falha ao deletar arquivo",
+    "failedToRenameFile": "Falha ao renomear arquivo",
+    "failedToCreateFile": "Falha ao criar arquivo",
+    "failedToCreateFileVolume": "Falha ao criar arquivo. Verifique as permissões do volume.",
+    "failedToMoveFile": "Falha ao mover arquivo",
+    "failedToCrossVolume": "Não é possível mover arquivos entre volumes diferentes",
+    "failedToCreateFolder": "Falha ao criar pasta",
+    "failedToRenameItem": "Falha ao renomear item",
+    "failedToLoadFolders": "Falha ao carregar pastas",
+    "failedToLoadTrash": "Falha ao carregar lixeira",
+    "failedToRestore": "Falha ao restaurar",
+    "failedToDelete": "Falha ao deletar",
+    "failedToRestoreCheatSheet": "Falha ao restaurar o cheat-sheet",
+    "failedToEmptyTrash": "Falha ao esvaziar lixeira",
+    "failedToExport": "Falha ao exportar",
+    "failedToImportDocx": "Falha ao importar .docx",
+    "failedToImportZip": "Falha ao importar .zip",
+    "failedToImportFile": "Falha ao importar arquivo",
+    "failedToImportImage": "Falha ao importar imagem",
+    "filenameTooLong": "Nome de arquivo muito longo (máx. 255 bytes)",
+    "exportPdfModeWarning": "Alterne para o modo Dividido ou Visualização para exportar em PDF.",
+    "failedToDuplicate": "Falha ao duplicar arquivo"
+  },
+  "contextMenu": {
+    "duplicate": "Duplicar",
+    "rename": "Renomear",
+    "delete": "Apagar"
+  },
   "searchPanel": {
     "searchPlaceholder": "Buscar...",
     "replacePlaceholder": "Substituir...",

@@ -411,3 +411,21 @@ export async function exportWithImages(
 
   return response.blob();
 }
+
+/**
+ * Duplicate a file
+ */
+export async function duplicateFile(sourcePath: string): Promise<{ newPath: string }> {
+  const response = await fetch(`${getApiBaseUrl()}/files/copy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sourcePath }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to duplicate file' }));
+    throw new Error(error.error || 'Failed to duplicate file');
+  }
+
+  return response.json();
+}

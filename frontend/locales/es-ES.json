@@ -171,6 +171,36 @@
     "expiresIn": "Expira en {{days}} días",
     "restoreCheatSheet": "Restaurar el archivo markdown-cheat-sheet"
   },
+  "errors": {
+    "failedToLoadFile": "Error al cargar el archivo",
+    "failedToDeleteFile": "Error al eliminar el archivo",
+    "failedToRenameFile": "Error al renombrar el archivo",
+    "failedToCreateFile": "Error al crear el archivo",
+    "failedToCreateFileVolume": "Error al crear el archivo. Verifique los permisos del volumen.",
+    "failedToMoveFile": "Error al mover el archivo",
+    "failedToCrossVolume": "No es posible mover archivos entre distintos volúmenes",
+    "failedToCreateFolder": "Error al crear la carpeta",
+    "failedToRenameItem": "Error al renombrar el elemento",
+    "failedToLoadFolders": "Error al cargar las carpetas",
+    "failedToLoadTrash": "Error al cargar la papelera",
+    "failedToRestore": "Error al restaurar",
+    "failedToDelete": "Error al eliminar",
+    "failedToRestoreCheatSheet": "Error al restaurar el cheat-sheet",
+    "failedToEmptyTrash": "Error al vaciar la papelera",
+    "failedToExport": "Error al exportar",
+    "failedToImportDocx": "Error al importar .docx",
+    "failedToImportZip": "Error al importar .zip",
+    "failedToImportFile": "Error al importar archivo",
+    "failedToImportImage": "Error al importar imagen",
+    "filenameTooLong": "Nombre de archivo demasiado largo (máx. 255 bytes)",
+    "exportPdfModeWarning": "Cambie al modo Dividido o Vista previa para exportar en PDF.",
+    "failedToDuplicate": "Error al duplicar el archivo"
+  },
+  "contextMenu": {
+    "duplicate": "Duplicar",
+    "rename": "Renombrar",
+    "delete": "Eliminar"
+  },
   "searchPanel": {
     "searchPlaceholder": "Buscar...",
     "replacePlaceholder": "Reemplazar...",

@@ -12,6 +12,7 @@ import {
   importImage,
   importDocx,
   importZip,
+  copyFile,
   upload,
 } from '../controllers/file.controller.js';
 
@@ -46,6 +47,9 @@ router.post('/import-docx', upload.single('file'), importDocx);
 
 // Import .zip (markdown + images)
 router.post('/import-zip', upload.single('file'), importZip);
+
+// Copy file or directory
+router.post('/copy', copyFile);
 
 // Delete file
 router.delete('/delete', deleteFile);

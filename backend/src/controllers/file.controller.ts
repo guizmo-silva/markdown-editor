@@ -288,6 +288,21 @@ export const importZip = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+export const copyFile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { sourcePath } = req.body;
+    if (!sourcePath) {
+      res.status(400).json({ error: 'sourcePath is required' });
+      return;
+    }
+    const result = await fileService.copyFileOrDirectory(sourcePath);
+    res.json(result);
+  } catch (error: any) {
+    console.error('Error copying file:', error);
+    res.status(500).json({ error: 'Failed to copy file' });
+  }
+};
+
 export const importImage = async (req: Request, res: Response): Promise<void> => {
   try {
     const { documentPath } = req.body;

@@ -1,12 +1,12 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { memo, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import AssetSection from './AssetSection';
 import LogoMenu from './LogoMenu';
 import { FileBrowser } from '@/components/FileBrowser';
 import { ViewToggle, ViewMode } from '@/components/ViewToggle';
-import { parseMarkdownAssets, type MarkdownAssets } from '@/utils/markdownParser';
+import { parseMarkdownAssets } from '@/utils/markdownParser';
 import { useThemedIcon } from '@/utils/useThemedIcon';
 
 type SectionId = 'headings' | 'links' | 'images' | 'quotes' | 'unorderedLists' | 'orderedLists' | 'codeBlocks' | 'tables' | 'footnotes' | 'alerts' | 'formulas';
@@ -28,8 +28,8 @@ function SidebarItemText({ children }: { children: React.ReactNode }) {
   );
 }
 
-const SECTION_MIN_PERCENT = 20; // Minimum 20% for each section
-const SECTION_MAX_PERCENT = 80; // Maximum 80% for each section
+const SECTION_MIN_PERCENT = 20;
+const SECTION_MAX_PERCENT = 80;
 
 interface AssetsSidebarProps {
   markdown: string;
@@ -51,27 +51,62 @@ interface AssetsSidebarProps {
   onOpenTrash?: () => void;
 }
 
-export default function AssetsSidebar({
+interface SidebarBodyProps {
+  markdown: string;
+  onNavigateToLine?: (line: number) => void;
+  onFileSelect?: (filePath: string) => void;
+  onDeleteFile?: (filePath: string) => void;
+  onRenameFolder?: (oldPath: string, newPath: string) => void;
+  onExport?: () => void;
+  onToggleCollapse?: () => void;
+  fileRefreshTrigger?: number;
+  trashCount?: number;
+  onOpenTrash?: () => void;
+}
+
+function sidebarBodyPropsEqual(prev: SidebarBodyProps, next: SidebarBodyProps) {
+  return (
+    prev.markdown === next.markdown &&
+    prev.fileRefreshTrigger === next.fileRefreshTrigger &&
+    prev.trashCount === next.trashCount
+  );
+}
+
+const SidebarBody = memo(function SidebarBody({
   markdown,
-  viewMode,
-  onViewModeChange,
-  onSplitDoubleClick,
-  splitVariant,
   onNavigateToLine,
   onFileSelect,
   onDeleteFile,
   onRenameFolder,
   onExport,
-  onImportClick,
-  isCollapsed = false,
   onToggleCollapse,
-  width = 230,
   fileRefreshTrigger,
   trashCount = 0,
   onOpenTrash,
-}: AssetsSidebarProps) {
+}: SidebarBodyProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
+
+  // Stabilize callback props via refs — parent re-renders (e.g. viewMode change) won't cause re-render here
+  const onNavigateToLineRef = useRef(onNavigateToLine);
+  onNavigateToLineRef.current = onNavigateToLine;
+  const onExportRef = useRef(onExport);
+  onExportRef.current = onExport;
+  const onToggleCollapseRef = useRef(onToggleCollapse);
+  onToggleCollapseRef.current = onToggleCollapse;
+  const onOpenTrashRef = useRef(onOpenTrash);
+  onOpenTrashRef.current = onOpenTrash;
+  const onFileSelectRef = useRef(onFileSelect);
+  onFileSelectRef.current = onFileSelect;
+  const onDeleteFileRef = useRef(onDeleteFile);
+  onDeleteFileRef.current = onDeleteFile;
+  const onRenameFolderRef = useRef(onRenameFolder);
+  onRenameFolderRef.current = onRenameFolder;
+
+  // Stable wrappers for FileBrowser — never change identity, so FileBrowser won't re-render on parent changes
+  const stableFileSelect = useCallback((p: string) => { onFileSelectRef.current?.(p); }, []);
+  const stableDeleteFile = useCallback((p: string) => { onDeleteFileRef.current?.(p); }, []);
+  const stableRenameFolder = useCallback((o: string, n: string) => { onRenameFolderRef.current?.(o, n); }, []);
 
   // State to track which sections are open
   const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>({
@@ -95,11 +130,12 @@ export default function AssetsSidebar({
   const [contentSectionPercent, setContentSectionPercent] = useState(50);
   const [isResizingSection, setIsResizingSection] = useState(false);
   const sectionContainerRef = useRef<HTMLDivElement>(null);
+  const contentSectionRef = useRef<HTMLDivElement>(null);
+  const filesSectionRef = useRef<HTMLDivElement>(null);
+  const contentSectionPercentLive = useRef(50);
 
   // Parse markdown to extract all assets
-  const assets: MarkdownAssets = useMemo(() => {
-    return parseMarkdownAssets(markdown);
-  }, [markdown]);
+  const assets = useMemo(() => parseMarkdownAssets(markdown), [markdown]);
 
   // Fold state for H1 and H2 headings
   const [collapsedHeadings, setCollapsedHeadings] = useState<Set<number>>(new Set());
@@ -112,7 +148,6 @@ export default function AssetsSidebar({
     if (collapsedHeadings.size > 0) setCollapsedHeadings(new Set());
   }
 
-  // Which H1/H2 indices have at least one deeper heading immediately below them
   const foldableHeadings = useMemo(() => {
     const result = new Set<number>();
     for (let i = 0; i < assets.headings.length; i++) {
@@ -125,18 +160,15 @@ export default function AssetsSidebar({
     return result;
   }, [assets.headings]);
 
-  // Which heading indices are visible given current collapsed state
   const visibleHeadings = useMemo(() => {
     const result: boolean[] = [];
     let collapsedUntilLevel: number | null = null;
     for (let i = 0; i < assets.headings.length; i++) {
       const { level } = assets.headings[i];
-      // A same-or-higher-hierarchy heading breaks the current collapse scope
       if (collapsedUntilLevel !== null && level <= collapsedUntilLevel) {
         collapsedUntilLevel = null;
       }
       result.push(collapsedUntilLevel === null);
-      // If this heading is collapsed and we're not already under a collapse, start hiding children
       if ((level === 1 || level === 2) && collapsedHeadings.has(i) && collapsedUntilLevel === null) {
         collapsedUntilLevel = level;
       }
@@ -153,14 +185,11 @@ export default function AssetsSidebar({
     });
   }, []);
 
-  // Handle section toggle
   const handleSectionToggle = (sectionId: SectionId, isOpen: boolean) => {
     setOpenSections(prev => ({ ...prev, [sectionId]: isOpen }));
   };
 
-  // Collapse all content sections
   const handleCollapseAllContent = () => {
-    // Check if any section is open
     const anyOpen = Object.values(openSections).some(v => v);
     if (anyOpen) {
       setOpenSections({
@@ -179,18 +208,14 @@ export default function AssetsSidebar({
     }
   };
 
-  // Collapse all files
   const handleCollapseAllFiles = () => {
     setFilesCollapseTrigger(prev => prev + 1);
   };
 
-  const handleItemClick = (line: number) => {
-    if (onNavigateToLine) {
-      onNavigateToLine(line);
-    }
-  };
+  const handleItemClick = useCallback((line: number) => {
+    onNavigateToLineRef.current?.(line);
+  }, []);
 
-  // Section divider resize handlers
   const handleSectionResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizingSection(true);
@@ -198,23 +223,19 @@ export default function AssetsSidebar({
 
   const handleSectionResizeMove = useCallback((e: MouseEvent) => {
     if (!isResizingSection || !sectionContainerRef.current) return;
-
     const container = sectionContainerRef.current;
     const containerRect = container.getBoundingClientRect();
     const relativeY = e.clientY - containerRect.top;
-    const percentage = (relativeY / containerRect.height) * 100;
-
-    if (percentage >= SECTION_MIN_PERCENT && percentage <= SECTION_MAX_PERCENT) {
-      setContentSectionPercent(percentage);
-    } else if (percentage < SECTION_MIN_PERCENT) {
-      setContentSectionPercent(SECTION_MIN_PERCENT);
-    } else if (percentage > SECTION_MAX_PERCENT) {
-      setContentSectionPercent(SECTION_MAX_PERCENT);
-    }
+    let percentage = (relativeY / containerRect.height) * 100;
+    percentage = Math.max(SECTION_MIN_PERCENT, Math.min(SECTION_MAX_PERCENT, percentage));
+    contentSectionPercentLive.current = percentage;
+    if (contentSectionRef.current) contentSectionRef.current.style.height = `${percentage}%`;
+    if (filesSectionRef.current) filesSectionRef.current.style.height = `calc(${100 - percentage}% - 11px)`;
   }, [isResizingSection]);
 
   const handleSectionResizeEnd = useCallback(() => {
     setIsResizingSection(false);
+    setContentSectionPercent(contentSectionPercentLive.current);
   }, []);
 
   useEffect(() => {
@@ -234,20 +255,12 @@ export default function AssetsSidebar({
   }, [isResizingSection, handleSectionResizeMove, handleSectionResizeEnd]);
 
   return (
-    <div className="h-full bg-[var(--bg-primary)] flex flex-col relative" style={{ width }}>
-      {/* Top Section: Logo and View Toggle */}
-      <div className="pl-[20px] pr-4 pt-[20px] pb-3 flex items-center justify-between gap-3">
-        {/* Logo with Menu */}
-        <LogoMenu onImportClick={onImportClick} />
-
-        {/* View Toggle */}
-        <ViewToggle currentMode={viewMode} onModeChange={onViewModeChange} onSplitDoubleClick={onSplitDoubleClick} splitVariant={splitVariant} />
-      </div>
-
+    <>
       {/* Sections Container */}
       <div ref={sectionContainerRef} className="flex-1 flex flex-col overflow-hidden">
         {/* Conteúdo Section - with independent scroll */}
         <div
+          ref={contentSectionRef}
           className="overflow-hidden flex flex-col"
           style={{ height: `${contentSectionPercent}%` }}
         >
@@ -671,6 +684,7 @@ export default function AssetsSidebar({
 
         {/* Arquivos Section - with independent scroll */}
         <div
+          ref={filesSectionRef}
           className="overflow-hidden flex flex-col"
           style={{ height: `calc(${100 - contentSectionPercent}% - 11px)` }}
         >
@@ -686,7 +700,7 @@ export default function AssetsSidebar({
           </div>
           <div className="flex-1 relative overflow-hidden">
             <div className="absolute inset-0 overflow-y-auto sidebar-scroll pb-8">
-              <FileBrowser onFileSelect={onFileSelect} onDeleteFile={onDeleteFile} onRenameFolder={onRenameFolder} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
+              <FileBrowser onFileSelect={stableFileSelect} onDeleteFile={stableDeleteFile} onRenameFolder={stableRenameFolder} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
             </div>
             <div
               className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none z-10"
@@ -701,7 +715,7 @@ export default function AssetsSidebar({
         {/* Trash button (only visible when trash has items) */}
         {trashCount > 0 && onOpenTrash && (
           <button
-            onClick={onOpenTrash}
+            onClick={() => onOpenTrashRef.current?.()}
             className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[var(--hover-bg)] transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             title={t('trash.title', 'Lixeira')}
           >
@@ -721,7 +735,7 @@ export default function AssetsSidebar({
         <div className="flex items-center justify-between">
           {/* Export Button */}
           <button
-            onClick={onExport}
+            onClick={() => onExportRef.current?.()}
             className="px-4 py-2 bg-[var(--button-bg)] text-[var(--text-button)] text-[12px] font-medium rounded hover:bg-[var(--button-hover)] transition-colors"
             style={{ fontFamily: 'Roboto Mono, monospace' }}
             title={t('tooltips.export')}
@@ -732,7 +746,7 @@ export default function AssetsSidebar({
           {/* Collapse Button */}
           {onToggleCollapse && (
             <button
-              onClick={onToggleCollapse}
+              onClick={() => onToggleCollapseRef.current?.()}
               className="p-2 hover:ring-1 hover:ring-[var(--border-primary)] rounded transition-all"
               aria-label={t('tooltips.hideSidebar')}
               title={t('tooltips.hideSidebar')}
@@ -746,6 +760,48 @@ export default function AssetsSidebar({
           )}
         </div>
       </div>
+    </>
+  );
+}, sidebarBodyPropsEqual);
+
+export default function AssetsSidebar({
+  markdown,
+  viewMode,
+  onViewModeChange,
+  onSplitDoubleClick,
+  splitVariant,
+  onNavigateToLine,
+  onFileSelect,
+  onDeleteFile,
+  onRenameFolder,
+  onExport,
+  onImportClick,
+  onToggleCollapse,
+  fileRefreshTrigger,
+  trashCount = 0,
+  onOpenTrash,
+}: AssetsSidebarProps) {
+  return (
+    <div className="h-full w-full bg-[var(--bg-primary)] flex flex-col relative">
+      {/* Header: Logo + ViewToggle. Re-renders with viewMode changes (cheap). */}
+      <div className="pl-[20px] pr-4 pt-[20px] pb-3 flex items-center justify-between gap-3">
+        <LogoMenu onImportClick={onImportClick} />
+        <ViewToggle currentMode={viewMode} onModeChange={onViewModeChange} onSplitDoubleClick={onSplitDoubleClick} splitVariant={splitVariant} />
+      </div>
+
+      {/* Heavy body: memoized — won't re-render on viewMode changes */}
+      <SidebarBody
+        markdown={markdown}
+        onNavigateToLine={onNavigateToLine}
+        onFileSelect={onFileSelect}
+        onDeleteFile={onDeleteFile}
+        onRenameFolder={onRenameFolder}
+        onExport={onExport}
+        onToggleCollapse={onToggleCollapse}
+        fileRefreshTrigger={fileRefreshTrigger}
+        trashCount={trashCount}
+        onOpenTrash={onOpenTrash}
+      />
     </div>
   );
 }

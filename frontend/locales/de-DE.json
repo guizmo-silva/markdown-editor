@@ -171,6 +171,36 @@
     "expiresIn": "Läuft in {{days}} Tagen ab",
     "restoreCheatSheet": "Die Datei markdown-cheat-sheet wiederherstellen"
   },
+  "errors": {
+    "failedToLoadFile": "Datei konnte nicht geladen werden",
+    "failedToDeleteFile": "Datei konnte nicht gelöscht werden",
+    "failedToRenameFile": "Datei konnte nicht umbenannt werden",
+    "failedToCreateFile": "Datei konnte nicht erstellt werden",
+    "failedToCreateFileVolume": "Datei konnte nicht erstellt werden. Überprüfen Sie die Volume-Berechtigungen.",
+    "failedToMoveFile": "Datei konnte nicht verschoben werden",
+    "failedToCrossVolume": "Dateien können nicht zwischen verschiedenen Volumes verschoben werden",
+    "failedToCreateFolder": "Ordner konnte nicht erstellt werden",
+    "failedToRenameItem": "Element konnte nicht umbenannt werden",
+    "failedToLoadFolders": "Ordner konnten nicht geladen werden",
+    "failedToLoadTrash": "Papierkorb konnte nicht geladen werden",
+    "failedToRestore": "Wiederherstellen fehlgeschlagen",
+    "failedToDelete": "Löschen fehlgeschlagen",
+    "failedToRestoreCheatSheet": "Cheat-Sheet konnte nicht wiederhergestellt werden",
+    "failedToEmptyTrash": "Papierkorb konnte nicht geleert werden",
+    "failedToExport": "Export fehlgeschlagen",
+    "failedToImportDocx": ".docx konnte nicht importiert werden",
+    "failedToImportZip": ".zip konnte nicht importiert werden",
+    "failedToImportFile": "Datei konnte nicht importiert werden",
+    "failedToImportImage": "Bild konnte nicht importiert werden",
+    "filenameTooLong": "Dateiname zu lang (max. 255 Bytes)",
+    "exportPdfModeWarning": "Wechseln Sie in den Teilen- oder Vorschau-Modus, um als PDF zu exportieren.",
+    "failedToDuplicate": "Datei konnte nicht dupliziert werden"
+  },
+  "contextMenu": {
+    "duplicate": "Duplizieren",
+    "rename": "Umbenennen",
+    "delete": "Löschen"
+  },
   "searchPanel": {
     "searchPlaceholder": "Suchen...",
     "replacePlaceholder": "Ersetzen...",

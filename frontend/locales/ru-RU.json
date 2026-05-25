@@ -171,6 +171,36 @@
     "expiresIn": "истекает через {{days}} дн.",
     "restoreCheatSheet": "Восстановить файл markdown-cheat-sheet"
   },
+  "errors": {
+    "failedToLoadFile": "Не удалось загрузить файл",
+    "failedToDeleteFile": "Не удалось удалить файл",
+    "failedToRenameFile": "Не удалось переименовать файл",
+    "failedToCreateFile": "Не удалось создать файл",
+    "failedToCreateFileVolume": "Не удалось создать файл. Проверьте права доступа к тому.",
+    "failedToMoveFile": "Не удалось переместить файл",
+    "failedToCrossVolume": "Невозможно перемещать файлы между разными томами",
+    "failedToCreateFolder": "Не удалось создать папку",
+    "failedToRenameItem": "Не удалось переименовать элемент",
+    "failedToLoadFolders": "Не удалось загрузить папки",
+    "failedToLoadTrash": "Не удалось загрузить корзину",
+    "failedToRestore": "Не удалось восстановить",
+    "failedToDelete": "Не удалось удалить",
+    "failedToRestoreCheatSheet": "Не удалось восстановить cheat-sheet",
+    "failedToEmptyTrash": "Не удалось очистить корзину",
+    "failedToExport": "Не удалось экспортировать",
+    "failedToImportDocx": "Не удалось импортировать .docx",
+    "failedToImportZip": "Не удалось импортировать .zip",
+    "failedToImportFile": "Не удалось импортировать файл",
+    "failedToImportImage": "Не удалось импортировать изображение",
+    "filenameTooLong": "Слишком длинное имя файла (макс. 255 байт)",
+    "exportPdfModeWarning": "Переключитесь в режим «Разделить» или «Предпросмотр» для экспорта в PDF.",
+    "failedToDuplicate": "Не удалось скопировать файл"
+  },
+  "contextMenu": {
+    "duplicate": "Дублировать",
+    "rename": "Переименовать",
+    "delete": "Удалить"
+  },
   "searchPanel": {
     "searchPlaceholder": "Найти...",
     "replacePlaceholder": "Заменить...",

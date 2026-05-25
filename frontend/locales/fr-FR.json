@@ -171,6 +171,36 @@
     "expiresIn": "Expire dans {{days}} jours",
     "restoreCheatSheet": "Restaurer le fichier markdown-cheat-sheet"
   },
+  "errors": {
+    "failedToLoadFile": "Échec du chargement du fichier",
+    "failedToDeleteFile": "Échec de la suppression du fichier",
+    "failedToRenameFile": "Échec du renommage du fichier",
+    "failedToCreateFile": "Échec de la création du fichier",
+    "failedToCreateFileVolume": "Échec de la création du fichier. Vérifiez les permissions du volume.",
+    "failedToMoveFile": "Échec du déplacement du fichier",
+    "failedToCrossVolume": "Impossible de déplacer des fichiers entre différents volumes",
+    "failedToCreateFolder": "Échec de la création du dossier",
+    "failedToRenameItem": "Échec du renommage de l'élément",
+    "failedToLoadFolders": "Échec du chargement des dossiers",
+    "failedToLoadTrash": "Échec du chargement de la corbeille",
+    "failedToRestore": "Échec de la restauration",
+    "failedToDelete": "Échec de la suppression",
+    "failedToRestoreCheatSheet": "Échec de la restauration du cheat-sheet",
+    "failedToEmptyTrash": "Échec du vidage de la corbeille",
+    "failedToExport": "Échec de l'exportation",
+    "failedToImportDocx": "Échec de l'importation du .docx",
+    "failedToImportZip": "Échec de l'importation du .zip",
+    "failedToImportFile": "Échec de l'importation du fichier",
+    "failedToImportImage": "Échec de l'importation de l'image",
+    "filenameTooLong": "Nom de fichier trop long (max. 255 octets)",
+    "exportPdfModeWarning": "Passez en mode Divisé ou Aperçu pour exporter en PDF.",
+    "failedToDuplicate": "Échec de la duplication du fichier"
+  },
+  "contextMenu": {
+    "duplicate": "Dupliquer",
+    "rename": "Renommer",
+    "delete": "Supprimer"
+  },
   "searchPanel": {
     "searchPlaceholder": "Rechercher...",
     "replacePlaceholder": "Remplacer...",
