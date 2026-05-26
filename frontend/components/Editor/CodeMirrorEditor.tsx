@@ -968,18 +968,50 @@ const createFormatCommand = (prefix: string, suffix: string) => {
 const linkCommand = (view: EditorView): boolean => {
   const { from, to } = view.state.selection.main;
   const selectedText = view.state.sliceDoc(from, to);
+  const docText = view.state.doc.toString();
 
-  const linkText = selectedText || 'link text';
-  const replacement = `[${linkText}](url)`;
+  const searchStart = Math.max(0, from - 200);
+  const searchEnd = Math.min(docText.length, to + 200);
+  const searchArea = docText.substring(searchStart, searchEnd);
+  const relativeFrom = from - searchStart;
+  const relativeTo = to - searchStart;
 
-  view.dispatch({
-    changes: { from, to, insert: replacement },
-    selection: selectedText
-      ? // Text was selected — place cursor selecting "url"
-        { anchor: from + 1 + linkText.length + 2, head: from + 1 + linkText.length + 2 + 3 }
-      : // No text — select "link text" placeholder
-        { anchor: from + 1, head: from + 1 + linkText.length },
-  });
+  const linkRegex = /\[([^\]]*)\]\(([^)]*)\)/g;
+  let match;
+  let foundLink: { text: string; url: string; absoluteStart: number; absoluteEnd: number } | null = null;
+
+  while ((match = linkRegex.exec(searchArea)) !== null) {
+    const linkStart = match.index;
+    const linkEnd = match.index + match[0].length;
+    if (relativeFrom >= linkStart && relativeTo <= linkEnd) {
+      foundLink = {
+        text: match[1],
+        url: match[2],
+        absoluteStart: searchStart + linkStart,
+        absoluteEnd: searchStart + linkEnd,
+      };
+      break;
+    }
+  }
+
+  if (foundLink) {
+    const isPlaceholder = foundLink.text === 'link text' && foundLink.url === 'url';
+    const replacement = isPlaceholder ? '' : foundLink.text;
+    const newPos = foundLink.absoluteStart + replacement.length;
+    view.dispatch({
+      changes: { from: foundLink.absoluteStart, to: foundLink.absoluteEnd, insert: replacement },
+      selection: { anchor: newPos, head: newPos },
+    });
+  } else {
+    const linkText = selectedText || 'link text';
+    const replacement = `[${linkText}](url)`;
+    view.dispatch({
+      changes: { from, to, insert: replacement },
+      selection: selectedText
+        ? { anchor: from + 1 + linkText.length + 2, head: from + 1 + linkText.length + 2 + 3 }
+        : { anchor: from + 1, head: from + 1 + linkText.length },
+    });
+  }
   return true;
 };
 

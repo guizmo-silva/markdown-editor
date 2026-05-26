@@ -125,7 +125,7 @@ export async function deleteFile(path: string): Promise<void> {
 /**
  * Rename a file
  */
-export async function renameFile(oldPath: string, newPath: string): Promise<void> {
+export async function renameFile(oldPath: string, newPath: string): Promise<string> {
   const response = await fetch(`${getApiBaseUrl()}/files/rename`, {
     method: 'PUT',
     headers: {
@@ -138,6 +138,9 @@ export async function renameFile(oldPath: string, newPath: string): Promise<void
     const error = await response.json().catch(() => ({ error: 'Failed to rename file' }));
     throw new Error(error.error || 'Failed to rename file');
   }
+
+  const data = await response.json();
+  return data.newPath as string;
 }
 
 /**

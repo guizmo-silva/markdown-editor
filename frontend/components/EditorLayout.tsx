@@ -529,7 +529,7 @@ export default function EditorLayout() {
 
   const handleRenameFile = async (oldPath: string, newPath: string) => {
     try {
-      await renameFile(oldPath, newPath);
+      const actualNewPath = await renameFile(oldPath, newPath);
       setFileRefreshTrigger(prev => prev + 1);
       // If an image was moved, bust the preview cache so linked images reload
       const imageExts = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.tiff', '.tif', '.avif']);
@@ -537,8 +537,8 @@ export default function EditorLayout() {
       if (imageExts.has(ext)) {
         setImageRevision(prev => prev + 1);
       }
-      // Update tab ID if we renamed its file
-      updateTabId(oldPath, newPath);
+      // Update tab ID using the actual new path returned by the backend
+      updateTabId(oldPath, actualNewPath);
     } catch (err) {
       console.error('Failed to rename file:', err);
       throw err;
@@ -603,10 +603,10 @@ export default function EditorLayout() {
     if (newPath === tabId) return;
 
     try {
-      await renameFile(tabId, newPath);
+      const actualNewPath = await renameFile(tabId, newPath);
       // Update tab: change ID and disable auto-rename
-      updateTabId(tabId, newPath);
-      updateTab(newPath, { isAutoNamed: false, lastAutoRenamedTitle: '' });
+      updateTabId(tabId, actualNewPath);
+      updateTab(actualNewPath, { isAutoNamed: false, lastAutoRenamedTitle: '' });
       setFileRefreshTrigger(prev => prev + 1);
     } catch (err) {
       console.error('Failed to rename file:', err);

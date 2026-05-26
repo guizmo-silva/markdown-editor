@@ -281,7 +281,7 @@ export const deleteFileOrDirectory = async (relativePath: string): Promise<void>
 export const renameFileOrDirectory = async (
   oldRelativePath: string,
   newRelativePath: string
-): Promise<void> => {
+): Promise<string> => {
   validateFileName(newRelativePath);
   const oldResolved = resolveVolumePath(oldRelativePath);
   const newResolved = resolveVolumePath(newRelativePath);
@@ -296,13 +296,26 @@ export const renameFileOrDirectory = async (
   // If moving a .md that lives inside its document folder, move the whole folder
   let srcPath = oldSafePath;
   let destPath = newSafePath;
+  let isDocumentFolderOp = false;
+
   if (path.extname(oldSafePath).toLowerCase() === '.md') {
     const parentDir = path.dirname(oldSafePath);
     const parentName = path.basename(parentDir);
     const mdBaseName = path.basename(oldSafePath, '.md');
     if (slugify(parentName) === slugify(mdBaseName)) {
+      isDocumentFolderOp = true;
       srcPath = parentDir;
-      destPath = path.join(path.dirname(newSafePath), parentName);
+      const newMdBaseName = path.basename(newSafePath, '.md');
+      // Detect if newSafePath is inside the old folder (rename-in-place vs cross-directory move)
+      const relToSrc = path.relative(srcPath, newSafePath);
+      const isRenameInPlace = !relToSrc.startsWith('..') && !path.isAbsolute(relToSrc);
+      if (isRenameInPlace) {
+        // Pure rename: place the renamed folder next to the old one
+        destPath = path.join(path.dirname(srcPath), newMdBaseName);
+      } else {
+        // Move to a different directory
+        destPath = path.join(path.dirname(newSafePath), newMdBaseName);
+      }
     }
   }
 
@@ -317,6 +330,27 @@ export const renameFileOrDirectory = async (
       throw err;
     }
   }
+
+  // For document folder operations, rename the internal .md file to match the new folder name
+  let actualDestMdPath: string;
+  if (isDocumentFolderOp) {
+    const oldMdName = path.basename(oldSafePath);
+    const newMdBaseName = path.basename(newSafePath, '.md');
+    const newMdName = `${newMdBaseName}.md`;
+    const newMdPath = path.join(destPath, newMdName);
+    if (oldMdName !== newMdName) {
+      await fs.rename(path.join(destPath, oldMdName), newMdPath);
+    }
+    actualDestMdPath = newMdPath;
+  } else {
+    actualDestMdPath = destPath;
+  }
+
+  // Return the volume-prefixed path of the actual new .md file
+  const volumeName = oldResolved.volume.name;
+  const volumeMountPath = oldResolved.volume.mountPath;
+  const relativeActual = path.relative(volumeMountPath, actualDestMdPath).split(path.sep).join('/');
+  return `${volumeName}/${relativeActual}`;
 };
 
 /**

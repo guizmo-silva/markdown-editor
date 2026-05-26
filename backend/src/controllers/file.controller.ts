@@ -123,8 +123,8 @@ export const renameFile = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    await fileService.renameFileOrDirectory(oldPath, newPath);
-    res.json({ success: true, newPath });
+    const actualNewPath = await fileService.renameFileOrDirectory(oldPath, newPath);
+    res.json({ success: true, newPath: actualNewPath });
   } catch (error: any) {
     console.error('Error renaming file:', error);
     if (error.message === 'Cannot move files between different volumes' || error.message?.startsWith('Filename too long')) {
