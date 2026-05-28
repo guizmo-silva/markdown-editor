@@ -200,17 +200,31 @@
   "contextMenu": {
     "duplicate": "डुप्लिकेट करें",
     "rename": "नाम बदलें",
-    "delete": "हटाएँ"
+    "delete": "हटाएँ",
+    "bold": "बोल्ड",
+    "italic": "इटैलिक",
+    "strikethrough": "स्ट्राइकथ्रू",
+    "highlight": "हाइलाइट",
+    "copy": "कॉपी करें",
+    "cut": "कट करें",
+    "paste": "पेस्ट करें",
+    "findSelection": "चयन खोजें",
+    "find": "खोजें"
   },
   "searchPanel": {
     "searchPlaceholder": "खोजें...",
     "replacePlaceholder": "बदलें...",
     "next": "अगला",
+    "nextTooltip": "अगला परिणाम",
     "previous": "पिछला",
+    "previousTooltip": "पिछला परिणाम",
     "all": "सभी",
     "matchCase": "Aa",
+    "matchCaseTooltip": "अक्षर-संवेदनशील",
     "regexp": ".*",
+    "regexpTooltip": "नियमित अभिव्यक्ति",
     "wholeWord": "शब्द",
+    "wholeWordTooltip": "पूरा शब्द",
     "replace": "बदलें",
     "replaceAll": "सभी बदलें"
   }

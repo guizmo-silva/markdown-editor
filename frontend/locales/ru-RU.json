@@ -200,17 +200,31 @@
   "contextMenu": {
     "duplicate": "Дублировать",
     "rename": "Переименовать",
-    "delete": "Удалить"
+    "delete": "Удалить",
+    "bold": "Жирный",
+    "italic": "Курсив",
+    "strikethrough": "Зачёркнутый",
+    "highlight": "Выделить",
+    "copy": "Копировать",
+    "cut": "Вырезать",
+    "paste": "Вставить",
+    "findSelection": "Найти выделенное",
+    "find": "Найти"
   },
   "searchPanel": {
     "searchPlaceholder": "Найти...",
     "replacePlaceholder": "Заменить...",
     "next": "Далее",
+    "nextTooltip": "Следующий результат",
     "previous": "Назад",
+    "previousTooltip": "Предыдущий результат",
     "all": "Все",
     "matchCase": "Aa",
+    "matchCaseTooltip": "С учётом регистра",
     "regexp": ".*",
+    "regexpTooltip": "Регулярное выражение",
     "wholeWord": "Слово",
+    "wholeWordTooltip": "Слово целиком",
     "replace": "Заменить",
     "replaceAll": "Заменить все"
   }

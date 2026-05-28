@@ -92,6 +92,11 @@
   padding: 0;
 }
 
+/* Hindi (Devanagari) — aumenta fonte da UI pois os glifos ficam pequenos */
+html:lang(hi) {
+  font-size: 112%;
+}
+
 html,
 body {
   height: 100%;
@@ -366,20 +371,27 @@ body {
 .cm-search {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px 10px;
+  padding: 9px 12px;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-primary);
   font-family: 'Roboto Mono', monospace;
   font-size: 12px;
 }
 
+.cm-search-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 .cm-search input {
   background: var(--bg-primary);
   color: var(--text-primary);
   border: 1px solid var(--border-primary);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 3px 7px;
   font-family: inherit;
   font-size: 12px;
@@ -395,7 +407,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
-  border-radius: 8px !important;
+  border-radius: 4px !important;
   padding: 3px 8px;
   font-family: inherit;
   font-size: 11px;
@@ -408,21 +420,49 @@ body {
   color: var(--text-primary);
 }
 
-.cm-search button[name="close"] {
-  border: none;
-  background: transparent;
-  font-size: 20px;
-  line-height: 1;
-  padding: 4px 10px;
-  margin-left: auto;
-  color: var(--text-secondary);
-  border-radius: 8px;
+.cm-search .cm-icon-button {
+  padding: 3px 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cm-search-nav-group {
+  display: flex;
+  gap: 0;
+}
+
+.cm-search-nav-group button[name="prev"] {
+  border-radius: 4px 0 0 4px !important;
+  border-right: none !important;
+}
+
+.cm-search-nav-group button[name="next"] {
+  border-radius: 0 4px 4px 0 !important;
+}
+
+.cm-search-close-btn {
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  padding: 2px !important;
+  margin-left: auto !important;
+  margin-top: 5px !important;
+  margin-right: 3px !important;
+  display: flex !important;
+  align-items: center !important;
+  color: var(--text-secondary) !important;
+  border-radius: 4px !important;
+}
+
+.cm-search-close-btn:hover {
+  background: var(--hover-bg) !important;
+  color: var(--text-primary) !important;
 }
 
 .cm-search label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
   color: var(--text-secondary);
   cursor: pointer;
   user-select: none;

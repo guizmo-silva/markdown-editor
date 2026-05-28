@@ -200,17 +200,31 @@
   "contextMenu": {
     "duplicate": "Duplizieren",
     "rename": "Umbenennen",
-    "delete": "Löschen"
+    "delete": "Löschen",
+    "bold": "Fett",
+    "italic": "Kursiv",
+    "strikethrough": "Durchgestrichen",
+    "highlight": "Hervorheben",
+    "copy": "Kopieren",
+    "cut": "Ausschneiden",
+    "paste": "Einfügen",
+    "findSelection": "Auswahl suchen",
+    "find": "Suchen"
   },
   "searchPanel": {
     "searchPlaceholder": "Suchen...",
     "replacePlaceholder": "Ersetzen...",
     "next": "Weiter",
+    "nextTooltip": "Nächstes Ergebnis",
     "previous": "Zurück",
+    "previousTooltip": "Vorheriges Ergebnis",
     "all": "Alle",
     "matchCase": "Aa",
+    "matchCaseTooltip": "Groß-/Kleinschreibung beachten",
     "regexp": ".*",
+    "regexpTooltip": "Regulärer Ausdruck",
     "wholeWord": "Wort",
+    "wholeWordTooltip": "Ganzes Wort",
     "replace": "Ersetzen",
     "replaceAll": "Alle ersetzen"
   }

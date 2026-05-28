@@ -200,17 +200,31 @@
   "contextMenu": {
     "duplicate": "Duplicate",
     "rename": "Rename",
-    "delete": "Delete"
+    "delete": "Delete",
+    "bold": "Bold",
+    "italic": "Italic",
+    "strikethrough": "Strikethrough",
+    "highlight": "Highlight",
+    "copy": "Copy",
+    "cut": "Cut",
+    "paste": "Paste",
+    "findSelection": "Find selection",
+    "find": "Find"
   },
   "searchPanel": {
     "searchPlaceholder": "Search...",
     "replacePlaceholder": "Replace...",
     "next": "Next",
+    "nextTooltip": "Next result",
     "previous": "Previous",
+    "previousTooltip": "Previous result",
     "all": "All",
     "matchCase": "Aa",
+    "matchCaseTooltip": "Match case",
     "regexp": ".*",
+    "regexpTooltip": "Regular expression",
     "wholeWord": "Word",
+    "wholeWordTooltip": "Whole word",
     "replace": "Replace",
     "replaceAll": "Replace all"
   }

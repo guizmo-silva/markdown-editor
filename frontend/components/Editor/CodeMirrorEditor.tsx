@@ -14,6 +14,7 @@ import { slug as githubSlug } from 'github-slugger';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
 import InfoBar from './InfoBar';
+import EditorContextMenu from './EditorContextMenu';
 import { importImage } from '@/services/api';
 
 // Interface to expose textarea-like API for compatibility with Toolbar
@@ -57,11 +58,16 @@ const _searchLabels = {
   searchPlaceholder: 'Buscar...',
   replacePlaceholder: 'Substituir...',
   next: 'Próximo',
+  nextTooltip: 'Próximo resultado',
   previous: 'Anterior',
+  previousTooltip: 'Resultado anterior',
   all: 'Todos',
   matchCase: 'Aa',
+  matchCaseTooltip: 'Diferenciar maiúsculas/minúsculas',
   regexp: '.*',
+  regexpTooltip: 'Expressão regular',
   wholeWord: 'Palavra',
+  wholeWordTooltip: 'Palavra inteira',
   replace: 'Substituir',
   replaceAll: 'Subs. todos',
 };
@@ -104,10 +110,11 @@ function createLocalizedSearchPanel(view: EditorView) {
   wordCheck.name = 'word';
   wordCheck.checked = !!query.wholeWord;
 
-  function makeLabel(text: string, input: HTMLInputElement): HTMLLabelElement {
+  function makeLabel(text: string, input: HTMLInputElement, tooltip?: string): HTMLLabelElement {
     const label = document.createElement('label');
+    if (tooltip) label.title = tooltip;
     label.appendChild(input);
-    label.appendChild(document.createTextNode('\u00A0' + text));
+    label.appendChild(document.createTextNode(text));
     return label;
   }
 
@@ -117,6 +124,28 @@ function createLocalizedSearchPanel(view: EditorView) {
     btn.textContent = text;
     btn.type = 'button';
     btn.className = 'cm-button';
+    btn.addEventListener('click', onClick);
+    return btn;
+  }
+
+  function makeIconButton(name: string, label: string, paths: Array<{tag: string, attrs: Record<string, string>}>, onClick: () => void): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.name = name;
+    btn.type = 'button';
+    btn.className = 'cm-button cm-icon-button';
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('title', label);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '11'); svg.setAttribute('height', '11');
+    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '2.5');
+    svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round');
+    for (const { tag, attrs } of paths) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+      svg.appendChild(el);
+    }
+    btn.appendChild(svg);
     btn.addEventListener('click', onClick);
     return btn;
   }
@@ -155,33 +184,60 @@ function createLocalizedSearchPanel(view: EditorView) {
 
   const closeBtn = document.createElement('button');
   closeBtn.name = 'close';
-  closeBtn.textContent = '✕';
+  closeBtn.className = 'cm-search-close-btn';
   closeBtn.type = 'button';
   closeBtn.setAttribute('aria-label', L.replacePlaceholder);
+  const closeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  closeSvg.setAttribute('width', '9'); closeSvg.setAttribute('height', '9');
+  closeSvg.setAttribute('viewBox', '0 0 11 11'); closeSvg.setAttribute('fill', 'none');
+  closeSvg.setAttribute('stroke', 'currentColor'); closeSvg.setAttribute('stroke-width', '2');
+  closeSvg.setAttribute('stroke-linecap', 'round');
+  const l1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  l1.setAttribute('x1', '1.5'); l1.setAttribute('y1', '1.5'); l1.setAttribute('x2', '9.5'); l1.setAttribute('y2', '9.5');
+  const l2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  l2.setAttribute('x1', '9.5'); l2.setAttribute('y1', '1.5'); l2.setAttribute('x2', '1.5'); l2.setAttribute('y2', '9.5');
+  closeSvg.appendChild(l1); closeSvg.appendChild(l2);
+  closeBtn.appendChild(closeSvg);
   closeBtn.addEventListener('click', () => { closeSearchPanel(view); view.focus(); });
 
   const dom = document.createElement('div');
   dom.className = 'cm-search';
   dom.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Escape') { e.preventDefault(); closeSearchPanel(view); view.focus(); }
+    if (e.key === 'f' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); closeSearchPanel(view); view.focus(); }
   });
 
-  dom.appendChild(searchInput);
-  dom.appendChild(makeButton('next', L.next, () => findNext(view)));
-  dom.appendChild(makeButton('prev', L.previous, () => findPrevious(view)));
-  dom.appendChild(makeButton('select', L.all, () => selectMatches(view)));
-  dom.appendChild(makeLabel(L.matchCase, caseCheck));
-  dom.appendChild(makeLabel(L.regexp, reCheck));
-  dom.appendChild(makeLabel(L.wholeWord, wordCheck));
-  dom.appendChild(document.createElement('br'));
-  dom.appendChild(replaceInput);
-  dom.appendChild(makeButton('replace', L.replace, () => replaceNext(view)));
-  dom.appendChild(makeButton('replaceAll', L.replaceAll, () => replaceAll(view)));
+  const navGroup = document.createElement('div');
+  navGroup.className = 'cm-search-nav-group';
+  navGroup.appendChild(makeIconButton('prev', L.previousTooltip, [
+    { tag: 'polyline', attrs: { points: '15 18 9 12 15 6' } },
+  ], () => findPrevious(view)));
+  navGroup.appendChild(makeIconButton('next', L.nextTooltip, [
+    { tag: 'polyline', attrs: { points: '9 18 15 12 9 6' } },
+  ], () => findNext(view)));
+
+  const contentGroup = document.createElement('div');
+  contentGroup.className = 'cm-search-content';
+  contentGroup.appendChild(searchInput);
+  contentGroup.appendChild(navGroup);
+  contentGroup.appendChild(makeButton('select', L.all, () => selectMatches(view)));
+  contentGroup.appendChild(makeLabel(L.matchCase, caseCheck, L.matchCaseTooltip));
+  contentGroup.appendChild(makeLabel(L.regexp, reCheck, L.regexpTooltip));
+  contentGroup.appendChild(makeLabel(L.wholeWord, wordCheck, L.wholeWordTooltip));
+  contentGroup.appendChild(document.createElement('br'));
+  contentGroup.appendChild(replaceInput);
+  contentGroup.appendChild(makeButton('replace', L.replace, () => replaceNext(view)));
+  contentGroup.appendChild(makeButton('replaceAll', L.replaceAll, () => replaceAll(view)));
+
+  dom.appendChild(contentGroup);
   dom.appendChild(closeBtn);
 
   return {
     dom,
-    mount() { searchInput.focus(); searchInput.select(); },
+    mount() {
+      searchInput.focus();
+      searchInput.select();
+    },
     update(update: ViewUpdate) {
       const q = getSearchQuery(update.state);
       const prev = getSearchQuery(update.startState);
@@ -1450,6 +1506,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   const [editorZoom, setEditorZoom] = useState(EDITOR_DEFAULT_ZOOM);
   const editorZoomRef = useRef(EDITOR_DEFAULT_ZOOM);
   editorZoomRef.current = editorZoom;
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const previousDocumentIdRef = useRef<string | null | undefined>(documentId);
   // Always holds the current translation for the fold placeholder tooltip.
   // Updated every render so placeholderDOM always reads the latest language.
@@ -1466,11 +1523,16 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   _searchLabels.searchPlaceholder  = t('searchPanel.searchPlaceholder', 'Buscar...');
   _searchLabels.replacePlaceholder = t('searchPanel.replacePlaceholder', 'Substituir...');
   _searchLabels.next               = t('searchPanel.next', 'Próximo');
+  _searchLabels.nextTooltip        = t('searchPanel.nextTooltip', 'Próximo resultado');
   _searchLabels.previous           = t('searchPanel.previous', 'Anterior');
+  _searchLabels.previousTooltip    = t('searchPanel.previousTooltip', 'Resultado anterior');
   _searchLabels.all                = t('searchPanel.all', 'Todos');
   _searchLabels.matchCase          = t('searchPanel.matchCase', 'Aa');
+  _searchLabels.matchCaseTooltip   = t('searchPanel.matchCaseTooltip', 'Diferenciar maiúsculas/minúsculas');
   _searchLabels.regexp             = t('searchPanel.regexp', '.*');
+  _searchLabels.regexpTooltip      = t('searchPanel.regexpTooltip', 'Expressão regular');
   _searchLabels.wholeWord          = t('searchPanel.wholeWord', 'Palavra');
+  _searchLabels.wholeWordTooltip   = t('searchPanel.wholeWordTooltip', 'Palavra inteira');
   _searchLabels.replace            = t('searchPanel.replace', 'Substituir');
   _searchLabels.replaceAll         = t('searchPanel.replaceAll', 'Subs. todos');
 
@@ -2047,8 +2109,83 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     return () => clearTimeout(timeout);
   }, [scrollToLine]);
 
+  const handleContextMenuBold = useCallback(() => {
+    const view = viewRef.current;
+    if (view) createFormatCommand('**', '**')(view);
+  }, []);
+
+  const handleContextMenuItalic = useCallback(() => {
+    const view = viewRef.current;
+    if (view) createFormatCommand('*', '*')(view);
+  }, []);
+
+  const handleContextMenuStrike = useCallback(() => {
+    const view = viewRef.current;
+    if (view) createFormatCommand('~~', '~~')(view);
+  }, []);
+
+  const handleContextMenuHighlight = useCallback(() => {
+    const view = viewRef.current;
+    if (view) createFormatCommand('==', '==')(view);
+  }, []);
+
+  const handleContextMenuCopy = useCallback(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    const text = view.state.sliceDoc(from, to);
+    navigator.clipboard.writeText(text).catch(() => {});
+  }, []);
+
+  const handleContextMenuCut = useCallback(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    const text = view.state.sliceDoc(from, to);
+    navigator.clipboard.writeText(text).catch(() => {});
+    view.dispatch({ changes: { from, to, insert: '' }, selection: { anchor: from } });
+    view.focus();
+  }, []);
+
+  const handleContextMenuPaste = useCallback(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.focus();
+    navigator.clipboard.readText().then((text) => {
+      if (!text) return;
+      const v = viewRef.current;
+      if (!v) return;
+      const { from, to } = v.state.selection.main;
+      v.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + text.length } });
+      v.focus();
+    }).catch(() => {});
+  }, []);
+
+  const handleContextMenuFind = useCallback(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    if (from !== to) {
+      const selectedText = view.state.sliceDoc(from, to);
+      view.dispatch({ effects: setSearchQuery.of(new SearchQuery({ search: selectedText })) });
+    }
+    openSearchPanel(view);
+  }, []);
+
+  const contextMenuHasSelection = (() => {
+    const sel = viewRef.current?.state.selection.main;
+    return !!sel && sel.from !== sel.to;
+  })();
+
   return (
-    <div className="flex flex-col h-full bg-[var(--bg-code)]">
+    <div
+      className="flex flex-col h-full bg-[var(--bg-code)]"
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY });
+      }}
+    >
       {/* Editor Area */}
       <div ref={editorRef} className="flex-1 overflow-hidden" suppressHydrationWarning />
 
@@ -2071,6 +2208,23 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         onEditorZoomOut={handleEditorZoomOut}
         onEditorZoomReset={handleEditorZoomReset}
       />
+
+      {contextMenu && (
+        <EditorContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          hasSelection={contextMenuHasSelection}
+          onClose={() => setContextMenu(null)}
+          onBold={handleContextMenuBold}
+          onItalic={handleContextMenuItalic}
+          onStrike={handleContextMenuStrike}
+          onHighlight={handleContextMenuHighlight}
+          onCopy={handleContextMenuCopy}
+          onCut={handleContextMenuCut}
+          onPaste={handleContextMenuPaste}
+          onFind={handleContextMenuFind}
+        />
+      )}
     </div>
   );
 });

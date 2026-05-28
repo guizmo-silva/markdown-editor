@@ -200,17 +200,31 @@
   "contextMenu": {
     "duplicate": "Dupliquer",
     "rename": "Renommer",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "bold": "Gras",
+    "italic": "Italique",
+    "strikethrough": "Barré",
+    "highlight": "Surligner",
+    "copy": "Copier",
+    "cut": "Couper",
+    "paste": "Coller",
+    "findSelection": "Rechercher la sélection",
+    "find": "Rechercher"
   },
   "searchPanel": {
     "searchPlaceholder": "Rechercher...",
     "replacePlaceholder": "Remplacer...",
     "next": "Suivant",
+    "nextTooltip": "Résultat suivant",
     "previous": "Précédent",
+    "previousTooltip": "Résultat précédent",
     "all": "Tous",
     "matchCase": "Aa",
+    "matchCaseTooltip": "Respecter la casse",
     "regexp": ".*",
+    "regexpTooltip": "Expression régulière",
     "wholeWord": "Mot",
+    "wholeWordTooltip": "Mot entier",
     "replace": "Remplacer",
     "replaceAll": "Tout remplacer"
   }

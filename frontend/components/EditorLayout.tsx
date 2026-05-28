@@ -128,6 +128,13 @@ export default function EditorLayout() {
   const [imageRevision, setImageRevision] = useState(0);
   const [previewZoom, setPreviewZoom] = useState(PREVIEW_DEFAULT_ZOOM);
 
+  // Disable browser context menu globally — the editor and file browser have their own
+  useEffect(() => {
+    const handler = (e: MouseEvent) => e.preventDefault();
+    document.addEventListener('contextmenu', handler);
+    return () => document.removeEventListener('contextmenu', handler);
+  }, []);
+
   // Onboarding: show once on first launch, then skip forever
   useEffect(() => {
     if (localStorage.getItem('mkd_onboarding_done')) {
