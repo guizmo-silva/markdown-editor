@@ -16,12 +16,15 @@ interface EditorContextMenuProps {
   onCut: () => void;
   onPaste: () => void;
   onFind: () => void;
+  spellSuggestions: string[];
+  onSpellReplace: (suggestion: string) => void;
 }
 
 export default function EditorContextMenu({
   x, y, hasSelection,
   onClose, onBold, onItalic, onStrike, onHighlight,
   onCopy, onCut, onPaste, onFind,
+  spellSuggestions, onSpellReplace,
 }: EditorContextMenuProps) {
   const { t } = useTranslation();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -36,7 +39,7 @@ export default function EditorContextMenu({
       left: x + w > vw ? Math.max(0, vw - w - 8) : x,
       top:  y + h > vh ? Math.max(0, vh - h - 8) : y,
     });
-  }, [x, y]);
+  }, [x, y, spellSuggestions]);
 
   useEffect(() => {
     const handlePointerDown = (e: MouseEvent) => {
@@ -72,6 +75,24 @@ export default function EditorContextMenu({
                  text-[12px] text-[var(--text-primary)]"
       style={{ left: pos.left, top: pos.top }}
     >
+      {/* Spell suggestions group */}
+      {spellSuggestions.length > 0 && (
+        <>
+          <div className="px-3 pt-1.5 pb-0.5 text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+            {t('contextMenu.spellSuggestions', 'Correções')}
+          </div>
+          {spellSuggestions.map(s => (
+            <button key={s} className={itemClass} onClick={() => run(() => onSpellReplace(s))}>
+              <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span style={{ fontFamily: 'Roboto Mono, monospace' }}>{s}</span>
+            </button>
+          ))}
+          <div className="my-1 border-t border-[var(--border-secondary)]" />
+        </>
+      )}
+
       {/* Formatting group */}
       <button className={itemClass} onClick={() => run(onBold)}>
         <svg className="w-3.5 h-3.5 text-[var(--text-secondary)] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">

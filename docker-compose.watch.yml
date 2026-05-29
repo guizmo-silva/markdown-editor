@@ -1,5 +1,7 @@
 # Compose para desenvolvimento com hot reload
 # Uso: docker compose -f docker-compose.watch.yml up
+
+name: mkd-watch
 #
 # Primeira vez ou ao mudar package.json:
 #   docker compose -f docker-compose.watch.yml up --build

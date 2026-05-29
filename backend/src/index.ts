@@ -7,6 +7,7 @@ import fileRoutes from './routes/file.routes.js';
 import exportRoutes from './routes/export.routes.js';
 import trashRoutes from './routes/trash.routes.js';
 import defaultsRoutes from './routes/defaults.routes.js';
+import spellRoutes from './routes/spell.routes.js';
 import { validateVolumes } from './services/volume.service.js';
 import { cleanupExpired } from './services/trash.service.js';
 
@@ -56,6 +57,7 @@ app.use('/api/files', fileRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/trash', trashRoutes);
 app.use('/api/defaults', defaultsRoutes);
+app.use('/api/spell', spellRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

@@ -1506,7 +1506,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   const [editorZoom, setEditorZoom] = useState(EDITOR_DEFAULT_ZOOM);
   const editorZoomRef = useRef(EDITOR_DEFAULT_ZOOM);
   editorZoomRef.current = editorZoom;
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; wordInfo?: { word: string; from: number; to: number } } | null>(null);
+  const [spellSuggestions, setSpellSuggestions] = useState<string[]>([]);
+  const [misspelledRange, setMisspelledRange] = useState<{ from: number; to: number } | null>(null);
   const previousDocumentIdRef = useRef<string | null | undefined>(documentId);
   // Always holds the current translation for the fold placeholder tooltip.
   // Updated every render so placeholderDOM always reads the latest language.
@@ -1886,6 +1888,37 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     });
   }, [spellcheckEnabled, spellcheckLanguage, getSpellcheckAttrs]);
 
+  // Fetch spell suggestions when context menu opens over a word
+  useEffect(() => {
+    if (!contextMenu?.wordInfo || !spellcheckEnabled) {
+      setSpellSuggestions([]);
+      setMisspelledRange(null);
+      return;
+    }
+    const { word, from, to } = contextMenu.wordInfo;
+    let cancelled = false;
+    fetch('/api/spell/suggest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word, language: spellcheckLanguage }),
+    })
+      .then(r => r.json())
+      .then((data: { misspelled: boolean; suggestions: string[] }) => {
+        if (cancelled) return;
+        if (data.misspelled && data.suggestions?.length) {
+          setSpellSuggestions(data.suggestions.slice(0, 5));
+          setMisspelledRange({ from, to });
+        } else {
+          setSpellSuggestions([]);
+          setMisspelledRange(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSpellSuggestions([]);
+      });
+    return () => { cancelled = true; };
+  }, [contextMenu, spellcheckEnabled, spellcheckLanguage]);
+
   // Update theme when it changes
   useEffect(() => {
     const view = viewRef.current;
@@ -2172,6 +2205,16 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
     openSearchPanel(view);
   }, []);
 
+  const handleSpellReplace = useCallback((suggestion: string) => {
+    if (!misspelledRange || !viewRef.current) return;
+    const view = viewRef.current;
+    view.dispatch({
+      changes: { from: misspelledRange.from, to: misspelledRange.to, insert: suggestion },
+      selection: { anchor: misspelledRange.from + suggestion.length },
+    });
+    view.focus();
+  }, [misspelledRange]);
+
   const contextMenuHasSelection = (() => {
     const sel = viewRef.current?.state.selection.main;
     return !!sel && sel.from !== sel.to;
@@ -2183,7 +2226,21 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       onContextMenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        setContextMenu({ x: e.clientX, y: e.clientY });
+        const view = viewRef.current;
+        let wordInfo: { word: string; from: number; to: number } | undefined;
+        if (view && spellcheckEnabled) {
+          const pos = view.posAtCoords({ x: e.clientX, y: e.clientY });
+          if (pos !== null) {
+            const range = view.state.wordAt(pos);
+            if (range) {
+              const word = view.state.sliceDoc(range.from, range.to);
+              if (/^[\p{L}'-]+$/u.test(word)) {
+                wordInfo = { word, from: range.from, to: range.to };
+              }
+            }
+          }
+        }
+        setContextMenu({ x: e.clientX, y: e.clientY, wordInfo });
       }}
     >
       {/* Editor Area */}
@@ -2214,7 +2271,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           x={contextMenu.x}
           y={contextMenu.y}
           hasSelection={contextMenuHasSelection}
-          onClose={() => setContextMenu(null)}
+          onClose={() => { setContextMenu(null); setSpellSuggestions([]); setMisspelledRange(null); }}
           onBold={handleContextMenuBold}
           onItalic={handleContextMenuItalic}
           onStrike={handleContextMenuStrike}
@@ -2223,6 +2280,8 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           onCut={handleContextMenuCut}
           onPaste={handleContextMenuPaste}
           onFind={handleContextMenuFind}
+          spellSuggestions={spellSuggestions}
+          onSpellReplace={handleSpellReplace}
         />
       )}
     </div>
