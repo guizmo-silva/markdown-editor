@@ -5,7 +5,8 @@
     "export": "निर्यात",
     "open": "खोलें",
     "new": "नया",
-    "close": "बंद करें"
+    "close": "बंद करें",
+    "delete": "हटाएँ"
   },
   "toolbar": {
     "bold": "बोल्ड",
@@ -64,7 +65,13 @@
     "caseUpper": "UPPERCASE",
     "highlight": "हाइलाइट",
     "more": "अधिक",
-    "back": "वापस"
+    "back": "वापस",
+    "heading1": "शीर्षक 1",
+    "heading2": "शीर्षक 2",
+    "heading3": "शीर्षक 3",
+    "heading4": "शीर्षक 4",
+    "heading5": "शीर्षक 5",
+    "heading6": "शीर्षक 6"
   },
   "sidebar": {
     "title": "संपत्तियाँ",
@@ -192,15 +199,22 @@
     "failedToImportZip": ".zip आयात करने में विफल",
     "failedToImportFile": "फ़ाइल आयात करने में विफल",
     "failedToImportImage": "छवि आयात करने में विफल",
+    "imageNotReferenced": "दस्तावेज़ में छवि संदर्भित नहीं है",
     "filenameTooLong": "फ़ाइल का नाम बहुत लंबा है (अधिकतम 255 बाइट्स)",
     "exportPdfModeWarning": "PDF के रूप में निर्यात करने के लिए विभाजित या पूर्वावलोकन मोड पर स्विच करें।",
     "failedToDuplicate": "फ़ाइल डुप्लिकेट करने में विफल",
     "failedToSavePermission": "सहेजा नहीं जा सका: अनुमति अस्वीकृत। सर्वर पर फ़ाइल के स्वामी की जांच करें।"
   },
+  "importModal": {
+    "title": "फ़ाइल आयात करें",
+    "destination": "गंतव्य फ़ोल्डर:",
+    "chooseFile": "फ़ाइल चुनें"
+  },
   "contextMenu": {
     "duplicate": "डुप्लिकेट करें",
     "rename": "नाम बदलें",
     "delete": "हटाएँ",
+    "spellSuggestions": "सुधार",
     "bold": "बोल्ड",
     "italic": "इटैलिक",
     "strikethrough": "स्ट्राइकथ्रू",

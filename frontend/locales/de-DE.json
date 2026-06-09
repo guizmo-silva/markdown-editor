@@ -5,7 +5,8 @@
     "export": "Exportieren",
     "open": "Öffnen",
     "new": "Neu",
-    "close": "Schließen"
+    "close": "Schließen",
+    "delete": "Löschen"
   },
   "toolbar": {
     "bold": "Fett",
@@ -64,7 +65,13 @@
     "caseUpper": "GROSSBUCHSTABEN",
     "highlight": "Hervorhebung",
     "more": "Mehr",
-    "back": "Zurück"
+    "back": "Zurück",
+    "heading1": "Überschrift 1",
+    "heading2": "Überschrift 2",
+    "heading3": "Überschrift 3",
+    "heading4": "Überschrift 4",
+    "heading5": "Überschrift 5",
+    "heading6": "Überschrift 6"
   },
   "sidebar": {
     "title": "Elemente",
@@ -192,15 +199,22 @@
     "failedToImportZip": ".zip konnte nicht importiert werden",
     "failedToImportFile": "Datei konnte nicht importiert werden",
     "failedToImportImage": "Bild konnte nicht importiert werden",
+    "imageNotReferenced": "Bild im Dokument nicht referenziert",
     "filenameTooLong": "Dateiname zu lang (max. 255 Bytes)",
     "exportPdfModeWarning": "Wechseln Sie in den Teilen- oder Vorschau-Modus, um als PDF zu exportieren.",
     "failedToDuplicate": "Datei konnte nicht dupliziert werden",
     "failedToSavePermission": "Speichern fehlgeschlagen: Zugriff verweigert. Überprüfen Sie den Dateibesitzer auf dem Server."
   },
+  "importModal": {
+    "title": "Datei importieren",
+    "destination": "Zielordner:",
+    "chooseFile": "Datei auswählen"
+  },
   "contextMenu": {
     "duplicate": "Duplizieren",
     "rename": "Umbenennen",
     "delete": "Löschen",
+    "spellSuggestions": "Korrekturen",
     "bold": "Fett",
     "italic": "Kursiv",
     "strikethrough": "Durchgestrichen",

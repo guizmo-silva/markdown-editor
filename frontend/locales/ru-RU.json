@@ -5,7 +5,8 @@
     "export": "Экспорт",
     "open": "Открыть",
     "new": "Новый",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "delete": "Удалить"
   },
   "toolbar": {
     "bold": "Жирный",
@@ -64,7 +65,13 @@
     "caseUpper": "ПРОПИСНЫЕ",
     "highlight": "Выделение",
     "more": "Ещё",
-    "back": "Назад"
+    "back": "Назад",
+    "heading1": "Заголовок 1",
+    "heading2": "Заголовок 2",
+    "heading3": "Заголовок 3",
+    "heading4": "Заголовок 4",
+    "heading5": "Заголовок 5",
+    "heading6": "Заголовок 6"
   },
   "sidebar": {
     "title": "Элементы",
@@ -192,15 +199,22 @@
     "failedToImportZip": "Не удалось импортировать .zip",
     "failedToImportFile": "Не удалось импортировать файл",
     "failedToImportImage": "Не удалось импортировать изображение",
+    "imageNotReferenced": "Изображение не упоминается в документе",
     "filenameTooLong": "Слишком длинное имя файла (макс. 255 байт)",
     "exportPdfModeWarning": "Переключитесь в режим «Разделить» или «Предпросмотр» для экспорта в PDF.",
     "failedToDuplicate": "Не удалось скопировать файл",
     "failedToSavePermission": "Не удалось сохранить: доступ запрещён. Проверьте владельца файла на сервере."
   },
+  "importModal": {
+    "title": "Импорт файла",
+    "destination": "Папка назначения:",
+    "chooseFile": "Выбрать файл"
+  },
   "contextMenu": {
     "duplicate": "Дублировать",
     "rename": "Переименовать",
     "delete": "Удалить",
+    "spellSuggestions": "Исправления",
     "bold": "Жирный",
     "italic": "Курсив",
     "strikethrough": "Зачёркнутый",

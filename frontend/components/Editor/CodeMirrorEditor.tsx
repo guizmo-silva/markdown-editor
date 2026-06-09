@@ -50,6 +50,7 @@ interface CodeMirrorEditorProps {
   onColumnWidthChange?: (value: number) => void;
   documentPath?: string | null;
   onImagePasted?: (newDocPath: string, imageName: string) => void;
+  onImagePasteError?: (error: unknown) => void;
 }
 
 // Module-level labels for the search panel — updated by the component on each render
@@ -655,7 +656,6 @@ const pasteLinkHandler = EditorView.domEventHandlers({
         const selectedText = view.state.sliceDoc(from, to).replace(/\n+$/, '').trim();
         const placeholder = 'descrição da imagem';
         const docPath = _pasteImageDocPath;
-        const callback = _pasteImageCallback;
         importImage(docPath, file).then(({ newDocumentPath, imageName }) => {
           const altText = selectedText || placeholder;
           const markdown = `![${altText}](${imageName})`;
@@ -666,9 +666,10 @@ const pasteLinkHandler = EditorView.domEventHandlers({
               : { anchor: from + 2, head: from + 2 + placeholder.length },
           });
           view.focus();
-          callback?.(newDocumentPath, imageName);
+          _pasteImageCallback?.(newDocumentPath, imageName);
         }).catch(err => {
-          console.error('Erro ao importar imagem do clipboard:', err);
+          console.error('Image paste import failed:', err);
+          _pasteImageErrorCallback?.(err);
         });
       }
       return true;
@@ -1077,6 +1078,7 @@ let plainPasteMode = false;
 // Module-level state for clipboard image paste — updated by the component on each render
 let _pasteImageDocPath: string | null = null;
 let _pasteImageCallback: ((newDocPath: string, imageName: string) => void) | null = null;
+let _pasteImageErrorCallback: ((error: unknown) => void) | null = null;
 
 // Keymap for formatting shortcuts (Mod = Ctrl on Windows/Linux, Cmd on macOS)
 const formatKeymap = keymap.of([
@@ -1492,6 +1494,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   onColumnWidthChange,
   documentPath,
   onImagePasted,
+  onImagePasteError,
 }, ref) => {
   const { i18n, t } = useTranslation();
   const { theme: globalTheme } = useTheme();
@@ -1518,6 +1521,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   // Sync module-level vars used by the paste handler (same pattern as plainPasteMode)
   _pasteImageDocPath = documentPath ?? null;
   _pasteImageCallback = onImagePasted ?? null;
+  _pasteImageErrorCallback = onImagePasteError ?? null;
 
   // Keep module-level search panel labels in sync with the current language.
   // Updated every render (same pattern as unfoldLabelRef) so the panel always
@@ -1826,6 +1830,8 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         const v = viewRef.current;
         if (!v) return;
         const content = v.state.doc.toString();
+        pendingCharCount.current = content.length;
+        scheduleInfoBarUpdate();
         if (content !== lastSentContent.current) {
           lastSentContent.current = content;
           onChangeRef.current(content);
@@ -1874,7 +1880,10 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
       view.contentDOM.removeEventListener('compositionend', handleCompositionEnd);
       view.destroy();
       viewRef.current = null;
-      if (infoBarRafId.current) cancelAnimationFrame(infoBarRafId.current);
+      if (infoBarRafId.current) {
+        cancelAnimationFrame(infoBarRafId.current);
+        infoBarRafId.current = 0;
+      }
     };
   }, []); // Only run once on mount
 
@@ -1914,7 +1923,10 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
         }
       })
       .catch(() => {
-        if (!cancelled) setSpellSuggestions([]);
+        if (!cancelled) {
+          setSpellSuggestions([]);
+          setMisspelledRange(null);
+        }
       });
     return () => { cancelled = true; };
   }, [contextMenu, spellcheckEnabled, spellcheckLanguage]);
@@ -2034,6 +2046,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
           tightSelectionLayer,
           history(),
           formatKeymap,
+          toggleSearchKeymap,
           closeBrackets(),
           search({ createPanel: createLocalizedSearchPanel }),
           keymap.of([
@@ -2064,6 +2077,7 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
             }
           }),
           EditorView.lineWrapping,
+          placeholder ? EditorView.contentAttributes.of({ 'data-placeholder': placeholder }) : [],
           spellcheckCompartment.of(getSpellcheckAttrs()),
           flashHighlightField,
           frontMatterRangeField,

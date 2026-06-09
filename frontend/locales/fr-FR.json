@@ -5,7 +5,8 @@
     "export": "Exporter",
     "open": "Ouvrir",
     "new": "Nouveau",
-    "close": "Fermer"
+    "close": "Fermer",
+    "delete": "Supprimer"
   },
   "toolbar": {
     "bold": "Gras",
@@ -64,7 +65,13 @@
     "caseUpper": "MAJUSCULES",
     "highlight": "Surlignage",
     "more": "Plus",
-    "back": "Retour"
+    "back": "Retour",
+    "heading1": "Titre 1",
+    "heading2": "Titre 2",
+    "heading3": "Titre 3",
+    "heading4": "Titre 4",
+    "heading5": "Titre 5",
+    "heading6": "Titre 6"
   },
   "sidebar": {
     "title": "Éléments",
@@ -192,15 +199,22 @@
     "failedToImportZip": "Échec de l'importation du .zip",
     "failedToImportFile": "Échec de l'importation du fichier",
     "failedToImportImage": "Échec de l'importation de l'image",
+    "imageNotReferenced": "Image non référencée dans le document",
     "filenameTooLong": "Nom de fichier trop long (max. 255 octets)",
     "exportPdfModeWarning": "Passez en mode Divisé ou Aperçu pour exporter en PDF.",
     "failedToDuplicate": "Échec de la duplication du fichier",
     "failedToSavePermission": "Impossible d'enregistrer : permission refusée. Vérifiez le propriétaire du fichier sur le serveur."
   },
+  "importModal": {
+    "title": "Importer un fichier",
+    "destination": "Dossier de destination :",
+    "chooseFile": "Choisir un fichier"
+  },
   "contextMenu": {
     "duplicate": "Dupliquer",
     "rename": "Renommer",
     "delete": "Supprimer",
+    "spellSuggestions": "Corrections",
     "bold": "Gras",
     "italic": "Italique",
     "strikethrough": "Barré",

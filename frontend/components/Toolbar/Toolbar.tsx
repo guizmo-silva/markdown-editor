@@ -751,12 +751,12 @@ export default function Toolbar({
   };
 
   const headingOptions = [
-    { level: 1, label: 'H1', description: 'Título 1' },
-    { level: 2, label: 'H2', description: 'Título 2' },
-    { level: 3, label: 'H3', description: 'Título 3' },
-    { level: 4, label: 'H4', description: 'Título 4' },
-    { level: 5, label: 'H5', description: 'Título 5' },
-    { level: 6, label: 'H6', description: 'Título 6' },
+    { level: 1, label: 'H1', description: t('toolbar.heading1') },
+    { level: 2, label: 'H2', description: t('toolbar.heading2') },
+    { level: 3, label: 'H3', description: t('toolbar.heading3') },
+    { level: 4, label: 'H4', description: t('toolbar.heading4') },
+    { level: 5, label: 'H5', description: t('toolbar.heading5') },
+    { level: 6, label: 'H6', description: t('toolbar.heading6') },
   ];
 
   // Alert handlers

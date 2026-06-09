@@ -5,7 +5,8 @@
     "export": "Exportar",
     "open": "Abrir",
     "new": "Nuevo",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "delete": "Eliminar"
   },
   "toolbar": {
     "bold": "Negrita",
@@ -64,7 +65,13 @@
     "caseUpper": "MAYÚSCULAS",
     "highlight": "Resaltado",
     "more": "Más",
-    "back": "Volver"
+    "back": "Volver",
+    "heading1": "Encabezado 1",
+    "heading2": "Encabezado 2",
+    "heading3": "Encabezado 3",
+    "heading4": "Encabezado 4",
+    "heading5": "Encabezado 5",
+    "heading6": "Encabezado 6"
   },
   "sidebar": {
     "title": "Elementos",
@@ -192,15 +199,22 @@
     "failedToImportZip": "Error al importar .zip",
     "failedToImportFile": "Error al importar archivo",
     "failedToImportImage": "Error al importar imagen",
+    "imageNotReferenced": "Imagen no referenciada en el documento",
     "filenameTooLong": "Nombre de archivo demasiado largo (máx. 255 bytes)",
     "exportPdfModeWarning": "Cambie al modo Dividido o Vista previa para exportar en PDF.",
     "failedToDuplicate": "Error al duplicar el archivo",
     "failedToSavePermission": "No se pudo guardar: permiso denegado. Compruebe el propietario del archivo en el servidor."
   },
+  "importModal": {
+    "title": "Importar archivo",
+    "destination": "Carpeta de destino:",
+    "chooseFile": "Elegir archivo"
+  },
   "contextMenu": {
     "duplicate": "Duplicar",
     "rename": "Renombrar",
     "delete": "Eliminar",
+    "spellSuggestions": "Correcciones",
     "bold": "Negrita",
     "italic": "Cursiva",
     "strikethrough": "Tachado",

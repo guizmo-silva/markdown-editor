@@ -167,6 +167,10 @@ export default function EditorLayout() {
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const AUTOSAVE_DELAY = 1000; // 1 second debounce
+  // Tracks the pending save so cleanup can flush it immediately on tab switch.
+  // Compared against activeTabIdRef to distinguish tab-switch from content-change cleanup.
+  const pendingSaveRef = useRef<{ tabId: string; content: string } | null>(null);
+  const activeTabIdRef = useRef<string | null>(null);
   const [showDividerTooltip, setShowDividerTooltip] = useState(false);
   const dividerTooltipTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -175,6 +179,13 @@ export default function EditorLayout() {
   const markdown = activeTab?.content ?? '';
   const markdownRef = useRef(markdown);
   markdownRef.current = markdown;
+  // Tracks the cycle state for "click image in sidebar → scroll to its reference".
+  // null until the first image click; reset on tab change.
+  const imageNavRef = useRef<{ name: string; index: number } | null>(null);
+  // Mirror of viewMode for stable callbacks that must read it without re-creating
+  // on every viewMode change (e.g. handleImageSelect passed through memoized SidebarBody).
+  const viewModeRef = useRef(viewMode);
+  viewModeRef.current = viewMode;
   const saveStatus = activeTab?.saveStatus ?? 'saved';
   const isAutoNamed = activeTab?.isAutoNamed ?? false;
   const currentFilePath = activeTabId;
@@ -408,8 +419,6 @@ export default function EditorLayout() {
     const ext = filePath.includes('.') ? '.' + filePath.split('.').pop()!.toLowerCase() : '';
     if (imageExtensions.has(ext)) return;
 
-    console.log('Selected file:', filePath);
-
     // Check if tab already exists
     const existingTab = tabs.find(t => t.id === filePath);
     if (existingTab) {
@@ -477,7 +486,6 @@ export default function EditorLayout() {
     try {
       await saveFile(targetTabId, contentToSave);
       updateTab(targetTabId, { lastSavedContent: contentToSave, saveStatus: 'saved' });
-      console.log('File saved:', targetTabId);
     } catch (err) {
       console.error('Failed to save file:', err);
       updateTab(targetTabId, { saveStatus: 'error' });
@@ -864,6 +872,8 @@ export default function EditorLayout() {
 
   // Autosave with debounce - only triggered by content changes
   useEffect(() => {
+    activeTabIdRef.current = activeTabId;
+
     // Clear any existing timeout
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
@@ -871,6 +881,7 @@ export default function EditorLayout() {
 
     // Don't autosave if no active tab or content hasn't changed
     if (!activeTabId || activeContent === undefined || activeContent === activeLastSaved) {
+      pendingSaveRef.current = null;
       return;
     }
 
@@ -891,8 +902,10 @@ export default function EditorLayout() {
     // Set up debounced save
     const tabIdToSave = activeTabId;
     const contentToSave = activeContent;
+    pendingSaveRef.current = { tabId: tabIdToSave, content: contentToSave };
 
     autoSaveTimeoutRef.current = setTimeout(async () => {
+      pendingSaveRef.current = null;
       setTabs(prevTabs => prevTabs.map(tab =>
         tab.id === tabIdToSave ? { ...tab, saveStatus: 'saving' } : tab
       ));
@@ -904,7 +917,6 @@ export default function EditorLayout() {
             ? { ...tab, lastSavedContent: contentToSave, saveStatus: 'saved' }
             : tab
         ));
-        console.log('Autosaved:', tabIdToSave);
       } catch (err: any) {
         if (err?.code === 'EACCES') {
           console.error('Failed to autosave (permission denied):', tabIdToSave);
@@ -918,10 +930,25 @@ export default function EditorLayout() {
       }
     }, AUTOSAVE_DELAY);
 
-    // Cleanup on unmount or when dependencies change
+    // Cleanup: if switching to a different tab, save the current tab immediately
+    // instead of losing the pending debounce. Same-tab cleanups (content change)
+    // just cancel and re-schedule — no immediate save needed.
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
+      }
+      const pending = pendingSaveRef.current;
+      if (pending && activeTabIdRef.current !== pending.tabId) {
+        pendingSaveRef.current = null;
+        saveFile(pending.tabId, pending.content)
+          .then(() => {
+            setTabs(prev => prev.map(t =>
+              t.id === pending.tabId
+                ? { ...t, lastSavedContent: pending.content, saveStatus: 'saved' }
+                : t
+            ));
+          })
+          .catch(err => console.error('Failed to save on tab switch:', err));
       }
     };
   }, [activeTabId, activeContent, activeLastSaved]);
@@ -932,9 +959,14 @@ export default function EditorLayout() {
       // Check if any tab has unsaved changes
       const unsavedTabs = tabs.filter(t => t.content !== t.lastSavedContent);
       if (unsavedTabs.length > 0) {
-        // Try to save all unsaved tabs
+        // keepalive: true ensures the request survives page unload (unlike a normal fetch)
         unsavedTabs.forEach(tab => {
-          saveFile(tab.id, tab.content).catch(console.error);
+          fetch('/api/files/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: tab.id, content: tab.content }),
+            keepalive: true,
+          }).catch(console.error);
         });
         e.preventDefault();
         e.returnValue = '';
@@ -1049,7 +1081,7 @@ export default function EditorLayout() {
         setFileRefreshTrigger(prev => prev + 1);
       } catch (err) {
         // If rename fails (e.g., file exists), just keep current name
-        console.log('Auto-rename skipped:', err);
+        console.warn('Auto-rename skipped:', err);
         setTabs(prevTabs => prevTabs.map(tab =>
           tab.id === currentTabId ? { ...tab, lastAutoRenamedTitle: heading } : tab
         ));
@@ -1385,12 +1417,48 @@ export default function EditorLayout() {
     }
   }, [resolvePreviewClickOffset, viewMode]);
 
+  // Navigate the editor to an image's markdown reference when its name is clicked
+  // in the file browser. Repeated clicks on the same image cycle through every
+  // occurrence; clicking a different image restarts the cycle. Stable identity
+  // (reads viewMode/markdown via refs) so the memoized SidebarBody never goes stale.
+  const handleImageSelect = useCallback((imageName: string) => {
+    const content = markdownRef.current;
+    const escaped = imageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp('!\\[[^\\]]*\\]\\(' + escaped + '\\)', 'g');
+    const offsets: number[] = [];
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(content)) !== null) {
+      offsets.push(match.index);
+    }
+
+    if (offsets.length === 0) {
+      showError(t('errors.imageNotReferenced', 'Imagem não referenciada no documento'));
+      return;
+    }
+
+    const prev = imageNavRef.current;
+    const index = prev && prev.name === imageName
+      ? (prev.index + 1) % offsets.length
+      : 0;
+    imageNavRef.current = { name: imageName, index };
+
+    const offset = offsets[index];
+    const editor = editorRef.current;
+    if (editor && (viewModeRef.current === 'split' || viewModeRef.current === 'code')) {
+      editor.scrollToOffset(offset);
+    } else {
+      // Preview-only mode — apply once the editor becomes visible
+      pendingCursorOffset.current = offset;
+    }
+  }, [showError, t]);
+
   // Reset preview scroll position and offset when switching tabs
   useEffect(() => {
     if (previewScrollRef.current) {
       previewScrollRef.current.scrollTop = 0;
     }
     scrollOffsetRef.current = 0;
+    imageNavRef.current = null;
   }, [activeTabId]);
 
   // Wrapper: save scroll positions BEFORE switching, then restore after render
@@ -1665,6 +1733,7 @@ export default function EditorLayout() {
             splitVariant={lastSplitMode}
             onNavigateToLine={handleNavigateToLine}
             onFileSelect={handleFileSelect}
+            onImageSelect={handleImageSelect}
             onDeleteFile={handleDeleteFile}
             onRenameFolder={handleRenameFile}
             onExport={handleExportClick}
@@ -1838,6 +1907,7 @@ export default function EditorLayout() {
                       onColumnWidthChange={!isAnySplit ? setColumnWidth : undefined}
                       documentPath={currentFilePath}
                       onImagePasted={handleImageImported}
+                      onImagePasteError={() => showError(t('errors.failedToImportImage'))}
                     />
                     {/* Floating back button — appears after sidebar navigation */}
                     <button

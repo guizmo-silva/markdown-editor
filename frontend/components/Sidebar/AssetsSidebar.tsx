@@ -39,6 +39,7 @@ interface AssetsSidebarProps {
   splitVariant?: 'split' | 'split-horizontal';
   onNavigateToLine?: (line: number) => void;
   onFileSelect?: (filePath: string) => void;
+  onImageSelect?: (name: string) => void;
   onDeleteFile?: (filePath: string) => void;
   onRenameFolder?: (oldPath: string, newPath: string) => void;
   onExport?: () => void;
@@ -55,6 +56,7 @@ interface SidebarBodyProps {
   markdown: string;
   onNavigateToLine?: (line: number) => void;
   onFileSelect?: (filePath: string) => void;
+  onImageSelect?: (name: string) => void;
   onDeleteFile?: (filePath: string) => void;
   onRenameFolder?: (oldPath: string, newPath: string) => void;
   onExport?: () => void;
@@ -76,6 +78,7 @@ const SidebarBody = memo(function SidebarBody({
   markdown,
   onNavigateToLine,
   onFileSelect,
+  onImageSelect,
   onDeleteFile,
   onRenameFolder,
   onExport,
@@ -98,6 +101,8 @@ const SidebarBody = memo(function SidebarBody({
   onOpenTrashRef.current = onOpenTrash;
   const onFileSelectRef = useRef(onFileSelect);
   onFileSelectRef.current = onFileSelect;
+  const onImageSelectRef = useRef(onImageSelect);
+  onImageSelectRef.current = onImageSelect;
   const onDeleteFileRef = useRef(onDeleteFile);
   onDeleteFileRef.current = onDeleteFile;
   const onRenameFolderRef = useRef(onRenameFolder);
@@ -105,6 +110,7 @@ const SidebarBody = memo(function SidebarBody({
 
   // Stable wrappers for FileBrowser — never change identity, so FileBrowser won't re-render on parent changes
   const stableFileSelect = useCallback((p: string) => { onFileSelectRef.current?.(p); }, []);
+  const stableImageSelect = useCallback((n: string) => { onImageSelectRef.current?.(n); }, []);
   const stableDeleteFile = useCallback((p: string) => { onDeleteFileRef.current?.(p); }, []);
   const stableRenameFolder = useCallback((o: string, n: string) => { onRenameFolderRef.current?.(o, n); }, []);
 
@@ -700,7 +706,7 @@ const SidebarBody = memo(function SidebarBody({
           </div>
           <div className="flex-1 relative overflow-hidden">
             <div className="absolute inset-0 overflow-y-auto sidebar-scroll pb-8">
-              <FileBrowser onFileSelect={stableFileSelect} onDeleteFile={stableDeleteFile} onRenameFolder={stableRenameFolder} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
+              <FileBrowser onFileSelect={stableFileSelect} onImageSelect={stableImageSelect} onDeleteFile={stableDeleteFile} onRenameFolder={stableRenameFolder} collapseAllTrigger={filesCollapseTrigger} refreshTrigger={fileRefreshTrigger} />
             </div>
             <div
               className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none z-10"
@@ -772,6 +778,7 @@ export default function AssetsSidebar({
   splitVariant,
   onNavigateToLine,
   onFileSelect,
+  onImageSelect,
   onDeleteFile,
   onRenameFolder,
   onExport,
@@ -794,6 +801,7 @@ export default function AssetsSidebar({
         markdown={markdown}
         onNavigateToLine={onNavigateToLine}
         onFileSelect={onFileSelect}
+        onImageSelect={onImageSelect}
         onDeleteFile={onDeleteFile}
         onRenameFolder={onRenameFolder}
         onExport={onExport}

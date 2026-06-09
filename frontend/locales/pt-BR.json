@@ -5,7 +5,8 @@
     "export": "Exportar",
     "open": "Abrir",
     "new": "Novo",
-    "close": "Fechar"
+    "close": "Fechar",
+    "delete": "Apagar"
   },
   "toolbar": {
     "bold": "Negrito",
@@ -64,7 +65,13 @@
     "caseUpper": "MAIÚSCULAS",
     "highlight": "Destaque",
     "more": "Mais",
-    "back": "Voltar"
+    "back": "Voltar",
+    "heading1": "Título 1",
+    "heading2": "Título 2",
+    "heading3": "Título 3",
+    "heading4": "Título 4",
+    "heading5": "Título 5",
+    "heading6": "Título 6"
   },
   "sidebar": {
     "title": "Elementos",
@@ -192,15 +199,22 @@
     "failedToImportZip": "Falha ao importar .zip",
     "failedToImportFile": "Falha ao importar arquivo",
     "failedToImportImage": "Falha ao importar imagem",
+    "imageNotReferenced": "Imagem não referenciada no documento",
     "filenameTooLong": "Nome de arquivo muito longo (máx. 255 bytes)",
     "exportPdfModeWarning": "Alterne para o modo Dividido ou Visualização para exportar em PDF.",
     "failedToDuplicate": "Falha ao duplicar arquivo",
     "failedToSavePermission": "Não foi possível salvar: permissão negada. Verifique o dono do arquivo no servidor."
   },
+  "importModal": {
+    "title": "Importar arquivo",
+    "destination": "Pasta de destino:",
+    "chooseFile": "Escolher arquivo"
+  },
   "contextMenu": {
     "duplicate": "Duplicar",
     "rename": "Renomear",
     "delete": "Apagar",
+    "spellSuggestions": "Correções",
     "bold": "Negrito",
     "italic": "Itálico",
     "strikethrough": "Tachado",

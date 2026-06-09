@@ -402,8 +402,9 @@ export const createDocumentFolder = async (documentPath: string): Promise<string
   try {
     await fs.access(safeMdPath);
     await fs.rename(safeMdPath, newMdPath);
-  } catch {
-    // .md might already be at the new path — continue
+  } catch (err: any) {
+    // ENOENT: file not at source — it may already be at the destination, continue
+    if (err?.code !== 'ENOENT') throw err;
   }
 
   // Return new volume-prefixed path

@@ -5,7 +5,8 @@
     "export": "Export",
     "open": "Open",
     "new": "New",
-    "close": "Close"
+    "close": "Close",
+    "delete": "Delete"
   },
   "toolbar": {
     "bold": "Bold",
@@ -64,7 +65,13 @@
     "caseUpper": "UPPERCASE",
     "highlight": "Highlight",
     "more": "More",
-    "back": "Back"
+    "back": "Back",
+    "heading1": "Heading 1",
+    "heading2": "Heading 2",
+    "heading3": "Heading 3",
+    "heading4": "Heading 4",
+    "heading5": "Heading 5",
+    "heading6": "Heading 6"
   },
   "sidebar": {
     "title": "Assets",
@@ -192,15 +199,22 @@
     "failedToImportZip": "Failed to import .zip",
     "failedToImportFile": "Failed to import file",
     "failedToImportImage": "Failed to import image",
+    "imageNotReferenced": "Image not referenced in the document",
     "filenameTooLong": "Filename too long (max 255 bytes)",
     "exportPdfModeWarning": "Switch to Split or Preview mode to export as PDF.",
     "failedToDuplicate": "Failed to duplicate file",
     "failedToSavePermission": "Cannot save: permission denied. Check file ownership on the server."
   },
+  "importModal": {
+    "title": "Import file",
+    "destination": "Destination folder:",
+    "chooseFile": "Choose file"
+  },
   "contextMenu": {
     "duplicate": "Duplicate",
     "rename": "Rename",
     "delete": "Delete",
+    "spellSuggestions": "Corrections",
     "bold": "Bold",
     "italic": "Italic",
     "strikethrough": "Strikethrough",

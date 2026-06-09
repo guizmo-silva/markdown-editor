@@ -8,6 +8,7 @@ import { listFiles, createFolder, getVolumes, duplicateFile, type FileItem, type
 
 interface FileBrowserProps {
   onFileSelect?: (filePath: string) => void;
+  onImageSelect?: (name: string) => void;
   onDeleteFile?: (filePath: string) => void;
   onRenameFolder?: (oldPath: string, newPath: string) => void;
   collapseAllTrigger?: number; // Increment to trigger collapse all
@@ -199,6 +200,7 @@ interface FileTreeItemProps {
   item: FileItem;
   level: number;
   onSelect: (path: string) => void;
+  onImageSelect?: (name: string) => void;
   onDelete?: (path: string) => void;
   onRenameItem?: (oldPath: string, newPath: string) => void;
   isLast?: boolean;
@@ -224,7 +226,7 @@ interface FileTreeItemProps {
   onContextMenu?: (item: FileItem, x: number, y: number) => void;
 }
 
-function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, creatingFolderIn, onStartCreateFolder, onConfirmCreateFolder, onCancelCreateFolder, editingItemPath, onStartEditItem, onConfirmEditItem, onCancelEditItem, editItemValue, onEditItemValueChange, sidebarWidth, expandedFolders, onToggleExpand, draggedItem, dragOverTarget, onDragStart, onDragOverFolder, getParentFolder, isDocumentChild, onContextMenu }: FileTreeItemProps) {
+function FileTreeItem({ item, level, onSelect, onImageSelect, onDelete, onRenameItem, isLast, creatingFolderIn, onStartCreateFolder, onConfirmCreateFolder, onCancelCreateFolder, editingItemPath, onStartEditItem, onConfirmEditItem, onCancelEditItem, editItemValue, onEditItemValueChange, sidebarWidth, expandedFolders, onToggleExpand, draggedItem, dragOverTarget, onDragStart, onDragOverFolder, getParentFolder, isDocumentChild, onContextMenu }: FileTreeItemProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -287,7 +289,8 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
     if (item.type === 'folder') {
       onToggleExpand(item.path);
     } else if (item.type === 'image') {
-      // Images are not openable
+      // Clicking an image navigates the editor to its markdown reference
+      onImageSelect?.(item.name);
     } else {
       // For document files with images, single click also toggles children
       if (isDocumentFile) {
@@ -557,6 +560,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
                   item={child}
                   level={level + 1}
                   onSelect={onSelect}
+                  onImageSelect={onImageSelect}
                   onDelete={onDelete}
                   onRenameItem={onRenameItem}
                   isLast={index === item.children!.length - 1 && !isCreatingHere}
@@ -611,7 +615,7 @@ function FileTreeItem({ item, level, onSelect, onDelete, onRenameItem, isLast, c
   );
 }
 
-export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder, collapseAllTrigger, refreshTrigger }: FileBrowserProps) {
+export default function FileBrowser({ onFileSelect, onImageSelect, onDeleteFile, onRenameFolder, collapseAllTrigger, refreshTrigger }: FileBrowserProps) {
   const { t } = useTranslation();
   const { getIconPath } = useThemedIcon();
   const { showError } = useToast();
@@ -803,7 +807,6 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
   };
 
   const handleFileSelect = (filePath: string) => {
-    console.log('Selected file:', filePath);
     if (onFileSelect) {
       onFileSelect(filePath);
     }
@@ -1019,6 +1022,7 @@ export default function FileBrowser({ onFileSelect, onDeleteFile, onRenameFolder
           item={item}
           level={1}
           onSelect={handleFileSelect}
+          onImageSelect={onImageSelect}
           onDelete={onDeleteFile}
           onRenameItem={onRenameFolder}
           isLast={index === fileList.length - 1 && creatingFolderIn !== rootKey}
