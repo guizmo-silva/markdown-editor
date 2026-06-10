@@ -240,6 +240,9 @@
     "wholeWord": "शब्द",
     "wholeWordTooltip": "पूरा शब्द",
     "replace": "बदलें",
-    "replaceAll": "सभी बदलें"
+    "replaceAll": "सभी बदलें",
+    "results": "{count} परिणाम",
+    "resultOne": "{count} परिणाम",
+    "noResults": "कोई परिणाम नहीं"
   }
 }

@@ -240,6 +240,9 @@
     "wholeWord": "Mot",
     "wholeWordTooltip": "Mot entier",
     "replace": "Remplacer",
-    "replaceAll": "Tout remplacer"
+    "replaceAll": "Tout remplacer",
+    "results": "{count} résultats",
+    "resultOne": "{count} résultat",
+    "noResults": "Aucun résultat"
   }
 }

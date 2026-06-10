@@ -240,6 +240,9 @@
     "wholeWord": "单词",
     "wholeWordTooltip": "整个单词",
     "replace": "替换",
-    "replaceAll": "全部替换"
+    "replaceAll": "全部替换",
+    "results": "{count} 个结果",
+    "resultOne": "{count} 个结果",
+    "noResults": "无结果"
   }
 }

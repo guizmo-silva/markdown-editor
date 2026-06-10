@@ -256,6 +256,15 @@ body {
   background: transparent !important;
 }
 
+/* …but restore real text selection inside the search panel's text fields,
+   which live inside .cm-editor but are ordinary inputs, not editor content. */
+.cm-search input::selection {
+  background: #A0A0A0 !important;
+}
+.dark .cm-search input::selection {
+  background: #606060 !important;
+}
+
 
 /* Tight selection rects drawn by tightSelectionLayer (layer() API, above: false).
    The layer has z-index: -1 (behind text). Children are position:absolute via .cm-layer > *. */
@@ -385,6 +394,15 @@ body {
   justify-content: center;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.cm-search-count {
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  min-width: 64px;
+  text-align: right;
+  padding-right: 2px;
 }
 
 .cm-search input {

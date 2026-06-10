@@ -240,6 +240,9 @@
     "wholeWord": "Palavra",
     "wholeWordTooltip": "Palavra inteira",
     "replace": "Substituir",
-    "replaceAll": "Subs. todos"
+    "replaceAll": "Subs. todos",
+    "results": "{count} resultados",
+    "resultOne": "{count} resultado",
+    "noResults": "Nenhum resultado"
   }
 }

@@ -71,7 +71,20 @@ const _searchLabels = {
   wholeWordTooltip: 'Palavra inteira',
   replace: 'Substituir',
   replaceAll: 'Subs. todos',
+  results: '{count} resultados',
+  resultOne: '{count} resultado',
+  noResults: 'Nenhum resultado',
 };
+
+// Count how many times the current search query matches in the document.
+function countSearchMatches(view: EditorView): number {
+  const query = getSearchQuery(view.state);
+  if (!query.valid || !query.search) return 0;
+  let count = 0;
+  const cursor = query.getCursor(view.state);
+  for (let r = cursor.next(); !r.done; r = cursor.next()) count++;
+  return count;
+}
 
 function createLocalizedSearchPanel(view: EditorView) {
   const query = getSearchQuery(view.state);
@@ -172,10 +185,19 @@ function createLocalizedSearchPanel(view: EditorView) {
   reCheck.addEventListener('change', commit);
   wordCheck.addEventListener('change', commit);
 
+  // Run a find action and then re-scroll so the active match sits centered
+  // vertically, instead of barely peeking in at the bottom edge each time.
+  function findAndCenter(action: (v: EditorView) => boolean) {
+    if (action(view)) {
+      const main = view.state.selection.main;
+      view.dispatch({ effects: EditorView.scrollIntoView(main.head, { y: 'center' }) });
+    }
+  }
+
   searchInput.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (e.shiftKey) findPrevious(view); else findNext(view);
+      if (e.shiftKey) findAndCenter(findPrevious); else findAndCenter(findNext);
     }
   });
 
@@ -212,13 +234,32 @@ function createLocalizedSearchPanel(view: EditorView) {
   navGroup.className = 'cm-search-nav-group';
   navGroup.appendChild(makeIconButton('prev', L.previousTooltip, [
     { tag: 'polyline', attrs: { points: '15 18 9 12 15 6' } },
-  ], () => findPrevious(view)));
+  ], () => findAndCenter(findPrevious)));
   navGroup.appendChild(makeIconButton('next', L.nextTooltip, [
     { tag: 'polyline', attrs: { points: '9 18 15 12 9 6' } },
-  ], () => findNext(view)));
+  ], () => findAndCenter(findNext)));
+
+  const countDisplay = document.createElement('span');
+  countDisplay.className = 'cm-search-count';
+
+  function renderCount() {
+    const q = getSearchQuery(view.state);
+    if (!q.search) {
+      countDisplay.textContent = '';
+      return;
+    }
+    const n = countSearchMatches(view);
+    if (n === 0) {
+      countDisplay.textContent = L.noResults;
+    } else {
+      const template = n === 1 ? L.resultOne : L.results;
+      countDisplay.textContent = template.replace('{count}', String(n));
+    }
+  }
 
   const contentGroup = document.createElement('div');
   contentGroup.className = 'cm-search-content';
+  contentGroup.appendChild(countDisplay);
   contentGroup.appendChild(searchInput);
   contentGroup.appendChild(navGroup);
   contentGroup.appendChild(makeButton('select', L.all, () => selectMatches(view)));
@@ -238,6 +279,7 @@ function createLocalizedSearchPanel(view: EditorView) {
     mount() {
       searchInput.focus();
       searchInput.select();
+      renderCount();
     },
     update(update: ViewUpdate) {
       const q = getSearchQuery(update.state);
@@ -249,6 +291,8 @@ function createLocalizedSearchPanel(view: EditorView) {
         reCheck.checked = !!q.regexp;
         wordCheck.checked = !!q.wholeWord;
       }
+      // Recount when the query changes or the document is edited.
+      if (!q.eq(prev) || update.docChanged) renderCount();
     },
   };
 }
@@ -1541,6 +1585,9 @@ const CodeMirrorEditor = forwardRef<CodeMirrorHandle, CodeMirrorEditorProps>(({
   _searchLabels.wholeWordTooltip   = t('searchPanel.wholeWordTooltip', 'Palavra inteira');
   _searchLabels.replace            = t('searchPanel.replace', 'Substituir');
   _searchLabels.replaceAll         = t('searchPanel.replaceAll', 'Subs. todos');
+  _searchLabels.results            = t('searchPanel.results', '{count} resultados');
+  _searchLabels.resultOne          = t('searchPanel.resultOne', '{count} resultado');
+  _searchLabels.noResults          = t('searchPanel.noResults', 'Nenhum resultado');
 
   // Deferred state update refs - batch React state updates to avoid
   // synchronous re-renders during CodeMirror transactions (prevents scroll jumps)
