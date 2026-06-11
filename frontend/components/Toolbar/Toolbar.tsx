@@ -1,6 +1,6 @@
 'use client';
 
-import { RefObject, useState, useRef, useEffect } from 'react';
+import { RefObject, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { CodeMirrorHandle } from '@/components/Editor';
@@ -38,6 +38,48 @@ const SNIPPETS_KEY = 'mkd_snippets';
 const MAX_SNIPPETS = 50;
 const MAX_CONTENT_LENGTH = 10000;
 const MAX_NAME_LENGTH = 60;
+
+// Margem mínima entre o menu e a borda da janela
+const MENU_VIEWPORT_MARGIN = 8;
+
+// Reposiciona um dropdown (portal fixo) para que ele apareça por completo dentro
+// da área visível. Se o menu transborda a borda direita, é realinhado pela borda
+// oposta (borda direita do menu alinhada à borda direita do botão).
+function useMenuReposition(
+  isOpen: boolean,
+  buttonRef: RefObject<HTMLElement | null>,
+  menuRef: RefObject<HTMLElement | null>,
+  pos: { top: number; left: number },
+  setPos: (pos: { top: number; left: number }) => void,
+  // Dependências extras que alteram o tamanho do menu (ex.: navegação de submenu)
+  extraDeps: unknown[] = []
+) {
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const menu = menuRef.current;
+    if (!menu) return;
+
+    const menuWidth = menu.offsetWidth;
+    const viewportWidth = window.innerWidth;
+    let left = pos.left;
+
+    // Transborda a borda direita visível → alinha pela borda oposta
+    if (left + menuWidth > viewportWidth - MENU_VIEWPORT_MARGIN) {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      left = rect
+        ? rect.right - menuWidth
+        : viewportWidth - menuWidth - MENU_VIEWPORT_MARGIN;
+    }
+
+    // Nunca ultrapassar a borda esquerda
+    if (left < MENU_VIEWPORT_MARGIN) left = MENU_VIEWPORT_MARGIN;
+
+    if (left !== pos.left) {
+      setPos({ top: pos.top, left });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, ...extraDeps]);
+}
 
 function loadSnippets(): Snippet[] {
   try {
@@ -128,6 +170,15 @@ export default function Toolbar({
   const tableMenuRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  // Reposiciona os dropdowns que transbordariam a borda visível da janela
+  useMenuReposition(showHeadingMenu, headingButtonRef, headingMenuRef, headingMenuPos, setHeadingMenuPos);
+  useMenuReposition(showQuoteMenu, quoteButtonRef, quoteMenuRef, quoteMenuPos, setQuoteMenuPos);
+  useMenuReposition(showLinkMenu, linkButtonRef, linkMenuRef, linkMenuPos, setLinkMenuPos);
+  useMenuReposition(showImageMenu, imageButtonRef, imageMenuRef, imageMenuPos, setImageMenuPos);
+  useMenuReposition(showTableMenu, tableButtonRef, tableMenuRef, tableMenuPos, setTableMenuPos);
+  // O menu "+" muda de largura ao navegar entre submenus → recalcula nesses casos
+  useMenuReposition(showMoreMenu, moreButtonRef, moreMenuRef, moreMenuPos, setMoreMenuPos, [moreSubmenu]);
 
   // Close dropdown menus when clicking outside
   useEffect(() => {
@@ -2473,8 +2524,8 @@ export default function Toolbar({
                 onClick={() => setMoreSubmenu('specialChars')}
                 className="flex items-center gap-2 w-full px-3 py-1.5 rounded hover:bg-[var(--hover-bg)] text-sm text-[var(--text-primary)] justify-between"
               >
-                <span className="flex items-center gap-2">
-                  <img src={getIconPath('SpecialChar_icon.svg')} alt="" className="w-5 h-5" />
+                <span className="flex items-center gap-2 text-left">
+                  <img src={getIconPath('SpecialChar_icon.svg')} alt="" className="w-5 h-5 flex-shrink-0" />
                   {t('toolbar.specialChars')}
                 </span>
                 <span className="text-[var(--text-secondary)]">›</span>
@@ -2485,8 +2536,8 @@ export default function Toolbar({
                 onClick={() => setMoreSubmenu('caseConvert')}
                 className="flex items-center gap-2 w-full px-3 py-1.5 rounded hover:bg-[var(--hover-bg)] text-sm text-[var(--text-primary)] justify-between"
               >
-                <span className="flex items-center gap-2">
-                  <img src={getIconPath('CaseConvert_icon.svg')} alt="" className="w-5 h-5" />
+                <span className="flex items-center gap-2 text-left">
+                  <img src={getIconPath('CaseConvert_icon.svg')} alt="" className="w-5 h-5 flex-shrink-0" />
                   {t('toolbar.caseConvert')}
                 </span>
                 <span className="text-[var(--text-secondary)]">›</span>
@@ -2497,8 +2548,8 @@ export default function Toolbar({
                 onClick={() => setMoreSubmenu('alerts')}
                 className="flex items-center gap-2 w-full px-3 py-1.5 rounded hover:bg-[var(--hover-bg)] text-sm text-[var(--text-primary)] justify-between"
               >
-                <span className="flex items-center gap-2">
-                  <img src={getIconPath('Alerts_icon.svg')} alt="" className="w-5 h-5" />
+                <span className="flex items-center gap-2 text-left">
+                  <img src={getIconPath('Alerts_icon.svg')} alt="" className="w-5 h-5 flex-shrink-0" />
                   {t('toolbar.alert')} (GFM)
                 </span>
                 <span className="text-[var(--text-secondary)]">›</span>
@@ -2509,7 +2560,7 @@ export default function Toolbar({
                 onClick={() => setMoreSubmenu('snippets')}
                 className="flex items-center gap-2 w-full px-3 py-1.5 rounded hover:bg-[var(--hover-bg)] text-sm text-[var(--text-primary)] justify-between"
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 text-left">
                   <svg viewBox="-5 -2 24 24" fill="currentColor" className="w-5 h-5 flex-shrink-0">
                     <path d="M3 2a1 1 0 0 0-1 1v15l2.978-2.717a3 3 0 0 1 4.044 0L12 18V3a1 1 0 0 0-1-1H3zm0-2h8a3 3 0 0 1 3 3v15a2 2 0 0 1-3.348 1.477L7.674 16.76a1 1 0 0 0-1.348 0l-2.978 2.717A2 2 0 0 1 0 18V3a3 3 0 0 1 3-3zm5 8h2a1 1 0 0 1 0 2H8v2a1 1 0 0 1-2 0v-2H4a1 1 0 1 1 0-2h2V6a1 1 0 1 1 2 0v2z"/>
                   </svg>
